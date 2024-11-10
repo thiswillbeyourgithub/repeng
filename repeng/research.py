@@ -11,14 +11,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path.cwd().parent.absolute()))
 from repeng import ControlVector, ControlModel, DatasetEntry
 
-# load and wrap Mistral-7B
-# model_name = "mistralai/Mistral-7B-Instruct-v0.1"
-model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
-# fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
-fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
-model = AutoModelForCausalLM.from_pretrained(model_name, gguf_file=fname)#, torch_dtype=torch.int8)
-model = ControlModel(model, list(range(-5, -18, -1)))
-
 # Example taken from the notebooks
 def make_dataset(
     template: str,
@@ -39,6 +31,17 @@ def make_dataset(
             )
     return dataset
 
+
+# load and wrap Mistral-7B
+# model_name = "mistralai/Mistral-7B-Instruct-v0.1"
+model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
+# fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
+fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
+
+print("Initializing model...")
+model = AutoModelForCausalLM.from_pretrained(model_name, gguf_file=fname)#, torch_dtype=torch.int8)
+model = ControlModel(model, list(range(-5, -18, -1)))
+
 # generate a dataset with closely-opposite paired statements
 print("Making dataset")
 trippy_dataset = make_dataset(
@@ -53,6 +56,7 @@ print("Training control vector")
 trippy_vector = ControlVector.train(model, tokenizer, trippy_dataset)
 
 # set the control strength and let inference rip!
+print("Applying strength vectors")
 for strength in (-2.2, 1, 2.2):
     print(f"strength={strength}")
     model.set_control(trippy_vector, strength)
@@ -69,7 +73,6 @@ for strength in (-2.2, 1, 2.2):
     print()
 
 print("Now proceeding to test the model")
-
 # Create test Harness
 harness = Harness(task="text-classification",
                   model={'model': model, "hub": "custom"}, 
