@@ -4,10 +4,6 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import time
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path.cwd().parent.absolute()))
 from repeng import ControlVector, ControlModel, DatasetEntry
 
 starttme = time.time()
