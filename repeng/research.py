@@ -2,12 +2,21 @@ from tqdm import tqdm
 import json
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+import time
 
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path.cwd().parent.absolute()))
 from repeng import ControlVector, ControlModel, DatasetEntry
+
+starttme = time.time()
+def printer(message: str):
+    endtime = time.time()
+    elapsed = endtime - starttme
+    elapsedmin = int(elapsed // 60)
+    print(f"T+{elapsedmin}M: {message}")
+    starttme = time.time()
 
 # Example taken from the notebooks
 def make_dataset(
@@ -36,12 +45,12 @@ model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
 # fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
 fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
 
-print("Initializing model...")
+printer("Initializing model...")
 model = AutoModelForCausalLM.from_pretrained(model_name, gguf_file=fname)#, torch_dtype=torch.int8)
 model = ControlModel(model, list(range(-5, -18, -1)))
 
 # generate a dataset with closely-opposite paired statements
-print("Making dataset")
+printer("Making dataset")
 trippy_dataset = make_dataset(
     "Act as if you're extremely {persona}.",
     ["high on psychedelic drugs"],
@@ -50,13 +59,13 @@ trippy_dataset = make_dataset(
 )
 
 # train the vector—takes less than a minute!
-print("Training control vector")
+printer("Training control vector")
 trippy_vector = ControlVector.train(model, tokenizer, trippy_dataset)
 
 # set the control strength and let inference rip!
-print("Applying strength vectors")
+printer("Applying strength vectors")
 for strength in (-2.2, 1, 2.2):
-    print(f"strength={strength}")
+    printer(f"strength={strength}")
     model.set_control(trippy_vector, strength)
     out = model.generate(
         **tokenizer(
@@ -67,10 +76,10 @@ for strength in (-2.2, 1, 2.2):
         max_new_tokens=128,
         repetition_penalty=1.1,
     )
-    print(tokenizer.decode(out.squeeze()).strip())
+    printer(tokenizer.decode(out.squeeze()).strip())
     print()
 
-print("Now proceeding to test the model")
+printer("Now proceeding to test the model")
 from langtest import Harness
 # Create test Harness
 harness = Harness(task="text-classification",
