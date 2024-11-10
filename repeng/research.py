@@ -2,9 +2,12 @@ from tqdm import tqdm
 import json
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from langtest import Harness
+from langtest import Harness
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path.cwd().parent.absolute()))
 from repeng import ControlVector, ControlModel, DatasetEntry
 
@@ -66,7 +69,6 @@ for strength in (-2.2, 1, 2.2):
     print()
 
 print("Now proceeding to test the model")
-from langtest import Harness
 
 # Create test Harness
 harness = Harness(task="text-classification",
