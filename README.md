@@ -17,3 +17,15 @@ Specifically, things I intend to do are:
     - Again with 1000 samples
     - Keep 10 UMAP dimensions, do a kmeans with k=5, apply the repeng using as vector the 1D pca of only the points in the first cluster, do that for each clusters and see if they all have a strong effect of not
     - Create a pair of good and bad answers to the MMLU, see if it increases its accuracy on other similar benchmarks
+
+
+
+
+# How to replicate my setup
+git clone this repo
+cd into it
+uv venv
+activate the venv
+make sure you have numpy version 1,26,4 installed
+uv pip install -e .
+uv pip install -U gguf
