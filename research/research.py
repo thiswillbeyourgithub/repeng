@@ -6,13 +6,14 @@ import time
 
 from repeng import ControlVector, ControlModel, DatasetEntry
 
-starttme = time.time()
+start_time = time.time()
 def printer(message: str):
+    global start_time
     endtime = time.time()
-    elapsed = endtime - starttme
+    elapsed = endtime - start_time
     elapsedmin = int(elapsed // 60)
     print(f"T+{elapsedmin}M: {message}")
-    starttme = time.time()
+    start_time = time.time()
 
 # Example taken from the notebooks
 def make_dataset(
