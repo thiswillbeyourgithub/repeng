@@ -15,9 +15,7 @@ fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
 model = AutoModelForCausalLM.from_pretrained(model_name, gguf_file=fname)#, torch_dtype=torch.int8)
 model = ControlModel(model, list(range(-5, -18, -1)))
 
-# def make_dataset(template: str, pos_personas: list[str], neg_personas: list[str], suffixes: list[str]):
-#     # see notebooks/experiments.ipynb for a definition of `make_dataset`
-#     ...
+# Example taken from the notebooks
 def make_dataset(
     template: str,
     positive_personas: list[str],
@@ -38,6 +36,7 @@ def make_dataset(
     return dataset
 
 # generate a dataset with closely-opposite paired statements
+print("Making dataset")
 trippy_dataset = make_dataset(
     "Act as if you're extremely {persona}.",
     ["high on psychedelic drugs"],
@@ -46,6 +45,7 @@ trippy_dataset = make_dataset(
 )
 
 # train the vector—takes less than a minute!
+print("Training control vector")
 trippy_vector = ControlVector.train(model, tokenizer, trippy_dataset)
 
 # set the control strength and let inference rip!
