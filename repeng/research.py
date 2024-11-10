@@ -64,3 +64,15 @@ for strength in (-2.2, 1, 2.2):
     )
     print(tokenizer.decode(out.squeeze()).strip())
     print()
+
+print("Now proceeding to test the model")
+from langtest import Harness
+
+# Create test Harness
+harness = Harness(task="text-classification",
+                  model={'model': model, "hub": "custom"}, 
+                  data={'data_source': 'test.csv'},
+                  config='config.yml')	
+
+# Generate, run and get a report on your test cases
+h.generate().run().report()
