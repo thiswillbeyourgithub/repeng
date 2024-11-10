@@ -49,7 +49,9 @@ printer("Initializing model...")
 model = AutoModel.from_pretrained(
     model_name,
     gguf_file=fname,
-    torch_dtype=torch.int8)
+    # torch_dtype=torch.int8,
+    load_in_8but=True,
+)
 
 printer("Creating control model...")
 breakpoint()
