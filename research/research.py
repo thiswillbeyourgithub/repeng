@@ -46,6 +46,7 @@ printer("Initializing model...")
 model = AutoModelForCausalLM.from_pretrained(model_name, gguf_file=fname)#, torch_dtype=torch.int8)
 
 printer("Creating control model...")
+breakpoint()
 model = ControlModel(model, list(range(-5, -18, -1)))
 
 # generate a dataset with closely-opposite paired statements
