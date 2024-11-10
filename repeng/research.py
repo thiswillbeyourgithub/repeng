@@ -11,8 +11,7 @@ from repeng import ControlVector, ControlModel, DatasetEntry
 # model_name = "mistralai/Mistral-7B-Instruct-v0.1"
 model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
 # fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
-fname = "Mistral-7B-Instruct-v0.3.Q2_K_S.gguf"
-# print(help(AutoModelForCausalLM.from_pretrained))
+fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
 model = AutoModelForCausalLM.from_pretrained(model_name, gguf_file=fname)#, torch_dtype=torch.int8)
 model = ControlModel(model, list(range(-5, -18, -1)))
 
