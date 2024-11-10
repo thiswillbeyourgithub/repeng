@@ -1,8 +1,8 @@
 from tqdm import tqdm
 import json
 import torch
-# from transformers import AutoModelForCausalLM, AutoTokenizer
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer
+# from transformers import AutoModel, AutoTokenizer
 import time
 
 from repeng import ControlVector, ControlModel, DatasetEntry
@@ -46,7 +46,7 @@ model_name = "TheBloke/Mistral-7B-Instruct-v0.1-GGUF"
 fname = "mistral-7b-instruct-v0.1.Q2_K.gguf"
 
 printer("Initializing model...")
-model = AutoModel.from_pretrained(
+model = AutoModelForCausalLM.from_pretrained(
     model_name,
     gguf_file=fname,
     # torch_dtype=torch.int8,
