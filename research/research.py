@@ -52,6 +52,7 @@ model = AutoModelForCausalLM.from_pretrained(
     torch_dtype=torch.int8,
     # load_in_8bit=True,  # must be disabled if loading a gguf
     device_map="auto",
+    low_cpu_mem_usage=True,
 )
 
 printer("Creating control model...")
