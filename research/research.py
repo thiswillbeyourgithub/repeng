@@ -49,7 +49,7 @@ printer("Initializing model...")
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     gguf_file=fname,
-    # torch_dtype=torch.int8,
+    torch_dtype=torch.int8,
     load_in_8but=True,
 )
 
