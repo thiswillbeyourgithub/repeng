@@ -50,7 +50,7 @@ model = AutoModelForCausalLM.from_pretrained(
     model_name,
     gguf_file=fname,
     torch_dtype=torch.int8,
-    load_in_8bit=True,
+    # load_in_8bit=True,  # must be disabled if loading a gguf
     device_map="auto",
 )
 
