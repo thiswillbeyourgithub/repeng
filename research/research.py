@@ -51,7 +51,8 @@ model = AutoModelForCausalLM.from_pretrained(
     gguf_file=fname,
     torch_dtype="int8",
     # load_in_8bit=True,  # must be disabled if loading a gguf
-    device_map="auto",
+    device_map="cuda",
+    # device_map="auto",  # may oom on low vram, otherwise use all available gous I think
     low_cpu_mem_usage=True,
 )
 
