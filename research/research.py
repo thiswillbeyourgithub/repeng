@@ -53,6 +53,8 @@ token=os.environ["HUGGINGFACE_API_TOKEN"]
 assert token
 login(token=token)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+if tokenizer.pad_token is None:
+    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     token=token,
