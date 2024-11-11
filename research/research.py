@@ -31,8 +31,8 @@ def make_dataset(
             negative_template = template.format(persona=negative_persona)
             dataset.append(
                 DatasetEntry(
-                    positive=f"{user_tag} {positive_template} {asst_tag} {suffix}",
-                    negative=f"{user_tag} {negative_template} {asst_tag} {suffix}",
+                    positive=f"{positive_template} {asst_tag} {suffix}",
+                    negative=f"{negative_template} {asst_tag} {suffix}",
                 )
             )
     return dataset
@@ -65,6 +65,7 @@ model = ControlModel(model, list(range(-5, -18, -1)))
 
 # generate a dataset with closely-opposite paired statements
 printer("Making dataset")
+truncated_output_suffixes = [""]
 trippy_dataset = make_dataset(
     "Act as if you're extremely {persona}.",
     ["high on psychedelic drugs"],
