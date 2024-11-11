@@ -25,7 +25,7 @@ def make_dataset(
     suffix_list: list[str]
 ) -> list[DatasetEntry]:
     dataset = []
-    for suffix in tadm(suffix_list):
+    for suffix in tqdm(suffix_list):
         for positive_persona, negative_persona in zip(positive_personas, negative_personas):
             positive_template = template.format(persona=positive_persona)
             negative_template = template.format(persona=negative_persona)
