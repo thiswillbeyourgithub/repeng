@@ -40,21 +40,22 @@ def make_dataset(
 
 # load and wrap Mistral-7B
 # model_name = "mistralai/Mistral-7B-Instruct-v0.1"
+model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 # model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
 # fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
 # fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
-model_name = "TheBloke/Mistral-7B-Instruct-v0.1-GGUF"
-fname = "mistral-7b-instruct-v0.1.Q2_K.gguf"
+# model_name = "TheBloke/Mistral-7B-Instruct-v0.1-GGUF"
+# fname = "mistral-7b-instruct-v0.1.Q2_K.gguf"
 
 printer("Initializing model...")
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    gguf_file=fname,
     token=os.environ["HUGGINGFACE_API_TOKEN"],
+    # gguf_file=fname,
     torch_dtype="int8",
-    # load_in_8bit=True,  # must be disabled if loading a gguf
-    device_map="cuda",
-    # device_map="auto",  # may oom on low vram, otherwise use all available gous I think
+    load_in_8bit=True,  # must be disabled if loading a gguf
+    # device_map="cuda",
+    device_map="auto",  # may oom on low vram, otherwise use all available gous I think
     low_cpu_mem_usage=True,
 )
 
