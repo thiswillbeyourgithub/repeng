@@ -6,6 +6,7 @@ Specifically, things I intend to do are:
 
 - Take as reference the model llama3.2 8B
 - Benchmark the model using langtest to get its reference scores on things like MMLU
+- do the following comparisons also with the instruct vs base versions
 - Run the benchmark again after applying the following vector to measure how badly we crippled the LLM:
     - Apply only to some layers and see how much it impacts the benchmarks
     - with 100 samples:
