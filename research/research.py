@@ -2,6 +2,7 @@ import os
 from tqdm import tqdm
 import json
 import torch
+from huggingface_hub import login
 from transformers import AutoModelForCausalLM, AutoTokenizer
 # from transformers import AutoModel, AutoTokenizer
 import time
@@ -39,8 +40,8 @@ def make_dataset(
 
 
 # load and wrap Mistral-7B
-# model_name = "mistralai/Mistral-7B-Instruct-v0.1"
-model_name = "mistralai/Mistral-7B-Instruct-v0.3"
+model_name = "mistralai/Mistral-7B-Instruct-v0.1"
+# model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 # model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
 # fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
 # fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
@@ -48,9 +49,13 @@ model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 # fname = "mistral-7b-instruct-v0.1.Q2_K.gguf"
 
 printer("Initializing model...")
+token=os.environ["HUGGINGFACE_API_TOKEN"]
+assert token
+login(token=token)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    token=os.environ["HUGGINGFACE_API_TOKEN"],
+    token=token,
     # gguf_file=fname,
     # torch_dtype="int8",
     load_in_8bit=True,  # must be disabled if loading a gguf
