@@ -31,8 +31,8 @@ def make_dataset(
             negative_template = template.format(persona=negative_persona)
             dataset.append(
                 DatasetEntry(
-                    positive=f"{positive_template} {asst_tag} {suffix}",
-                    negative=f"{negative_template} {asst_tag} {suffix}",
+                    positive=f"{positive_template} {suffix}",
+                    negative=f"{negative_template} {suffix}",
                 )
             )
     return dataset
@@ -60,7 +60,6 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 
 printer("Creating control model...")
-breakpoint()
 model = ControlModel(model, list(range(-5, -18, -1)))
 
 # generate a dataset with closely-opposite paired statements
