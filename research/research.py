@@ -103,7 +103,7 @@ for strength in (-1.0, -0.5, 0, 0.5, 1.0):
     model.set_control(trippy_vector, strength)
     out = model.generate(
         **tokenizer(
-            f"[INST] Give me a one-sentence pitch for a TV show. [/INST]",
+            f"[INST] Write me a short scene from an imaginary movie. [/INST] Sure! Here's the scene: \"",
             return_tensors="pt"
         ),
         do_sample=True,
