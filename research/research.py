@@ -96,7 +96,7 @@ trippy_vector = ControlVector.train(
 
 # set the control strength and let inference rip!
 printer("Applying strength vectors")
-for strength in (-2.2, 1, 2.2):
+for strength in (0, -2.2, 1, 2.2):
     printer(f"strength={strength}")
     model.set_control(trippy_vector, strength)
     out = model.generate(
