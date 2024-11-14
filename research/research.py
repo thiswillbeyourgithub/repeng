@@ -40,7 +40,9 @@ def make_dataset(
 
 
 # load and wrap Mistral-7B
-model_name = "mistralai/Mistral-7B-Instruct-v0.1"
+model_name = "meta-llama/Llama-3.2-1B-Instruct"
+# model_name = "meta-llama/Llama-3.2-3B-Instruct"
+# model_name = "mistralai/Mistral-7B-Instruct-v0.1"
 # model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 # model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
 # fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
