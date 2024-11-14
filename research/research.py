@@ -86,7 +86,13 @@ trippy_dataset = make_dataset(
 
 # train the vector—takes less than a minute!
 printer("Training control vector")
-trippy_vector = ControlVector.train(model, tokenizer, trippy_dataset)
+trippy_vector = ControlVector.train(
+    model,
+    tokenizer,
+    trippy_dataset,
+    batch_size=1,
+    method="pca_center",
+)
 
 # set the control strength and let inference rip!
 printer("Applying strength vectors")
