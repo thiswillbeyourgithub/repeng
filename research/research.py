@@ -111,7 +111,7 @@ for strength in (-1.0, -0.5, 0, 0.5, 1.0):
         repetition_penalty=1.5,
     )
     print(tokenizer.decode(out.squeeze()).strip())
-    print()
+    print("#" * 20)
 
 print("Now proceeding to test the model")
 harness = Harness(
