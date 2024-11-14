@@ -110,10 +110,15 @@ for strength in (-1.0, -0.5, 0, 0.5, 1.0):
 print("Now proceeding to test the model")
 from langtest import Harness
 # Create test Harness
-harness = Harness(task="text-classification",
-                  model={'model': model, "hub": "custom"}, 
-                  data={'data_source': 'test.csv'},
-                  config='config.yml')	
+harness = Harness(
+    model={'model': model, "hub": "custom"},
+    # task="text-classification",
+    # # data={'data_source': 'test.csv'},
+    # config='config.yml',
+
+    task="question-answering", 
+    data={"data_source" :"BoolQ", "split":"test-tiny"}
+)
 
 # Generate, run and get a report on your test cases
 h.generate().run().report()
