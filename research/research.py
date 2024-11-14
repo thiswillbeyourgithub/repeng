@@ -80,7 +80,7 @@ truncated_output_suffixes = [
     "lurking in a bar",
 ]
 trippy_dataset = make_dataset(
-    "Act as if you're extremely {persona}.",
+    "Act as if you're extremely {persona} that is ",
     ["high on psychedelic drugs"],
     ["sober from psychedelic drugs"],
     truncated_output_suffixes,
