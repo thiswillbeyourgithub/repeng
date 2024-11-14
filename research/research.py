@@ -106,7 +106,7 @@ for strength in (-1.5, 0, 0.7, 1.5):
         ),
         do_sample=True,
         max_new_tokens=128,
-        repetition_penalty=1.1,
+        repetition_penalty=1.5,
     )
     printer(tokenizer.decode(out.squeeze()).strip())
     print()
