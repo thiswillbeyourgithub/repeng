@@ -69,7 +69,10 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 
 printer("Creating control model...")
-model = ControlModel(model, list(range(-5, -18, -1)))
+model = ControlModel(
+    model,
+    # layer_ids=list(range(-5, -18, -1))
+)
 
 # generate a dataset with closely-opposite paired statements
 printer("Making dataset")
