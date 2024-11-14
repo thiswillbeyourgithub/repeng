@@ -76,7 +76,12 @@ model = ControlModel(
 
 # generate a dataset with closely-opposite paired statements
 printer("Making dataset")
-truncated_output_suffixes = ["on your first day", "during an interview"]
+truncated_output_suffixes = [
+    "on your first day",
+    "during a job interview",
+    "writing a philosophy thesis",
+    "lurking in a bar",
+]
 trippy_dataset = make_dataset(
     "Act as if you're extremely {persona}.",
     ["high on psychedelic drugs"],
