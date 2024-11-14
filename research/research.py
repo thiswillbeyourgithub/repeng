@@ -9,6 +9,10 @@ import time
 
 from repeng import ControlVector, ControlModel, DatasetEntry
 
+token=os.environ["HUGGINGFACE_API_TOKEN"]
+assert token
+login(token=token)
+
 # Example taken from the notebooks
 def make_dataset(
     template: str,
@@ -31,8 +35,9 @@ def make_dataset(
 
 
 # load and wrap the model
-# model_name = "meta-llama/Llama-3.2-1B-Instruct"
-model_name = "meta-llama/Llama-3.2-3B-Instruct"
+fname = None
+model_name = "meta-llama/Llama-3.2-1B-Instruct"
+# model_name = "meta-llama/Llama-3.2-3B-Instruct"
 
 # model_name = "mistralai/Mistral-7B-Instruct-v0.1"
 # model_name = "mistralai/Mistral-7B-Instruct-v0.3"
@@ -44,17 +49,15 @@ model_name = "meta-llama/Llama-3.2-3B-Instruct"
 # fname = "mistral-7b-instruct-v0.1.Q2_K.gguf"
 
 print("Initializing model...")
-token=os.environ["HUGGINGFACE_API_TOKEN"]
-assert token
-login(token=token)
+
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 if tokenizer.pad_token is None:
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    token=token,
-    # gguf_file=fname,
-    # torch_dtype="int8",
+    gguf_file=fname,
+    torch_dtype=torch.float16,
     load_in_8bit=True,  # must be disabled if loading a gguf
     # device_map="cuda",
     device_map="auto",  # may oom on low vram, otherwise use all available gous I think
