@@ -9,15 +9,6 @@ import time
 
 from repeng import ControlVector, ControlModel, DatasetEntry
 
-start_time = time.time()
-def printer(message: str):
-    global start_time
-    endtime = time.time()
-    elapsed = endtime - start_time
-    elapsedmin = int(elapsed // 60)
-    print(f"T+{elapsedmin}M: {message}")
-    start_time = time.time()
-
 # Example taken from the notebooks
 def make_dataset(
     template: str,
@@ -50,7 +41,7 @@ model_name = "meta-llama/Llama-3.2-1B-Instruct"
 # model_name = "TheBloke/Mistral-7B-Instruct-v0.1-GGUF"
 # fname = "mistral-7b-instruct-v0.1.Q2_K.gguf"
 
-printer("Initializing model...")
+print("Initializing model...")
 token=os.environ["HUGGINGFACE_API_TOKEN"]
 assert token
 login(token=token)
@@ -68,14 +59,14 @@ model = AutoModelForCausalLM.from_pretrained(
     low_cpu_mem_usage=True,
 )
 
-printer("Creating control model...")
+print("Creating control model...")
 model = ControlModel(
     model,
     # layer_ids=list(range(-5, -18, -1))
 )
 
 # generate a dataset with closely-opposite paired statements
-printer("Making dataset")
+print("Making dataset")
 truncated_output_suffixes = [
     "on your first day",
     "during a job interview",
@@ -90,7 +81,7 @@ trippy_dataset = make_dataset(
 )
 
 # train the vector—takes less than a minute!
-printer("Training control vector")
+print("Training control vector")
 trippy_vector = ControlVector.train(
     model,
     tokenizer,
@@ -100,9 +91,9 @@ trippy_vector = ControlVector.train(
 )
 
 # set the control strength and let inference rip!
-printer("Applying strength vectors")
+print("Applying strength vectors")
 for strength in (-1.5, 0, 0.7, 1.5):
-    printer(f"strength={strength}")
+    print(f"strength={strength}")
     model.set_control(trippy_vector, strength)
     out = model.generate(
         **tokenizer(
@@ -113,10 +104,10 @@ for strength in (-1.5, 0, 0.7, 1.5):
         max_new_tokens=128,
         repetition_penalty=1.5,
     )
-    printer(tokenizer.decode(out.squeeze()).strip())
+    print(tokenizer.decode(out.squeeze()).strip())
     print()
 
-printer("Now proceeding to test the model")
+print("Now proceeding to test the model")
 from langtest import Harness
 # Create test Harness
 harness = Harness(task="text-classification",
