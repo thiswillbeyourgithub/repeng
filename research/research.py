@@ -5,6 +5,7 @@ import torch
 from huggingface_hub import login
 from transformers import AutoModelForCausalLM, AutoTokenizer
 # from transformers import AutoModel, AutoTokenizer
+from langtest import Harness
 import time
 
 from repeng import ControlVector, ControlModel, DatasetEntry
@@ -113,8 +114,6 @@ for strength in (-1.0, -0.5, 0, 0.5, 1.0):
     print()
 
 print("Now proceeding to test the model")
-from langtest import Harness
-# Create test Harness
 harness = Harness(
     model={'model': model, "hub": "custom"},
     # task="text-classification",
