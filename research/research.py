@@ -62,7 +62,7 @@ model = AutoModelForCausalLM.from_pretrained(
     load_in_8bit=True,  # must be disabled if loading a gguf
     # device_map="cuda",
     device_map="auto",  # may oom on low vram, otherwise use all available gous I think
-    low_cpu_mem_usage=True,
+    # low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
 )
 
 print("Creating control model...")
