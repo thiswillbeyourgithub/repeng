@@ -16,13 +16,19 @@ class ControlModel(torch.nn.Module):
     A wrapped language model that can have controls set on its layers with `self.set_control`.
     """
 
-    def __init__(self, model: PreTrainedModel, layer_ids: typing.Iterable[int]):
+    def __init__(
+            self,
+            model: PreTrainedModel,
+            layer_ids: typing.Optional[typing.Iterable[int]] = None,
+    ):
         """
         **This mutates the wrapped `model`! Be careful using `model` after passing it to this class.**
 
         Build a new ControlModel around a model instance, initializing control on
         the layers specified in `layer_ids`.
         """
+        if not layer_ids:
+            layer_ids = range(-1, -model.config.num_hidden_layers, -1)
 
         super().__init__()
         self.model = model
