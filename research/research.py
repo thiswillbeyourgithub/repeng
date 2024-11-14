@@ -104,7 +104,7 @@ for strength in (-1.5, 0, 0.7, 1.5):
             f"[INST] Give me a one-sentence pitch for a TV show. [/INST]",
             return_tensors="pt"
         ),
-        do_sample=False,
+        do_sample=True,
         max_new_tokens=128,
         repetition_penalty=1.1,
     )
