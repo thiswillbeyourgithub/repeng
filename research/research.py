@@ -5,7 +5,7 @@ import torch
 from huggingface_hub import login
 from transformers import AutoModelForCausalLM, AutoTokenizer
 # from transformers import AutoModel, AutoTokenizer
-from langtest import Harness
+# from langtest import Harness
 import time
 
 from repeng import ControlVector, ControlModel, DatasetEntry
@@ -113,16 +113,16 @@ for strength in (-1.0, -0.5, 0, 0.5, 1.0):
     print(tokenizer.decode(out.squeeze()).strip())
     print("#" * 20)
 
-print("Now proceeding to test the model")
-harness = Harness(
-    model={'model': model, "hub": "custom"},
-    # task="text-classification",
-    # # data={'data_source': 'test.csv'},
-    # config='config.yml',
-
-    task="question-answering", 
-    data={"data_source" :"BoolQ", "split":"test-tiny"}
-)
-
-# Generate, run and get a report on your test cases
-h.generate().run().report()
+# print("Now proceeding to test the model")
+# harness = Harness(
+#     model={'model': model, "hub": "custom"},
+#     # task="text-classification",
+#     # # data={'data_source': 'test.csv'},
+#     # config='config.yml',
+#
+#     task="question-answering", 
+#     data={"data_source" :"BoolQ", "split":"test-tiny"}
+# )
+#
+# # Generate, run and get a report on your test cases
+# h.generate().run().report()
