@@ -277,6 +277,9 @@ def read_representations(
         h = layer_hiddens[layer]
         assert h.shape[0] == len(inputs) * 2
 
+        if np.isnan(h.ravel()).all():
+            warnings.warn(f"Skipping layer {layer} because the vector is full of nan")
+
         if method == "pca_diff":
             train = h[::2] - h[1::2]
         elif method == "pca_center":
