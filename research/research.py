@@ -53,7 +53,15 @@ fname = "Llama-3.2-1B-Instruct-Q4_K_S.gguf"
 
 print("Initializing model...")
 
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(
+    model_name,
+    gguf_file=fname,
+    load_in_8bit=True,
+    torch_dtype=torch.float16,
+    device_map="auto",  # may oom on low vram, otherwise use all available gous I think
+    low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
+    llm_int8_enable_fp32_cpu_offload=True,
+)
 if tokenizer.pad_token is None:
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
@@ -61,10 +69,12 @@ model = AutoModelForCausalLM.from_pretrained(
     model_name,
     gguf_file=fname,
     torch_dtype=torch.float16,
-    load_in_8bit=True,  # must be disabled if loading a gguf
+    # weights = "int8",
+    # load_in_8bit=True,  # must be disabled if loading a gguf
     # device_map="cuda",
     device_map="auto",  # may oom on low vram, otherwise use all available gous I think
-    # low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
+    low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
+    # llm_int8_enable_fp32_cpu_offload=True,
 )
 
 print("Creating control model...")
