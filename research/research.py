@@ -105,8 +105,8 @@ truncated_output_suffixes = [
 ]
 trippy_dataset = make_dataset(
     "Act as if you're extremely {persona} and ",
-    ["angry"],
-    ["calm"],
+    ["angry", "defiant", "unaggreable", "obnoxious", "dangerous"],
+    ["calm", "nice", "aggreable", "vertuou"],
     truncated_output_suffixes,
 )
 
