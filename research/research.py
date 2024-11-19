@@ -51,8 +51,9 @@ fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
 model_name = "bartowski/Llama-3.2-1B-Instruct-GGUF"
 fname = "Llama-3.2-1B-Instruct-Q4_K_S.gguf"
 
-print("Initializing model...")
+print(f"Selected model: {model_name}")
 
+print("Initializing tokenizer...")
 tokenizer = AutoTokenizer.from_pretrained(
     model_name,
     gguf_file=fname,
@@ -65,6 +66,7 @@ tokenizer = AutoTokenizer.from_pretrained(
 if tokenizer.pad_token is None:
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
+print("Initializing model...")
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     gguf_file=fname,
