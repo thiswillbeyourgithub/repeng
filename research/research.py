@@ -68,9 +68,8 @@ print("Initializing tokenizer...")
 tokenizer = AutoTokenizer.from_pretrained(
     model_name,
     gguf_file=fname,
-    # torch_dtype=torch.int8,
-    device_map="cuda",  # may oom on low vram, otherwise use all available gous I think
-    low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
+    device_map="auto",  # may oom on low vram, otherwise use all available gous I think
+    # low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
     quantization_config=bnb_config,
 )
 if tokenizer.pad_token is None:
@@ -80,10 +79,9 @@ print("Initializing model...")
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     gguf_file=fname,
-    # torch_dtype=torch.int8,
     device_map="auto",
     # device_map="cuda",  # may oom on low vram, otherwise use all available gous I think
-    low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
+    # low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
     quantization_config=bnb_config,
 )
 
