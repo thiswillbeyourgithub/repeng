@@ -54,14 +54,14 @@ model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 
 print(f"Selected model: {model_name}")
 bnb_config = BitsAndBytesConfig(
-  load_in_8bit=True,
-  bnb_8bit_quant_type="nf8",
-  bnb_8bit_compute_dtype=torch.bfloat16,
-  bnb_8bit_use_double_quant=True,
-  # load_in_4bit=True,
-  # bnb_4bit_quant_type="nf4",
-  # bnb_4bit_compute_dtype=torch.bfloat16,
-  # bnb_4bit_use_double_quant=True,
+  # load_in_8bit=True,
+  # bnb_8bit_quant_type="nf8",
+  # bnb_8bit_compute_dtype=torch.bfloat16,
+  # bnb_8bit_use_double_quant=True,
+  load_in_4bit=True,
+  bnb_4bit_quant_type="nf4",
+  bnb_4bit_compute_dtype=torch.bfloat16,
+  bnb_4bit_use_double_quant=True,
 )
 
 print("Initializing tokenizer...")
