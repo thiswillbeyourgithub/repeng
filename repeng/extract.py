@@ -13,6 +13,9 @@ import tqdm
 from .control import ControlModel, model_layer_list
 from .saes import Sae
 
+if not hasattr(np, "float_"):
+    np.float_ = np.float64
+
 
 @dataclasses.dataclass
 class DatasetEntry:
