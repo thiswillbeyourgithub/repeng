@@ -313,6 +313,7 @@ def read_representations(
                 low_memory=True,
                 random_state=42,
                 transform_seed=42,
+                densmap=True,
             )
             embedding = umap_model.fit_transform(train).astype(np.float32)
             directions[layer] = np.sum(train * embedding, axis=0) / np.sum(embedding)
