@@ -132,10 +132,10 @@ for strength in (-0.5, -0.2, 0, 0.2, 0.5):
             f"[INST] Write me a short discussion between two people in a movie called 'It happened'. [/INST] Sure! There you go: \"",
             return_tensors="pt"
         ),
-        do_sample=True,
         max_new_tokens=128,
         repetition_penalty=1.5,
-        temperature=0,
+        do_sample=False,
+        temperature=0.0,
     )
     print(tokenizer.decode(out.squeeze()).strip())
     print("#" * 20)
