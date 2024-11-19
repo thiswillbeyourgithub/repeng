@@ -94,15 +94,19 @@ model = ControlModel(
 # generate a dataset with closely-opposite paired statements
 print("Making dataset")
 truncated_output_suffixes = [
-    "on your first day",
+    "on your first day of school",
     "during a job interview",
-    "writing a philosophy thesis",
+    "writing a book",
     "lurking in a bar",
+    "talking to someone",
+    "rethinking your life",
+    "talking to your wife",
+    "talking to your boss",
 ]
 trippy_dataset = make_dataset(
-    "Act as if you're extremely {persona} that is ",
-    ["high on psychedelic drugs"],
-    ["sober from psychedelic drugs"],
+    "Act as if you're extremely {persona} and ",
+    ["angry"],
+    ["calm"],
     truncated_output_suffixes,
 )
 
@@ -123,7 +127,7 @@ for strength in (-0.5, -0.2, 0, 0.2, 0.5):
     model.set_control(trippy_vector, strength)
     out = model.generate(
         **tokenizer(
-            f"[INST] Write me a short scene from an imaginary movie. [/INST] Sure! Here's the scene: \"",
+            f"[INST] Write me a short discussion between two people in a movie called 'It happened'. [/INST] Sure! There you go: \"",
             return_tensors="pt"
         ),
         do_sample=True,
