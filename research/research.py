@@ -4,6 +4,7 @@ import json
 import torch
 from huggingface_hub import login
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import BitsAndBytesConfig
 # from transformers import AutoModel, AutoTokenizer
 # from langtest import Harness
 import time
@@ -41,26 +42,32 @@ fname = None
 # model_name = "meta-llama/Llama-3.2-3B-Instruct"
 
 # model_name = "mistralai/Mistral-7B-Instruct-v0.1"
-# model_name = "mistralai/Mistral-7B-Instruct-v0.3"
+model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 
-model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
-fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
+# model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
+# fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
 # fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
 # model_name = "TheBloke/Mistral-7B-Instruct-v0.1-GGUF"
 # fname = "mistral-7b-instruct-v0.1.Q2_K.gguf"
-model_name = "bartowski/Llama-3.2-1B-Instruct-GGUF"
-fname = "Llama-3.2-1B-Instruct-Q4_K_S.gguf"
+# model_name = "bartowski/Llama-3.2-1B-Instruct-GGUF"
+# fname = "Llama-3.2-1B-Instruct-Q4_K_S.gguf"
 
 print(f"Selected model: {model_name}")
+bnb_config = BitsAndBytesConfig(
+  load_in_4bit=True,
+  bnb_4bit_quant_type="nf4",
+  bnb_4bit_compute_dtype=torch.bfloat16,
+  bnb_4bit_use_double_quant=True,
+)
 
 print("Initializing tokenizer...")
 tokenizer = AutoTokenizer.from_pretrained(
     model_name,
     gguf_file=fname,
     # torch_dtype=torch.int8,
-    # load_in_8bit=True,
     device_map="cuda",  # may oom on low vram, otherwise use all available gous I think
     low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
+    quantization_config=bnb_config,
 )
 if tokenizer.pad_token is None:
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
@@ -70,10 +77,10 @@ model = AutoModelForCausalLM.from_pretrained(
     model_name,
     gguf_file=fname,
     # torch_dtype=torch.int8,
-    # load_in_8bit=True,  # must be disabled if loading a gguf
     device_map="auto",
     # device_map="cuda",  # may oom on low vram, otherwise use all available gous I think
     low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
+    quantization_config=bnb_config,
 )
 
 print("Creating control model...")
