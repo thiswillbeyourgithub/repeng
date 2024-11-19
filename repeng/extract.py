@@ -282,6 +282,10 @@ def read_representations(
 
         if np.isnan(h.ravel()).all():
             warnings.warn(f"Skipping layer {layer} because the vector is full of nan")
+            continue
+        elif np.isnan(h.ravel()).any():
+            warnings.warn(f"Skipping layer {layer} because the vector contains at least one nan")
+            continue
 
         if method == "pca_diff":
             train = h[::2] - h[1::2]
