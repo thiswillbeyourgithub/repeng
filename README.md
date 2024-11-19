@@ -23,10 +23,10 @@ Specifically, things I intend to do are:
 
 
 # How to replicate my setup
-git clone this repo
-cd into it
-uv venv
-activate the venv
-make sure you have numpy version 1,26,4 installed
-uv pip install -e .
-uv pip install -U gguf
+- git clone this repo
+- cd into it
+- `uv venv` then activate the venv
+- install my slightly modified repeng into the venv with `uv pip install -e .`
+- Also might be needed:
+    - `uv pip install -U gguf`
+    - installing `umap-learn` by following [those instructions](https://pypi.org/project/umap-learn/)

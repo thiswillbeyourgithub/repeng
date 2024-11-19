@@ -135,6 +135,7 @@ for strength in (-0.5, -0.2, 0, 0.2, 0.5):
         do_sample=True,
         max_new_tokens=128,
         repetition_penalty=1.5,
+        temperature=0,
     )
     print(tokenizer.decode(out.squeeze()).strip())
     print("#" * 20)
