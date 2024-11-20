@@ -70,7 +70,7 @@ class ControlVector:
         dataset: list[DatasetEntry],
         *,
         decode: bool = True,
-        method: typing.Literal["pca_diff", "pca_center", "umap"] = "pca_center",
+        method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap"] = "pca_center",
         **kwargs,
     ) -> "ControlVector":
         """
@@ -89,7 +89,7 @@ class ControlVector:
                 max_batch_size (int, optional): The maximum batch size for training.
                     Defaults to 32. Try reducing this if you're running out of memory.
                 method (str, optional): The training method to use. Can be either
-                    "pca_diff" or "pca_center". Defaults to "pca_center"! This is different
+                    "pca_diff", "pca_center", "umap" or "pacmap". Defaults to "pca_center"! This is different
                     than ControlVector.train, which defaults to "pca_diff".
 
         Returns:
@@ -249,7 +249,7 @@ def read_representations(
     inputs: list[DatasetEntry],
     hidden_layers: typing.Iterable[int] | None = None,
     batch_size: int = 32,
-    method: typing.Literal["pca_diff", "pca_center", "umap"] = "pca_diff",
+    method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap"] = "pca_diff",
     transform_hiddens: (
         typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
     ) = None,
@@ -294,17 +294,17 @@ def read_representations(
             train = h
             train[::2] -= center
             train[1::2] -= center
-        elif method == "umap":
+        elif method in ["umap", "pacmap"]:
             train = h
         else:
             raise ValueError("unknown method " + method)
 
-        if method != "umap":
+        if method in ["pca_center", "pca_diff"]:
             # shape (1, n_features)
             pca_model = PCA(n_components=1, whiten=False).fit(train)
             # shape (n_features,)
             directions[layer] = pca_model.components_.astype(np.float32).squeeze(axis=0)
-        else:
+        elif method == "umap":
             # still experimental so don't want to add this as a real dependency yet
             import umap  # type: ignore
 
@@ -316,6 +316,18 @@ def read_representations(
                 # densmap=True,
             )
             embedding = umap_model.fit_transform(train).astype(np.float32)
+            directions[layer] = np.sum(train * embedding, axis=0) / np.sum(embedding)
+        elif method == "pacmap":
+            # still experimental so don't want to add this as a real dependency yet
+            import pacmap  # type: ignore
+
+            pacmap_model = pacmap.PaCMAP(
+                n_components=1,
+                init="pca",
+                verbose=True,
+                apply_pca=False,  # wether to start by a pca or not, not the same as 'init'
+            )
+            embedding = pacmap_model.fit_transform(train).astype(np.float32)
             directions[layer] = np.sum(train * embedding, axis=0) / np.sum(embedding)
 
         # calculate sign
