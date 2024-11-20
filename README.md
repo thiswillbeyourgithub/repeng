@@ -33,3 +33,4 @@ Specifically, things I intend to do are:
 - Also might be needed:
     - `uv pip install -U gguf`
     - installing `umap-learn` by following [those instructions](https://pypi.org/project/umap-learn/)
+    - installing `pacmap` by following [those instructions](https://pypi.org/project/pacmap/)
