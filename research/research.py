@@ -154,7 +154,7 @@ for strength in range(-5, 6, 1):
     model.set_control(trippy_vector, strength)
     out = model.generate(
         **tokenizer(
-            f"[INST] Write me a short chat between A and B. [/INST] Sure! There you go:\nA: \"Hey B, it's been a while! What's on your mind?\"\nB: \"",
+            f"[INST] Write me a short chat between A and B. [/INST] \nA: So tell me B, what's on your mind?\nB: ",
             return_tensors="pt"
         ).to(model.device.type),
         max_new_tokens=128,
