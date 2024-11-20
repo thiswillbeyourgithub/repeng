@@ -18,6 +18,7 @@ Specifically, things I intend to do are:
         - PCA + 0.3 * UMAP
         - PCA + 0.3 * UMAP with densmap
     - Again with 1000 samples
+    - Again with all layers, only the middle half layers, only the last half
     - Keep 10 UMAP dimensions, do a kmeans with k=5, apply the repeng using as vector the 1D pca of only the points in the first cluster, do that for each clusters and see if they all have a strong effect of not
     - Create a pair of good and bad intelligence-aligned examples, see if it increases its accuracy on other similar benchmarks
     - Create a pair of good and bad answers to the MMLU, see if it increases its accuracy on other similar benchmarks
