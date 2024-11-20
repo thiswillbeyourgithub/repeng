@@ -131,7 +131,7 @@ for strength in range(-5, 5, 1):
     model.set_control(trippy_vector, strength)
     out = model.generate(
         **tokenizer(
-            f"[INST] Write me a short discussion between two people in a movie called 'It happened'. [/INST] Sure! There you go: \"",
+            f"[INST] Write me a short discussion between A and B in a movie. [/INST] Sure! There you go:\n- A: \"Hey B, it's been a while! What's on your mind?\"\n- B: \"",
             return_tensors="pt"
         ).to(model.device.type),
         max_new_tokens=128,
