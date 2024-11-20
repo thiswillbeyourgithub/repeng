@@ -11,8 +11,10 @@ Specifically, things I intend to do are:
     - Apply only to some layers and see how much it impacts the benchmarks
     - with 100 samples:
         - PCA
+        - pacmap
         - UMAP
         - UMAP with densmap
+        - PCA + 0.3 * pacmap
         - PCA + 0.3 * UMAP
         - PCA + 0.3 * UMAP with densmap
     - Again with 1000 samples
