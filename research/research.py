@@ -97,21 +97,40 @@ model = ControlModel(
 
 # generate a dataset with closely-opposite paired statements
 print("Making dataset")
-truncated_output_suffixes = [
-    "on your first day of school",
-    "during a job interview",
-    "writing a book",
-    "lurking in a bar",
-    "talking to someone",
-    "rethinking your life",
-    "talking to your wife",
-    "talking to your boss",
-]
 trippy_dataset = make_dataset(
-    template="Act as if you're extremely {persona} and ",
-    positive_personas=["calm", "nice", "aggreable", "vertuous", "happy",],
-    negative_personas=["angry", "defiant", "unaggreable", "obnoxious", "dangerous", "moody",],
-    suffix_list=truncated_output_suffixes,
+    template="You are {persona}. Write a short paragraph about ",
+    positive_personas=[
+        "a very calm person",
+        "very nice",
+        "the nicest person",
+        "extremely vertuous",
+        "extremely sympathetic",
+        "a saint",
+    ],
+    negative_personas=[
+        "extremely angry",
+        "overly defiant",
+        "in an unaggreable mood",
+        "a very obnoxious person",
+        "an extremely vicious person",
+        "an extremely manipulatif person",
+        "the devil incarnate",
+        "a purely evil person",
+    ],
+    suffix_list=[
+        "your first day of school.",
+        "your first job interview.",
+        "the book you wrote.",
+        "why you go to pubs.",
+        "how you talk to people.",
+        "how you think your life.",
+        "how you ended up that way.",
+        "why you choose that path.",
+        "how you argue.",
+        "how you talk to your boss.",
+        "how you talk to your wife.",
+        "how you talk to your friends.",
+    ]
 )
 
 # train the vector—takes less than a minute!
