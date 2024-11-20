@@ -123,8 +123,8 @@ trippy_vector = ControlVector.train(
     batch_size=1,
     # method="pca_diff",
     # method="pca_center",  # seems more stable, whereas pca_diff quickly seems to be unreadable
-    # method="umap",  # garbage
-    method="pacmap",
+    method="umap",  # garbage
+    # method="pacmap",
 )
 
 # set the control strength and let inference rip!
