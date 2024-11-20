@@ -117,8 +117,8 @@ trippy_vector = ControlVector.train(
     tokenizer,
     trippy_dataset,
     batch_size=1,
-    # method="pca_diff",
-    method="pca_center",
+    method="pca_diff",
+    # method="pca_center",
     # method="umap",
 )
 
