@@ -133,7 +133,7 @@ for strength in range(-5, 5, 1):
         **tokenizer(
             f"[INST] Write me a short discussion between two people in a movie called 'It happened'. [/INST] Sure! There you go: \"",
             return_tensors="pt"
-        ),
+        ).to(model.device.type),
         max_new_tokens=128,
         repetition_penalty=1.5,
         do_sample=False,
