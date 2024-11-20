@@ -139,8 +139,8 @@ trippy_vector = ControlVector.train(
     tokenizer,
     trippy_dataset,
     batch_size=1,
-    # method="pca_diff",
-    method="pca_center",  # seems more stable, whereas pca_diff quickly seems to be unreadable
+    method="pca_diff",
+    # method="pca_center",  # seems more stable, whereas pca_diff quickly seems to be unreadable
     # method="umap",  # garbage
     # method="pacmap",
 )
