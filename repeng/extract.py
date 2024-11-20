@@ -332,9 +332,6 @@ def read_representations(
             pca_model = PCA(n_components=1, whiten=False).fit(pm_embedding.reshape(2, -1))
             directions[layer] = pca_model.components_.reshape(-1, 1).squeeze().astype(np.float32)
 
-        # the shape of directions[layer] must be [ndim, 1]
-        assert directions[layer].shape[1] == 1 and len(directions[layer].shape) == 2, f"directions[layer] must be of shape (ndim, 1) and not {directions[layer].shape}"
-
         # calculate sign
         projected_hiddens = project_onto_direction(h, directions[layer])
 
