@@ -310,7 +310,7 @@ def read_representations(
 
             umap_model = umap.UMAP(
                 n_components=1,
-                low_memory=True,
+                # low_memory=True,
                 random_state=42,
                 transform_seed=42,
                 # densmap=True,
