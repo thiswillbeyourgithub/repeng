@@ -105,10 +105,10 @@ truncated_output_suffixes = [
     "talking to your boss",
 ]
 trippy_dataset = make_dataset(
-    "Act as if you're extremely {persona} and ",
-    ["angry", "defiant", "unaggreable", "obnoxious", "dangerous"],
-    ["calm", "nice", "aggreable", "vertuou"],
-    truncated_output_suffixes,
+    template="Act as if you're extremely {persona} and ",
+    positive_personas=["calm", "nice", "aggreable", "vertuou"],
+    negative_personas=["angry", "defiant", "unaggreable", "obnoxious", "dangerous"],
+    suffix_list=truncated_output_suffixes,
 )
 
 # train the vector—takes less than a minute!
