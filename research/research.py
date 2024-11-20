@@ -159,8 +159,9 @@ for strength in range(-5, 6, 1):
         ).to(model.device.type),
         max_new_tokens=128,
         repetition_penalty=1.5,
-        do_sample=False,
-        # temperature=0.0,  # must only be set if do_sample is True
+        # do_sample=False,
+        do_sample=True,
+        temperature=1.0,  # must only be set if do_sample is True
     )
     print(tokenizer.decode(out.squeeze()).strip())
     print("#" * 20)
