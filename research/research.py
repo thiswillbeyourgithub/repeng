@@ -155,15 +155,15 @@ for strength in strengths:
     print("#" * 20 + f" Strength={strength}")
     model.set_control(trippy_vector, strength)
     out = model.generate(
-        **tokenizer.apply_chat_template(
+        tokenizer.apply_chat_template(
             conversation=[
                 {
                     "role": "system",
-                    "content": f"You write plausible movie dialogues."
+                    "content": "You write plausible movie dialogues."
                 },
                 {
                     "role": "user",
-                    "content": f"Write me a short chat between A and B.",
+                    "content": "Write me a short chat between A and B.",
                 },
                 {
                     "role": "assistant",
