@@ -178,7 +178,7 @@ for strength in strengths:
     print("#" * 20 + f" Strength={strength}")
     model.set_control(trippy_vector, strength)
     out = model.generate(
-        tokenizer.apply_chat_template(
+        **tokenizer.apply_chat_template(
             conversation=[
                 {
                     "role": "system",
@@ -194,6 +194,7 @@ for strength in strengths:
                 },
             ],
             return_tensors="pt",
+            return_dict=True,
             continue_final_message=True,
             tokenize=True,
         ).to(model.device),
