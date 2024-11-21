@@ -24,17 +24,20 @@ def make_dataset(
     suffix_list: list[str]
 ) -> list[DatasetEntry]:
     dataset = []
+    checks = []
     for suffix in tqdm(suffix_list):
         for positive_persona, negative_persona in zip(positive_personas, negative_personas):
             if isinstance(template, str):
                 positive_template = template.format(persona=positive_persona, suffix=suffix)
                 negative_template = template.format(persona=negative_persona, suffix=suffix)
+
             elif isinstance(template, list):
                 positive_template = template.copy()
                 for il, l in enumerate(positive_template):
                     assert isinstance(l, dict), type(l)
                     for k, v in l.items():
                         positive_template[il][k] = v.format(persona=positive_persona, suffix=suffix)
+
                 negative_template = template.copy()
                 for il, l in enumerate(negative_template):
                     assert isinstance(l, dict), type(l)
@@ -43,12 +46,16 @@ def make_dataset(
             else:
                 raise ValueError(type(template))
 
+            assert positive_template != negative_template
             dataset.append(
                 DatasetEntry(
                     positive=positive_template,
                     negative=negative_template,
                 )
             )
+            checks.append(json.dumps(positive_template))
+            checks.append(json.dumps(negative_template))
+    assert len(set(checks)) == len(checks), "duplicate items in dataset"
     return dataset
 
 
