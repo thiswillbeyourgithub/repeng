@@ -191,20 +191,16 @@ for strength in strengths:
             conversation=[
                 {
                     "role": "system",
-                    "content": "You write plausible movie dialogues."
+                    "content": "You are the patient, the user is the psychiatrist."
                 },
                 {
                     "role": "user",
-                    "content": "Write me a short chat between A and B.",
-                },
-                {
-                    "role": "assistant",
-                    "content": f"There you go:\nA: So tell me B, what's been on your mind lately?\nB: Are you sure you wanna know?\nA: Yes.\nB:",
-                },
+                    "content": "Now let's talk about your mood. How do you feel?",
+                }
             ],
             return_tensors="pt",
             return_dict=True,
-            continue_final_message=True,
+            # continue_final_message=True,
             tokenize=True,
         ).to(model.device),
         pad_token_id=tokenizer.eos_token_id,
