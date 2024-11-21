@@ -25,12 +25,12 @@ def make_dataset(
     dataset = []
     for suffix in tqdm(suffix_list):
         for positive_persona, negative_persona in zip(positive_personas, negative_personas):
-            positive_template = template.format(persona=positive_persona)
-            negative_template = template.format(persona=negative_persona)
+            positive_template = template.format(persona=positive_persona, suffix=suffix)
+            negative_template = template.format(persona=negative_persona, suffix=suffix)
             dataset.append(
                 DatasetEntry(
-                    positive=f"{positive_template} {suffix}",
-                    negative=f"{negative_template} {suffix}",
+                    positive=positive_template,
+                    negative=negative_template,
                 )
             )
     return dataset
@@ -97,7 +97,7 @@ model = ControlModel(
 # generate a dataset with closely-opposite paired statements
 print("Making dataset")
 trippy_dataset = make_dataset(
-    template="You are {persona}. Write a short paragraph about ",
+    template="You are {persona}. Write a short paragraph about {suffix}",
     positive_personas=[
         "a very calm person",
         "very nice",
