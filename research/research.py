@@ -190,7 +190,7 @@ for strength in strengths:
                 },
                 {
                     "role": "assistant",
-                    "content": f"There you go:\nA: So tell me B, what's been on your mind lately?\nB: ",
+                    "content": f"There you go:\nA: So tell me B, what's been on your mind lately?\nB: Are you sure you wanna know?\nA: Yes.\n B:",
                 },
             ],
             return_tensors="pt",
