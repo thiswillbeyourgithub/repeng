@@ -121,7 +121,7 @@ model = ControlModel(
 
 # generate a dataset with closely-opposite paired statements
 print("Making dataset")
-trippy_dataset = make_dataset(
+dataset = make_dataset(
     # template="You are {persona}. Write a short paragraph about {suffix}",
     template=[
         {
@@ -172,7 +172,7 @@ print("Training control vector")
 trippy_vector = ControlVector.train(
     model,
     tokenizer,
-    trippy_dataset,
+    dataset,
     batch_size=1,
     method="pca_diff",
     # method="pca_center",  # seems more stable, whereas pca_diff quickly seems to be unreadable
