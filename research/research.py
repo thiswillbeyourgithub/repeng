@@ -152,10 +152,25 @@ for strength in strengths:
     print("#" * 20 + f" Strength={strength}")
     model.set_control(trippy_vector, strength)
     out = model.generate(
-        **tokenizer(
-            f"[INST] Write me a short chat between A and B. [/INST] \nA: So tell me B, what's on your mind?\nB: ",
-            return_tensors="pt"
-        ).to(model.device.type),
+        **tokenizer.apply_chat_template(
+            conversation=[
+                {
+                    "role": "system",
+                    "content": f"You write plausible movie dialogues."
+                },
+                {
+                    "role": "user",
+                    "content": f"Write me a short chat between A and B.",
+                },
+                {
+                    "role": "assistant",
+                    "content": f"There you go:\nA: So tell me B, what's been on your mind lately?\nB: ",
+                },
+            ],
+            return_tensors="pt",
+            continue_final_message=True,
+            tokenize=True,
+        ).to(model.device),
         max_new_tokens=128,
         repetition_penalty=1.5,
         # do_sample=False,
