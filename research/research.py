@@ -1,3 +1,4 @@
+import typing
 import os
 from tqdm import tqdm
 import json
@@ -17,25 +18,37 @@ login(token=token)
 
 # Example taken from the notebooks
 def make_dataset(
-    template: str,
+    template: typing.Union[str, list],
     positive_personas: list[str],
     negative_personas: list[str],
     suffix_list: list[str]
 ) -> list[DatasetEntry]:
     dataset = []
-    strings = []
     for suffix in tqdm(suffix_list):
         for positive_persona, negative_persona in zip(positive_personas, negative_personas):
-            positive_template = template.format(persona=positive_persona, suffix=suffix)
-            negative_template = template.format(persona=negative_persona, suffix=suffix)
+            if isinstance(template, str):
+                positive_template = template.format(persona=positive_persona, suffix=suffix)
+                negative_template = template.format(persona=negative_persona, suffix=suffix)
+            elif isinstance(template, list):
+                positive_template = template.copy()
+                for il, l in enumerate(positive_template):
+                    assert isinstance(l, dict), type(l)
+                    for k, v in l.items():
+                        positive_template[il][k] = v.format(persona=positive_persona, suffix=suffix)
+                negative_template = template.copy()
+                for il, l in enumerate(negative_template):
+                    assert isinstance(l, dict), type(l)
+                    for k, v in l.items():
+                        negative_template[il][k] = v.format(persona=negative_persona, suffix=suffix)
+            else:
+                raise ValueError(type(template))
+
             dataset.append(
                 DatasetEntry(
                     positive=positive_template,
                     negative=negative_template,
                 )
             )
-            strings.extend([positive_template, negative_template])
-    assert len(set(strings)) == len(strings), "duplicates found in dataset"
     return dataset
 
 
@@ -100,7 +113,17 @@ model = ControlModel(
 # generate a dataset with closely-opposite paired statements
 print("Making dataset")
 trippy_dataset = make_dataset(
-    template="You are {persona}. Write a short paragraph about {suffix}",
+    # template="You are {persona}. Write a short paragraph about {suffix}",
+    template=[
+        {
+            "role": "system",
+            "content": "You are {persona}",
+        },
+        {
+            "role": "user",
+            "content": "Write a short paragraph about {suffix}",
+        }
+    ],
     positive_personas=[
         "a very calm person",
         "very nice",

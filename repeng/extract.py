@@ -19,8 +19,8 @@ if not hasattr(np, "float_"):
 
 @dataclasses.dataclass
 class DatasetEntry:
-    positive: str
-    negative: str
+    positive: typing.Union[str, typing.List]
+    negative: typing.Union[str, typing.List]
 
 
 @dataclasses.dataclass
@@ -267,6 +267,11 @@ def read_representations(
     # the order is [positive, negative, positive, negative, ...]
     train_strs = [s for ex in inputs for s in (ex.positive, ex.negative)]
 
+    # apply chat template or not, depending on the type
+    for iex, ex in enumerate(train_strs):
+        if isinstance(ex, list):
+            train_strs[iex] = tokenizer.apply_chat_template(ex, tokenize=False)
+
     layer_hiddens = batched_get_hiddens(
         model, tokenizer, train_strs, hidden_layers, batch_size
     )
@@ -379,6 +384,7 @@ def batched_get_hiddens(
             # get the last token, handling right padding if present
             encoded_batch = tokenizer(batch, padding=True, return_tensors="pt").to(model.device)
             out = model(**encoded_batch, output_hidden_states=True)
+
             attention_mask = encoded_batch["attention_mask"]
             for i in range(len(batch)):
                 last_non_padding_index = (
