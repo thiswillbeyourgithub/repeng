@@ -180,7 +180,7 @@ for strength in strengths:
         do_sample=True,
         temperature=1.0,  # must only be set if do_sample is True
     )
-    print(tokenizer.decode(out.squeeze()).strip())
+    print(tokenizer.decode(out.squeeze(), skip_special_tokens=True).strip())
     print("#" * 20)
 
 # print("Now proceeding to test the model")
