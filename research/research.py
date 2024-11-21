@@ -23,6 +23,7 @@ def make_dataset(
     suffix_list: list[str]
 ) -> list[DatasetEntry]:
     dataset = []
+    strings = []
     for suffix in tqdm(suffix_list):
         for positive_persona, negative_persona in zip(positive_personas, negative_personas):
             positive_template = template.format(persona=positive_persona, suffix=suffix)
@@ -33,6 +34,8 @@ def make_dataset(
                     negative=negative_template,
                 )
             )
+            strings.extend([positive_template, negative_template])
+    assert len(set(strings)) == len(strings), "duplicates found in dataset"
     return dataset
 
 
