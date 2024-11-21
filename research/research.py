@@ -43,6 +43,7 @@ def make_dataset(
 ) -> list[DatasetEntry]:
     assert "{persona}" in json.dumps(template), template
     assert "{suffix}" in json.dumps(template), template
+    assert len(positive_personas) == len(negative_personas)
     dataset = []
     checks = []
     for suffix in tqdm(suffix_list):
