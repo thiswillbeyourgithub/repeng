@@ -13,11 +13,28 @@ import time
 
 from repeng import ControlVector, ControlModel, DatasetEntry
 
+# model to use:
+fname = None
+# model_name = "meta-llama/Llama-3.2-1B-Instruct"
+# model_name = "meta-llama/Llama-3.2-3B-Instruct"
+
+# model_name = "mistralai/Mistral-7B-Instruct-v0.1"
+model_name = "mistralai/Mistral-7B-Instruct-v0.3"
+# model_name = "mistralai/Mistral-Nemo-Instruct-2407"
+
+# model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
+# fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
+# fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
+# model_name = "TheBloke/Mistral-7B-Instruct-v0.1-GGUF"
+# fname = "mistral-7b-instruct-v0.1.Q2_K.gguf"
+# model_name = "bartowski/Llama-3.2-1B-Instruct-GGUF"
+# fname = "Llama-3.2-1B-Instruct-Q4_K_S.gguf"
+
+
 token=os.environ["HUGGINGFACE_API_TOKEN"]
 assert token
 login(token=token)
 
-# Example taken from the notebooks
 def make_dataset(
     template: typing.Union[str, list],
     positive_personas: list[str],
@@ -60,24 +77,6 @@ def make_dataset(
             checks.append(json.dumps(negative_template))
     assert len(set(checks)) == len(checks), "duplicate items in dataset"
     return dataset
-
-
-# load and wrap the model
-fname = None
-# model_name = "meta-llama/Llama-3.2-1B-Instruct"
-# model_name = "meta-llama/Llama-3.2-3B-Instruct"
-
-# model_name = "mistralai/Mistral-7B-Instruct-v0.1"
-# model_name = "mistralai/Mistral-7B-Instruct-v0.3"
-model_name = "mistralai/Mistral-Nemo-Instruct-2407"
-
-# model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
-# fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
-# fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
-# model_name = "TheBloke/Mistral-7B-Instruct-v0.1-GGUF"
-# fname = "mistral-7b-instruct-v0.1.Q2_K.gguf"
-# model_name = "bartowski/Llama-3.2-1B-Instruct-GGUF"
-# fname = "Llama-3.2-1B-Instruct-Q4_K_S.gguf"
 
 print(f"Selected model: {model_name}")
 bnb_config = BitsAndBytesConfig(
