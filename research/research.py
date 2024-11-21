@@ -1,3 +1,4 @@
+import copy
 import typing
 import os
 from tqdm import tqdm
@@ -23,22 +24,24 @@ def make_dataset(
     negative_personas: list[str],
     suffix_list: list[str]
 ) -> list[DatasetEntry]:
+    assert "{persona}" in json.dumps(template), template
+    assert "{suffix}" in json.dumps(template), template
     dataset = []
     checks = []
     for suffix in tqdm(suffix_list):
         for positive_persona, negative_persona in zip(positive_personas, negative_personas):
             if isinstance(template, str):
-                positive_template = template.format(persona=positive_persona, suffix=suffix)
-                negative_template = template.format(persona=negative_persona, suffix=suffix)
+                positive_template = copy(template).format(persona=positive_persona, suffix=suffix)
+                negative_template = copy(template).format(persona=negative_persona, suffix=suffix)
 
             elif isinstance(template, list):
-                positive_template = template.copy()
+                positive_template = copy.deepcopy(template)
                 for il, l in enumerate(positive_template):
                     assert isinstance(l, dict), type(l)
                     for k, v in l.items():
                         positive_template[il][k] = v.format(persona=positive_persona, suffix=suffix)
 
-                negative_template = template.copy()
+                negative_template = copy.deepcopy(template)
                 for il, l in enumerate(negative_template):
                     assert isinstance(l, dict), type(l)
                     for k, v in l.items():
