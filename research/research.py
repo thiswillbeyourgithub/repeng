@@ -197,6 +197,7 @@ for strength in strengths:
             continue_final_message=True,
             tokenize=True,
         ).to(model.device),
+        pad_token_id=tokenizer.eos_token_id,
         max_new_tokens=128,
         repetition_penalty=1.5,
         # do_sample=False,
