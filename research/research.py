@@ -182,7 +182,7 @@ trippy_vector = ControlVector.train(
 
 # set the control strength and let inference rip!
 print("Applying strength vectors")
-strengths = [-1] +  [r/10 for r in range(-5, 6, 1)] + [1]
+strengths = [-2, -1] +  [r/10 for r in range(-5, 6, 1)] + [1, 2]
 for strength in strengths:
     print("#" * 20 + f" Strength={strength}")
     model.set_control(trippy_vector, strength)
