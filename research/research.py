@@ -22,6 +22,7 @@ fname = None
 # model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 model_name = "mistralai/Mistral-Nemo-Instruct-2407"
 
+# # GGUF don't always work because there is a dequantization step. See here: https://github.com/huggingface/transformers/issues/34417
 # model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
 # fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
 # fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
