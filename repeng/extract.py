@@ -331,9 +331,9 @@ def read_representations(
                 verbose=False,
                 apply_pca=True,  # wether to start by a pca or not, not the same as 'init'
             )
-            pm_embedding = pacmap_model.fit_transform(train.T, init="pca").astype(np.float32)
+            pm_embedding = pacmap_model.fit_transform(train.T, init="pca").T.astype(np.float32)
 
-            directions[layer] = np.sum(train * pm_embedding.T, axis=0) / np.sum(pm_embedding)
+            directions[layer] = np.sum(train * pm_embedding, axis=0) / np.sum(pm_embedding)
 
         # calculate sign
         projected_hiddens = project_onto_direction(h, directions[layer])
