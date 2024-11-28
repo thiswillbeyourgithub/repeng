@@ -16,6 +16,7 @@ from .saes import Sae
 if not hasattr(np, "float_"):
     np.float_ = np.float64
 
+VERBOSE = False
 
 @dataclasses.dataclass
 class DatasetEntry:
@@ -322,6 +323,9 @@ def read_representations(
             )
             embedding = umap_model.fit_transform(train).astype(np.float32)
             embedding /= np.abs(embedding.ravel()).max()
+            if VERBOSE:
+                print("Embedding:")
+                print(embedding)
             directions[layer] = np.sum(train * embedding, axis=0) / np.sum(embedding)
         elif method == "pacmap":
             # still experimental so don't want to add this as a real dependency yet
@@ -334,11 +338,22 @@ def read_representations(
             )
             pm_embedding = pacmap_model.fit_transform(train.T, init="pca").T.astype(np.float32)
             pm_embedding /= np.abs(pm_embedding.ravel()).max()
+            if VERBOSE:
+                print("Embedding:")
+                print(pm_embedding)
 
             directions[layer] = np.sum(train * pm_embedding, axis=0) / np.sum(pm_embedding)
 
+        if VERBOSE:
+            print("Direction of layer:")
+            print(directions[layer])
+
         # calculate sign
         projected_hiddens = project_onto_direction(h, directions[layer])
+        if VERBOSE:
+            print("Projection:")
+            print(projected_hiddens)
+
 
         # order is [positive, negative, positive, negative, ...]
         positive_smaller_mean = np.mean(
