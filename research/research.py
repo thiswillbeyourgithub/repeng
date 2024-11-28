@@ -126,7 +126,7 @@ dataset = make_dataset(
     template=[
         {
             "role": "system",
-            "content": "You are {persona}",
+            "content": "You are {persona}.",
         },
         {
             "role": "user",
