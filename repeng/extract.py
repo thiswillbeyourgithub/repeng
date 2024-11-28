@@ -321,6 +321,7 @@ def read_representations(
                 # densmap=True,
             )
             embedding = umap_model.fit_transform(train).astype(np.float32)
+            embedding /= np.abs(embedding.ravel()).max()
             directions[layer] = np.sum(train * embedding, axis=0) / np.sum(embedding)
         elif method == "pacmap":
             # still experimental so don't want to add this as a real dependency yet
@@ -332,6 +333,7 @@ def read_representations(
                 apply_pca=True,  # wether to start by a pca or not, not the same as 'init'
             )
             pm_embedding = pacmap_model.fit_transform(train.T, init="pca").T.astype(np.float32)
+            pm_embedding /= np.abs(pm_embedding.ravel()).max()
 
             directions[layer] = np.sum(train * pm_embedding, axis=0) / np.sum(pm_embedding)
 
