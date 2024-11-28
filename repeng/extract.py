@@ -309,7 +309,8 @@ def read_representations(
             # shape (1, n_features)
             pca_model = PCA(n_components=1, whiten=False).fit(train)
             # shape (n_features,)
-            directions[layer] = pca_model.components_.astype(np.float32).squeeze(axis=0)
+            newlayer = pca_model.components_.astype(np.float32).squeeze(axis=0)
+
         elif method == "umap":
             # still experimental so don't want to add this as a real dependency yet
             import umap  # type: ignore
@@ -326,7 +327,8 @@ def read_representations(
             if VERBOSE:
                 print("Embedding:")
                 print(embedding)
-            directions[layer] = np.sum(train * embedding, axis=0) / np.sum(embedding)
+            newlayer = np.sum(train * embedding, axis=0) / np.sum(embedding)
+
         elif method == "pacmap":
             # still experimental so don't want to add this as a real dependency yet
             import pacmap  # type: ignore
@@ -342,7 +344,9 @@ def read_representations(
                 print("Embedding:")
                 print(pm_embedding)
 
-            directions[layer] = np.sum(train * pm_embedding, axis=0) / np.sum(pm_embedding)
+            newlayer = np.sum(train * pm_embedding, axis=0) / np.sum(pm_embedding)
+
+        directions[layer] = newlayer
 
         if VERBOSE:
             print("Direction of layer:")
