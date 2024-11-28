@@ -326,18 +326,14 @@ def read_representations(
             # still experimental so don't want to add this as a real dependency yet
             import pacmap  # type: ignore
 
-            n_dim = 5
-
             pacmap_model = pacmap.PaCMAP(
-                n_components=n_dim,  # cannot be set to 1
+                n_components=1,
                 verbose=False,
                 apply_pca=True,  # wether to start by a pca or not, not the same as 'init'
             )
             pm_embedding = pacmap_model.fit_transform(train.T, init="pca").astype(np.float32)
 
-            # we use pca after pacmap because there is 2 dimensions after pacmap
-            pca_model = PCA(n_components=1, whiten=False).fit(pm_embedding.reshape(n_dim, -1))
-            directions[layer] = pca_model.components_.reshape(-1, 1).squeeze().astype(np.float32).squeeze()
+            directions[layer] = np.sum(train * pm_embedding.T, axis=0) / np.sum(pm_embedding)
 
         # calculate sign
         projected_hiddens = project_onto_direction(h, directions[layer])
