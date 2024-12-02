@@ -324,11 +324,14 @@ def read_representations(
                 # densmap=True,
             )
             embedding = umap_model.fit_transform(train).astype(np.float32)
+            # embedding = umap_model.fit_transform(train.T).astype(np.float32)
             embedding /= np.abs(embedding.ravel()).max()
             if VERBOSE:
                 print("Embedding:")
                 print(embedding)
+            # newlayer = embedding.squeeze()
             newlayer = np.sum(train * embedding, axis=0) / np.sum(embedding)
+            # newlayer = (train.T @ embedding).squeeze()
 
         elif method == "pacmap":
             # still experimental so don't want to add this as a real dependency yet
