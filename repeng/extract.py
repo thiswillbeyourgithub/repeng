@@ -338,28 +338,45 @@ def read_representations(
             import umap
             from sklearn.cluster import KMeans
 
+            n_clusters = 10
+
             # First reduce to 2D with UMAP
-            umap_model = umap.UMAP(n_components=2)
+            umap_model = umap.UMAP(n_components=2, random_state=42, transform_seed=42, densmap=True)
             umap_embedding = umap_model.fit_transform(train)
 
             # Run KMeans clustering
-            kmeans = KMeans(n_clusters=5, random_state=42)
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
             clusters = kmeans.fit_predict(umap_embedding)
 
-            # For each cluster, run PCA on the original data points in that cluster
+            # For each cluster, run PCA on the differences between positive and negative samples
             newlayer = np.zeros_like(train[0])
-            for cluster_idx in range(5):
+            for cluster_idx in range(n_clusters):
                 cluster_mask = clusters == cluster_idx
                 if np.sum(cluster_mask) > 1:  # Only process clusters with >1 sample
-                    cluster_data = train[cluster_mask]
-                    pca_model = PCA(n_components=1, whiten=False).fit(cluster_data)
-                    cluster_direction = pca_model.components_.squeeze()
-                    # Weight by number of points in cluster
-                    newlayer += cluster_direction * np.sum(cluster_mask)
+                    # Get original indices for this cluster
+                    cluster_indices = np.where(cluster_mask)[0]
+                    # Map back to original pairs (even=positive, odd=negative)
+                    pairs = []
+                    for idx in cluster_indices:
+                        pair_idx = idx // 2 * 2  # Get the even index for this pair
+                        if pair_idx + 1 < len(train):  # Make sure we have both positive and negative
+                            pairs.append((pair_idx, pair_idx + 1))
+                    
+                    if pairs:  # Only process if we have complete pairs
+                        # Calculate differences between positive and negative samples
+                        differences = np.array([train[pos] - train[neg] for pos, neg in pairs])
+                        if len(differences) > 1:  # Need at least 2 samples for PCA
+                            pca_model = PCA(n_components=1, whiten=False).fit(differences)
+                            cluster_direction = pca_model.components_.squeeze()
+                            # Weight by number of pairs in cluster
+                            newlayer += cluster_direction * len(pairs)
+                    else:
+                        raise Exception("missing pair")
             
             # Normalize
             newlayer = newlayer.astype(np.float32)
-            newlayer /= np.linalg.norm(newlayer)
+            newlayer /= np.linalg.norm(newlayer)  # L2 norm
+            # newlayer /= np.linalg.norm(newlayer, 1)  # L1 norm
 
         elif method == "pacmap":
             # still experimental so don't want to add this as a real dependency yet
