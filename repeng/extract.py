@@ -343,6 +343,7 @@ def read_representations(
                 apply_pca=True,  # wether to start by a pca or not, not the same as 'init'
             )
             pm_embedding = pacmap_model.fit_transform(train.T, init="pca").T.astype(np.float32)
+            # pm_embedding = pacmap_model.fit_transform(train.T, init="random").T.astype(np.float32)
             pm_embedding /= np.abs(pm_embedding.ravel()).max()
             if VERBOSE:
                 print("Embedding:")
