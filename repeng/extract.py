@@ -251,7 +251,7 @@ def read_representations(
     inputs: list[DatasetEntry],
     hidden_layers: typing.Iterable[int] | None = None,
     batch_size: int = 32,
-    method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap"] = "pca_diff",
+    method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap", "umap_kmeans_pca_diff"] = "pca_diff",
     transform_hiddens: (
         typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
     ) = None,
@@ -301,7 +301,7 @@ def read_representations(
             train = h
             train[::2] -= center
             train[1::2] -= center
-        elif method in ["umap", "pacmap"]:
+        elif method in ["umap", "pacmap", "umap_kmeans_pca_diff"]:
             train = h
         else:
             raise ValueError("unknown method " + method)
@@ -332,6 +332,34 @@ def read_representations(
             # newlayer = embedding.squeeze()
             newlayer = np.sum(train * embedding, axis=0) / np.sum(embedding)
             # newlayer = (train.T @ embedding).squeeze()
+
+        elif method == "umap_kmeans_pca_diff":
+            # still experimental so don't want to add this as a real dependency yet
+            import umap
+            from sklearn.cluster import KMeans
+
+            # First reduce to 2D with UMAP
+            umap_model = umap.UMAP(n_components=2)
+            umap_embedding = umap_model.fit_transform(train)
+
+            # Run KMeans clustering
+            kmeans = KMeans(n_clusters=5, random_state=42)
+            clusters = kmeans.fit_predict(umap_embedding)
+
+            # For each cluster, run PCA on the original data points in that cluster
+            newlayer = np.zeros_like(train[0])
+            for cluster_idx in range(5):
+                cluster_mask = clusters == cluster_idx
+                if np.sum(cluster_mask) > 1:  # Only process clusters with >1 sample
+                    cluster_data = train[cluster_mask]
+                    pca_model = PCA(n_components=1, whiten=False).fit(cluster_data)
+                    cluster_direction = pca_model.components_.squeeze()
+                    # Weight by number of points in cluster
+                    newlayer += cluster_direction * np.sum(cluster_mask)
+            
+            # Normalize
+            newlayer = newlayer.astype(np.float32)
+            newlayer /= np.linalg.norm(newlayer)
 
         elif method == "pacmap":
             # still experimental so don't want to add this as a real dependency yet
