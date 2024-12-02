@@ -206,7 +206,7 @@ for strength in strengths:
                 },
                 {
                     "role": "user",
-                    "content": "Now let's talk about your mood. How do you feel?/n",
+                    "content": "Now let's talk about your mood. How do you feel?\n",
                 }
             ],
             return_tensors="pt",
