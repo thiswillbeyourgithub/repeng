@@ -159,7 +159,7 @@ dataset = make_dataset(
         "a mental health professional",
     ],
     negative_personas=[
-        "depressed",
+        "feeling very depressed, even suicidal",
         "in the middle of a nervous breakdown",
         "a violent schizophrenic patient",
     ],
@@ -206,7 +206,7 @@ for strength in strengths:
                 },
                 {
                     "role": "user",
-                    "content": "Now let's talk about your mood. How do you feel?",
+                    "content": "Now let's talk about your mood. How do you feel?/n",
                 }
             ],
             return_tensors="pt",
