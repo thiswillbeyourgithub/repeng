@@ -19,8 +19,8 @@ fname = None
 # model_name = "meta-llama/Llama-3.2-3B-Instruct"
 
 # model_name = "mistralai/Mistral-7B-Instruct-v0.1"
-# model_name = "mistralai/Mistral-7B-Instruct-v0.3"
-model_name = "mistralai/Mistral-Nemo-Base-2407"
+model_name = "mistralai/Mistral-7B-Instruct-v0.3"
+# model_name = "mistralai/Mistral-Nemo-Base-2407"
 # model_name = "mistralai/Mistral-Nemo-Instruct-2407"
 
 # # GGUF don't always work because there is a dequantization step. See here: https://github.com/huggingface/transformers/issues/34417
@@ -115,8 +115,9 @@ print("Creating control model...")
 model = ControlModel(
     model,
     # layer_ids=list(range(-5, -18, -1))
-    layer_ids="all",
-    # layer_ids="middle",
+    # layer_ids="all",
+    layer_ids="middle",
+    # layer_ids="only_middle",
 )
 
 # generate a dataset with closely-opposite paired statements
