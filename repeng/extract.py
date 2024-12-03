@@ -2,6 +2,7 @@ import dataclasses
 import os
 import typing
 import warnings
+from joblib import Memory
 
 import gguf
 import numpy as np
@@ -18,6 +19,20 @@ if not hasattr(np, "float_"):
 
 VERBOSE = False
 LOW_MEMORY = True
+
+# Setup cache
+cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "controlvector")
+memory = Memory(cache_dir, verbose=0)
+
+def _model_forward(model, encoded_batch, use_cache=True):
+    """Model forward pass with optional caching"""
+    if use_cache:
+        @memory.cache
+        def cached_forward(model, encoded_batch):
+            return model(**encoded_batch, output_hidden_states=True)
+        return cached_forward(model, encoded_batch)
+    else:
+        return model(**encoded_batch, output_hidden_states=True)
 
 @dataclasses.dataclass
 class DatasetEntry:
@@ -251,6 +266,7 @@ def read_representations(
     inputs: list[DatasetEntry],
     hidden_layers: typing.Iterable[int] | None = None,
     batch_size: int = 32,
+    use_cache: bool = True,
     method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap", "umap_kmeans_pca_diff", "umap_kmeans_pca_center"] = "pca_diff",
     transform_hiddens: (
         typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
@@ -277,7 +293,7 @@ def read_representations(
             train_strs[iex] = tokenizer.apply_chat_template(ex, tokenize=False)
 
     layer_hiddens = batched_get_hiddens(
-        model, tokenizer, train_strs, hidden_layers, batch_size
+        model, tokenizer, train_strs, hidden_layers, batch_size, use_cache=use_cache
     )
 
     if transform_hiddens is not None:
@@ -475,6 +491,7 @@ def batched_get_hiddens(
     inputs: list[str],
     hidden_layers: list[int],
     batch_size: int,
+    use_cache: bool = True,
 ) -> dict[int, np.ndarray]:
     """
     Using the given model and tokenizer, pass the inputs through the model and get the hidden
@@ -490,7 +507,7 @@ def batched_get_hiddens(
         for batch in tqdm.tqdm(batched_inputs, desc="Getting activations"):
             # get the last token, handling right padding if present
             encoded_batch = tokenizer(batch, padding=True, return_tensors="pt").to(model.device)
-            out = model(**encoded_batch, output_hidden_states=True)
+            out = _model_forward(model, encoded_batch, use_cache=use_cache)
 
             attention_mask = encoded_batch["attention_mask"]
             for i in range(len(batch)):
