@@ -13,12 +13,10 @@ import tqdm
 
 from .control import ControlModel, model_layer_list
 from .saes import Sae
+from .settings import VERBOSE, LOW_MEMORY
 
 if not hasattr(np, "float_"):
     np.float_ = np.float64
-
-VERBOSE = False
-LOW_MEMORY = True
 
 # Setup cache
 cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "controlvector")
