@@ -363,7 +363,6 @@ def read_representations(
             # newlayer = (train.T @ embedding).squeeze()
 
         elif method == "umap_kmeans_pca_diff":
-            # still experimental so don't want to add this as a real dependency yet
             import umap
             from sklearn.cluster import KMeans
 
@@ -403,7 +402,6 @@ def read_representations(
                     newlayer = newlayer.astype(np.float32)
                     
         elif method == "umap_kmeans_pca_center":
-            # still experimental so don't want to add this as a real dependency yet
             import umap
             from sklearn.cluster import KMeans
             
