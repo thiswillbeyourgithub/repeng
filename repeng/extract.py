@@ -348,9 +348,10 @@ def read_representations(
             umap_model = umap.UMAP(
                 n_components=1,
                 # low_memory=True,
-                # random_state=42,
-                # transform_seed=42,
+                random_state=42,
+                transform_seed=42,
                 # densmap=True,
+                n_jobs=1,
             )
             embedding = umap_model.fit_transform(train).astype(np.float32)
             # embedding = umap_model.fit_transform(train.T).astype(np.float32)
@@ -367,7 +368,13 @@ def read_representations(
             from sklearn.cluster import KMeans
 
             # First reduce to 2D with UMAP
-            umap_model = umap.UMAP(n_components=2, random_state=42, transform_seed=42, densmap=True)
+            umap_model = umap.UMAP(
+                n_components=2,
+                random_state=42,
+                transform_seed=42,
+                densmap=True,
+                n_jobs=1,
+            )
             umap_embedding = umap_model.fit_transform(train)
 
             # Run KMeans clustering
@@ -408,7 +415,13 @@ def read_representations(
             n_clusters = 10
             
             # First reduce to 2D with UMAP
-            umap_model = umap.UMAP(n_components=2, random_state=42, transform_seed=42, densmap=True)
+            umap_model = umap.UMAP(
+                n_components=2,
+                random_state=42,
+                transform_seed=42,
+                densmap=True,
+                n_jobs=1,
+            )
             umap_embedding = umap_model.fit_transform(train)
             
             # Run KMeans clustering
