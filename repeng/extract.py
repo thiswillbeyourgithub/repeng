@@ -27,10 +27,11 @@ memory = Memory(cache_dir, verbose=0)
 def _model_forward(model, encoded_batch, use_cache=True):
     """Model forward pass with optional caching"""
     if use_cache:
-        @memory.cache
-        def cached_forward(model, encoded_batch):
+        model_str = str(model)
+        @memory.cache(ignore=["model"])
+        def cached_forward(model, model_str: str, encoded_batch):
             return model(**encoded_batch, output_hidden_states=True)
-        return cached_forward(model, encoded_batch)
+        return cached_forward(model, model_str, encoded_batch)
     else:
         return model(**encoded_batch, output_hidden_states=True)
 
