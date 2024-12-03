@@ -12,6 +12,7 @@ from transformers import BitsAndBytesConfig
 import time
 
 from repeng import ControlVector, ControlModel, DatasetEntry
+from repeng.utils import make_dataset
 
 # model to use:
 fname = None
@@ -36,50 +37,6 @@ model_name = "mistralai/Mistral-Nemo-Instruct-2407"
 token=os.environ["HUGGINGFACE_API_TOKEN"]
 assert token
 login(token=token)
-
-def make_dataset(
-    template: typing.Union[str, list],
-    positive_personas: list[str],
-    negative_personas: list[str],
-    suffix_list: list[str]
-) -> list[DatasetEntry]:
-    assert "{persona}" in json.dumps(template), template
-    assert "{suffix}" in json.dumps(template), template
-    assert len(positive_personas) == len(negative_personas)
-    dataset = []
-    checks = []
-    for suffix in tqdm(suffix_list):
-        for positive_persona, negative_persona in zip(positive_personas, negative_personas):
-            if isinstance(template, str):
-                positive_template = copy(template).format(persona=positive_persona, suffix=suffix)
-                negative_template = copy(template).format(persona=negative_persona, suffix=suffix)
-
-            elif isinstance(template, list):
-                positive_template = copy.deepcopy(template)
-                for il, l in enumerate(positive_template):
-                    assert isinstance(l, dict), type(l)
-                    for k, v in l.items():
-                        positive_template[il][k] = v.format(persona=positive_persona, suffix=suffix)
-
-                negative_template = copy.deepcopy(template)
-                for il, l in enumerate(negative_template):
-                    assert isinstance(l, dict), type(l)
-                    for k, v in l.items():
-                        negative_template[il][k] = v.format(persona=negative_persona, suffix=suffix)
-            else:
-                raise ValueError(type(template))
-
-            assert positive_template != negative_template
-            dataset.append(
-                DatasetEntry(
-                    positive=positive_template,
-                    negative=negative_template,
-                )
-            )
-            checks.append(json.dumps(positive_template))
-            checks.append(json.dumps(negative_template))
-    assert len(set(checks)) == len(checks), "duplicate items in dataset"
-    return dataset
 
 print(f"Selected model: {model_name}")
 bnb_config = BitsAndBytesConfig(
