@@ -209,11 +209,11 @@ for strength in strengths:
                 },
                 {
                     "role": "user",
-                    "content": "Now let's talk about your mood. How do you feel?\n",
+                    "content": "Now let's talk about your mood. How do you feel?",
                 },
                 {
                     "role": "assistant",
-                    "content": "so, if I were to use one concept, it would be ",
+                    "content": "So, if I were to start with a single word it would be '",
                 }
             ],
             return_tensors="pt",
