@@ -72,6 +72,10 @@ class ControlVector:
                     Defaults to 32. Try reducing this if you're running out of memory.
                 method (str, optional): The training method to use. Can be either
                     "pca_diff" or "pca_center". Defaults to "pca_diff".
+                norm_type (str, optional): The type of normalization to use when projecting
+                    onto the direction vector. Can be either "l1" or "l2". Defaults to "l2".
+                n_clusters (int, optional): The number of clusters to use when method is
+                    "umap_kmeans_pca_diff" or "umap_kmeans_pca_center". Defaults to 2.
 
         Returns:
             ControlVector: The trained vector.
