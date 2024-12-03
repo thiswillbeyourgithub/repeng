@@ -170,7 +170,7 @@ for strength in strengths:
                 },
                 {
                     "role": "assistant",
-                    "content": "So, if I were to start with a single word it would be '",
+                    "content": "So, if I were to describe my mind with a single word? It would be '",
                 }
             ],
             return_tensors="pt",
