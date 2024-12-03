@@ -98,7 +98,7 @@ tokenizer = AutoTokenizer.from_pretrained(
     # low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
     quantization_config=bnb_config,
 )
-if tokenizer.pad_token is None:
+if tokenizer.pad_token is None:  # no idea what this does
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
 print("Initializing model...")
