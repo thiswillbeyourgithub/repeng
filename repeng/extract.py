@@ -24,15 +24,22 @@ LOW_MEMORY = True
 cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "controlvector")
 memory = Memory(cache_dir, verbose=0)
 
+@memory.cache(ignore=["model", "encoded_batch"])
+def cached_forward(model, encoded_batch, model_str: str, encoded_batch_str: str):
+    if VERBOSE:
+        print("cache bypassed")
+    return model(**encoded_batch, output_hidden_states=True)
+
 def _model_forward(model, encoded_batch, use_cache=True):
     """Model forward pass with optional caching"""
     if use_cache:
-        model_str = str(model)
-        @memory.cache
-        def cached_forward(model_str: str, encoded_batch):
-            print("cache bypassed")
-            return model(**encoded_batch, output_hidden_states=True)
-        return cached_forward(model_str, encoded_batch)
+        # the joblib cache can't handle pickling models etc so we just take the string of the dict
+        return cached_forward(
+            model=model,
+            encoded_batch=encoded_batch,
+            model_str=str(model.config.to_dict()),
+            encoded_batch_str=str(dict(encoded_batch)),
+        )
     else:
         return model(**encoded_batch, output_hidden_states=True)
 
