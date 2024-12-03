@@ -256,6 +256,7 @@ def read_representations(
         typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
     ) = None,
     norm_type: typing.Literal["l1", "l2"] = "l2",
+    n_clusters: int = 5,
     ) -> dict[int, np.ndarray]:
     """
     Extract the representations based on the contrast dataset.
@@ -338,8 +339,6 @@ def read_representations(
             # still experimental so don't want to add this as a real dependency yet
             import umap
             from sklearn.cluster import KMeans
-
-            n_clusters = 10
 
             # First reduce to 2D with UMAP
             umap_model = umap.UMAP(n_components=2, random_state=42, transform_seed=42, densmap=True)
