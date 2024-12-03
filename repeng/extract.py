@@ -372,7 +372,7 @@ def read_representations(
                 n_components=2,
                 random_state=42,
                 transform_seed=42,
-                densmap=True,
+                # densmap=True,
                 n_jobs=1,
             )
             umap_embedding = umap_model.fit_transform(train)
@@ -419,7 +419,7 @@ def read_representations(
                 n_components=2,
                 random_state=42,
                 transform_seed=42,
-                densmap=True,
+                # densmap=True,
                 n_jobs=1,
             )
             umap_embedding = umap_model.fit_transform(train)
