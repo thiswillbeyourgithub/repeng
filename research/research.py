@@ -151,6 +151,20 @@ trippy_vector = ControlVector.train(
     method="umap_kmeans_pca_diff",
     # method="umap_kmeans_pca_center",
 )
+scenario=[
+    {
+        "role": "system",
+        "content": "You are the patient, the user is the psychiatrist."
+    },
+    {
+        "role": "user",
+        "content": "Now let's talk about your mood. How do you feel?",
+    },
+    {
+        "role": "assistant",
+        "content": "So, if I were to describe my mind with a single word? It would be '",
+    }
+]
 
 # set the control strength and let inference rip!
 print("Applying strength vectors")
@@ -160,20 +174,7 @@ for strength in strengths:
     model.set_control(trippy_vector, strength)
     out = model.generate(
         **tokenizer.apply_chat_template(
-            conversation=[
-                {
-                    "role": "system",
-                    "content": "You are the patient, the user is the psychiatrist."
-                },
-                {
-                    "role": "user",
-                    "content": "Now let's talk about your mood. How do you feel?",
-                },
-                {
-                    "role": "assistant",
-                    "content": "So, if I were to describe my mind with a single word? It would be '",
-                }
-            ],
+            conversation=scenario,
             return_tensors="pt",
             return_dict=True,
             continue_final_message=True,
