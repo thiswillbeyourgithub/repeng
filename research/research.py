@@ -145,7 +145,7 @@ trippy_vector = ControlVector.train(
     dataset,
     batch_size=1,
     # method="pca_diff",
-    # method="pca_center",  # seems more stable, whereas pca_diff quickly seems to be unreadable
+    # method="pca_center",
     # method="umap",
     # method="pacmap",
     method="umap_kmeans_pca_diff",
