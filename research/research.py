@@ -184,6 +184,7 @@ for strength in strengths:
         # do_sample=False,
         do_sample=False,
         # temperature=1.0,  # must only be set if do_sample is True
+        use_cache=True,  # default to True
     )
     print(tokenizer.decode(out.squeeze(), skip_special_tokens=True).strip())
     print("#" * 20)
