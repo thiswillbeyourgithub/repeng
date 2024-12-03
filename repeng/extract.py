@@ -452,12 +452,7 @@ def read_representations(
 
             newlayer = np.sum(train * pm_embedding, axis=0) / np.sum(pm_embedding)
 
-        # Normalize the direction vector using specified norm
         newlayer = newlayer.astype(np.float32)
-        if norm_type == "l1":
-            newlayer /= np.linalg.norm(newlayer, ord=1)  # L1 norm
-        else:  # l2
-            newlayer /= np.linalg.norm(newlayer)  # L2 norm
 
         directions[layer] = newlayer
 
@@ -466,7 +461,7 @@ def read_representations(
             print(directions[layer])
 
         # calculate sign
-        projected_hiddens = project_onto_direction(h, directions[layer])
+        projected_hiddens = project_onto_direction(h, directions[layer], norm_type=norm_type)
         if VERBOSE:
             print("Projection:")
             print(projected_hiddens)
@@ -544,8 +539,11 @@ def batched_get_hiddens(
         return {k: torch.vstack(v).cpu().float().numpy() for k, v in hidden_states.items()}
 
 
-def project_onto_direction(H, direction):
+def project_onto_direction(H, direction, norm_type: str = "l2"):
     """Project matrix H (n, d_1) onto direction vector (d_2,)"""
-    mag = np.linalg.norm(direction)
+    if norm_type == "l2":
+        mag = np.linalg.norm(direction)  # l2 is the default
+    else:
+        mag = np.linalg.norm(direction, norm_type)
     assert not np.isinf(mag)
     return (H @ direction) / mag
