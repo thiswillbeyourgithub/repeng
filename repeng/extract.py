@@ -272,7 +272,7 @@ def read_representations(
         typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
     ) = None,
     norm_type: typing.Literal["l1", "l2"] = "l2",
-    n_clusters: int = 5,
+    n_clusters: int = 2,
     ) -> dict[int, np.ndarray]:
     """
     Extract the representations based on the contrast dataset.
