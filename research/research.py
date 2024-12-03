@@ -149,6 +149,7 @@ trippy_vector = ControlVector.train(
     # method="umap",
     # method="pacmap",
     method="umap_kmeans_pca_diff",
+    # method="umap_kmeans_pca_center",
 )
 
 # set the control strength and let inference rip!
