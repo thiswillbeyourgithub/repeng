@@ -54,6 +54,8 @@ class ControlModel(torch.nn.Module):
                 layer_ids = list(range(start_idx, end_idx + 1))
             if not layer_ids:
                 raise ValueError("The specified range doesn't include any layers")
+        else:
+            assert isinstance(layer_ids, list) and all(isinstance(item, int) for item in layer_ids), "unexpected value for layer_ids"
 
         layers = model_layer_list(model)
         self.layer_ids = [i if i >= 0 else len(layers) + i for i in layer_ids]
