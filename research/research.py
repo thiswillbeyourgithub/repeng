@@ -151,7 +151,7 @@ trippy_vector = ControlVector.train(
     method="umap_kmeans_pca_diff",
     # method="umap_kmeans_pca_center",
 )
-scenario=[
+scenario = [
     {
         "role": "system",
         "content": "You are the patient, the user is the psychiatrist."
@@ -166,6 +166,23 @@ scenario=[
     }
 ]
 
+templated_scenario = tokenizer.apply_chat_template(conversation=scenario, tokenize=False)
+#
+# Check if all contents of the scenario are in the templated version
+all_contents_present = all(
+    message['content'] in templated_scenario
+    for message in scenario
+)
+
+if all_contents_present:
+    print("All scenario contents are present in the templated version.")
+else:
+    print("Templated scenario:", templated_scenario)
+    print("Warning: Some scenario contents are missing in the templated version.")
+    for message in scenario:
+        if message['content'] not in templated_scenario:
+            print(f"Missing content: {message['content']}")
+assert all_contents_present
 # set the control strength and let inference rip!
 print("Applying strength vectors")
 strengths = [-3, -2, -1] +  [r/10 for r in range(-5, 6, 1)] + [1, 2, 3]
