@@ -255,7 +255,8 @@ def read_representations(
     transform_hiddens: (
         typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
     ) = None,
-) -> dict[int, np.ndarray]:
+    norm_type: typing.Literal["l1", "l2"] = "l2",
+    ) -> dict[int, np.ndarray]:
     """
     Extract the representations based on the contrast dataset.
     """
@@ -373,10 +374,7 @@ def read_representations(
                     else:
                         raise Exception("missing pair")
             
-            # Normalize
             newlayer = newlayer.astype(np.float32)
-            newlayer /= np.linalg.norm(newlayer)  # L2 norm
-            # newlayer /= np.linalg.norm(newlayer, 1)  # L1 norm
 
         elif method == "pacmap":
             # still experimental so don't want to add this as a real dependency yet
@@ -395,6 +393,13 @@ def read_representations(
                 print(pm_embedding)
 
             newlayer = np.sum(train * pm_embedding, axis=0) / np.sum(pm_embedding)
+
+        # Normalize the direction vector using specified norm
+        newlayer = newlayer.astype(np.float32)
+        if norm_type == "l1":
+            newlayer /= np.linalg.norm(newlayer, ord=1)  # L1 norm
+        else:  # l2
+            newlayer /= np.linalg.norm(newlayer)  # L2 norm
 
         directions[layer] = newlayer
 
