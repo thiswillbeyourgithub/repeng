@@ -210,11 +210,15 @@ for strength in strengths:
                 {
                     "role": "user",
                     "content": "Now let's talk about your mood. How do you feel?\n",
+                },
+                {
+                    "role": "assistant",
+                    "content": "so, if I were to use one concept, it would be ",
                 }
             ],
             return_tensors="pt",
             return_dict=True,
-            # continue_final_message=True,
+            continue_final_message=True,
             tokenize=True,
         ).to(model.device),
         pad_token_id=tokenizer.eos_token_id,
