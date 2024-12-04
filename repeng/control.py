@@ -59,6 +59,7 @@ class ControlModel(torch.nn.Module):
 
         layers = model_layer_list(model)
         self.layer_ids = [i if i >= 0 else len(layers) + i for i in layer_ids]
+
         for layer_id in self.layer_ids:
             layer = layers[layer_id]
             if not isinstance(layer, ControlModule):

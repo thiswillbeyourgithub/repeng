@@ -2,6 +2,8 @@ import copy
 import typing
 import dataclasses
 
+from .settings import VERBOSE
+
 @dataclasses.dataclass
 class DatasetEntry:
     positive: typing.Union[str, typing.List]
