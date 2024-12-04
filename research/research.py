@@ -139,7 +139,7 @@ dataset = make_dataset(
 
 # train the vector—takes less than a minute!
 print("Training control vector")
-trippy_vector = ControlVector.train(
+perturb_vector = ControlVector.train(
     model,
     tokenizer,
     dataset,
@@ -177,7 +177,7 @@ print("Applying strength vectors")
 strengths = [-3, -2, -1] +  [r/10 for r in range(-5, 6, 1)] + [1, 2, 3]
 for strength in strengths:
     print("#" * 20 + f" Strength={strength}")
-    model.set_control(trippy_vector, strength)
+    model.set_control(perturb_vector, strength)
     out = model.generate(
         **tokenizer(
             scenario,
