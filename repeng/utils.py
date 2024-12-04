@@ -192,7 +192,8 @@ def autocorrect_chat_templates(
             tokenizer_version = None
             for vn, mnames in mistral_versions.items():
                 for mname in mnames:
-                    if mname in model_name:
+                    # look for model, including after removing size information like '11b'
+                    if mname in model_name or "-".join([mn for mn in mname.split("-") if not (mn.endswith("b") and mn.split("b")[0].isdigit())]) in model_name:
                         assert tokenizer_version is None, f"Couldn't identify mistral tokenizer version (conflict)"
                         tokenizer_version = vn
                         break
