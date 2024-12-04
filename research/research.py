@@ -165,7 +165,12 @@ scenario = [
         "content": "So, if I were to describe my mind with a single word? It would be '",
     }
 ]
-scenario = autocorrect_chat_templates(messages=scenario, tokenizer=tokenizer, model=model)
+scenario = autocorrect_chat_templates(
+    messages=scenario,
+    tokenizer=tokenizer,
+    model=model,
+    continue_final_message=True,
+)
 
 # set the control strength and let inference rip!
 print("Applying strength vectors")
@@ -177,8 +182,6 @@ for strength in strengths:
         **tokenizer(
             scenario,
             return_tensors="pt",
-            continue_final_message=True,
-            tokenize=True,
         ).to(model.device),
         pad_token_id=tokenizer.eos_token_id,
         max_new_tokens=128,

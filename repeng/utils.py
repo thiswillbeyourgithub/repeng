@@ -102,6 +102,7 @@ def autocorrect_chat_templates(
     messages: typing.Union[list[list[dict]], list[dict], list[str], str],
     tokenizer,
     model,
+    **kwargs,
 ) -> typing.Union[list[str], str]:
     """
     Autocorrect chat templates to ensure compatibility with the given model and tokenizer.
@@ -115,6 +116,7 @@ def autocorrect_chat_templates(
             to be corrected. Can be a single message, a list of messages, or a list of chats.
         tokenizer: The tokenizer associated with the model.
         model: The model for which the chat templates should be corrected.
+        kwargs: Any additional kwargs are passed to the tokenizer.__call__ call
 
     Returns:
         Union[list[str], str]: The corrected chat template(s) as a string or list of strings.
@@ -146,7 +148,7 @@ def autocorrect_chat_templates(
         assert message["role"] in ["user", "assistant", "system"], f"the role of the message should be user or assistant or system. Found '{ex['role']}'"
         assert message["content"].strip(), f"message of role '{message['role']}' contains empty string(s)"
 
-    templated = tokenizer.apply_chat_template(messages, tokenize=False)
+    templated = tokenizer.apply_chat_template(messages, tokenize=False, **kwargs)
 
     if not all(message["content"] in templated for message in messages):
 
@@ -159,7 +161,7 @@ def autocorrect_chat_templates(
         copied_mes.append(sys_message)
         templated2 = None
         try:
-            templated2 = tokenizer.apply_chat_template(copied_mes, tokenize=False)
+            templated2 = tokenizer.apply_chat_template(copied_mes, tokenize=False, **kwargs)
         except Exception as e:
             if not "After the optional system message, conversation roles must alternate user/assistant/user/assistant/..." in str(e):
                 raise
@@ -213,7 +215,7 @@ def autocorrect_chat_templates(
                 print("Failed to properly autocorrect the chat template, will use a sane default template")
             copied_mes[first_user_index]["content"] = f"{sys_message['content'].rstrip()}\n\n{copied_mes[first_user_index]['content'].lstrip()}"
 
-        templated = tokenizer.apply_chat_template(copied_mes, tokenize=False)
+        templated = tokenizer.apply_chat_template(copied_mes, tokenize=False, **kwargs)
 
         if not all(message["content"] in templated for message in messages):
             for message in messages:
