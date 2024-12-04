@@ -74,6 +74,21 @@ def make_dataset(
     return dataset
 
 def get_model_name(model) -> str:
+    """
+    Retrieve the name of the given model.
+
+    This function attempts to find the name or path of the model by checking
+    various attributes commonly found in different model implementations.
+
+    Args:
+        model: The model object to retrieve the name from.
+
+    Returns:
+        str: The name or path of the model.
+
+    Raises:
+        ValueError: If the model name cannot be determined.
+    """
     if hasattr(model, "name_or_path"):
         return model.name_or_path
     elif hasattr(model, "model"):
@@ -88,6 +103,29 @@ def autocorrect_chat_templates(
     tokenizer,
     model,
 ) -> typing.Union[list[str], str]:
+    """
+    Autocorrect chat templates to ensure compatibility with the given model and tokenizer.
+
+    This function attempts to correct the format of chat messages to match the expected
+    input format for the specified model and tokenizer. It handles various input types
+    and applies model-specific corrections when necessary.
+
+    Args:
+        messages (Union[list[list[dict]], list[dict], list[str], str]): The input messages
+            to be corrected. Can be a single message, a list of messages, or a list of chats.
+        tokenizer: The tokenizer associated with the model.
+        model: The model for which the chat templates should be corrected.
+
+    Returns:
+        Union[list[str], str]: The corrected chat template(s) as a string or list of strings.
+
+    Raises:
+        ValueError: If the model type is not supported for template correction.
+        Exception: If some chat messages are still missing after attempting to correct the template.
+
+    Note:
+        This function includes specific handling for Mistral and LLaMA model variants.
+    """
 
     if isinstance(messages, str):  # not a chat template
         return messages
