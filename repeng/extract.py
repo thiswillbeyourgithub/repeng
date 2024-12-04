@@ -350,9 +350,6 @@ def read_representations(
             embedding = umap_model.fit_transform(train).astype(np.float32)
             # embedding = umap_model.fit_transform(train.T).astype(np.float32)
             embedding /= np.abs(embedding.ravel()).max()
-            if VERBOSE:
-                print("Embedding:")
-                print(embedding)
             # newlayer = embedding.squeeze()
             newlayer = np.sum(train * embedding, axis=0) / np.sum(embedding)
             # newlayer = (train.T @ embedding).squeeze()
@@ -453,9 +450,6 @@ def read_representations(
             pm_embedding = pacmap_model.fit_transform(train.T, init="pca").T.astype(np.float32)
             # pm_embedding = pacmap_model.fit_transform(train.T, init="random").T.astype(np.float32)
             pm_embedding /= np.abs(pm_embedding.ravel()).max()
-            if VERBOSE:
-                print("Embedding:")
-                print(pm_embedding)
 
             newlayer = np.sum(train * pm_embedding, axis=0) / np.sum(pm_embedding)
 
@@ -463,16 +457,8 @@ def read_representations(
 
         directions[layer] = newlayer
 
-        if VERBOSE:
-            print("Direction of layer:")
-            print(directions[layer])
-
         # calculate sign
         projected_hiddens = project_onto_direction(h, directions[layer], norm_type=norm_type)
-        if VERBOSE:
-            print("Projection:")
-            print(projected_hiddens)
-
 
         # order is [positive, negative, positive, negative, ...]
         positive_smaller_mean = np.mean(
