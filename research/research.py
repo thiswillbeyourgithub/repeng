@@ -32,6 +32,8 @@ model_name = "mistralai/Mistral-Nemo-Instruct-2407"
 # fname = "mistral-7b-instruct-v0.1.Q2_K.gguf"
 # model_name = "bartowski/Llama-3.2-1B-Instruct-GGUF"
 # fname = "Llama-3.2-1B-Instruct-Q4_K_S.gguf"
+#
+# model_name = "unsloth/Llama-3.2-11B-Vision-Instruct"
 
 
 token=os.environ["HUGGINGFACE_API_TOKEN"]
@@ -72,9 +74,12 @@ print("Creating control model...")
 model = ControlModel(
     model,
     # layer_ids=list(range(-5, -18, -1))
-    layer_ids="all",
+    # layer_ids="all",
     # layer_ids="middle",
     # layer_ids="only_middle",
+    # layer_ids="0.5-0.9",
+    # layer_ids="0.1-0.5",
+    layer_ids="0.1-0.3",
 )
 
 # generate a dataset with closely-opposite paired statements
@@ -144,11 +149,11 @@ perturb_vector = ControlVector.train(
     tokenizer,
     dataset,
     batch_size=1,
-    # method="pca_diff",
+    method="pca_diff",
     # method="pca_center",
     # method="umap",
     # method="pacmap",
-    method="umap_kmeans_pca_diff",
+    # method="umap_kmeans_pca_diff",
     # method="umap_kmeans_pca_center",
 )
 scenario = [
@@ -191,7 +196,7 @@ for strength in strengths:
         # temperature=1.0,  # must only be set if do_sample is True
         use_cache=True,  # default to True
     )
-    print(tokenizer.decode(out.squeeze(), skip_special_tokens=True).strip())
+    print(tokenizer.decode(out.squeeze(), skip_special_tokens=False).strip())
     print("#" * 20)
 
 # print("Now proceeding to test the model")
