@@ -186,7 +186,7 @@ def autocorrect_chat_templates(
             mistral_versions = {
                 "v1": ["mistral-7b-v0.1", "mistral-7b-instruct-v0.1", "mistral-7b-v0.2", "mistral-7b-instruct-v0.2", "mixtral-8x7b-v0.1", "mixtral-8x7b-instruct-v0.1", "mixtral-8x22b-v0.1"],
                 "v3": ["mixtral-8x22b-instruct-v0.1", "mistral-7b-v0.3", "mistral-7b-instruct-v0.3", "codestral-22b-v0.1", "mathstral-7b-v0.3", "mamba-codestral-7b-v0.1", "mistral-large-123b-instruct-2407", "mistral small 22b instruct 2407"],
-                "v3_tekken": ["mistral-nemo-12b-2407", "mistral-nemo-12b-instruct-2407", "pixtral-12b-2409", "ministral-8b-instruct-2410"]
+                "v3_tekken": ["mistral-nemo-12b-2407", "mistral-nemo-12b-instruct-2407", "pixtral-12b-2409", "ministral-8b-instruct-2410", "mistral-nemo-instruct-2407"]
             }
 
             tokenizer_version = None
