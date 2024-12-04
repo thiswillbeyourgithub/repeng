@@ -73,7 +73,15 @@ def make_dataset(
     assert len(set(checks)) == len(checks), "duplicate items in dataset"
     return dataset
 
-
+def get_model_name(model) -> str:
+    if hasattr(model, "name_or_path"):
+        return model.name_or_path
+    elif hasattr(model, "model"):
+        return get_model_name(model.model)
+    elif hasattr(model, "config"):
+        return model.config.to_dict()["_name_or_path"]
+    else:
+        raise ValueError("Couldn't find model name")
 
 def autocorrect_chat_templates(
     messages: typing.Union[list[list[dict]], list[dict], list[str], str],

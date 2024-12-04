@@ -14,7 +14,7 @@ import tqdm
 from .control import ControlModel, model_layer_list
 from .saes import Sae
 from .settings import VERBOSE, LOW_MEMORY
-from .utils import autocorrect_chat_templates, DatasetEntry
+from .utils import autocorrect_chat_templates, DatasetEntry, get_model_name
 
 if not hasattr(np, "float_"):
     np.float_ = np.float64
@@ -24,7 +24,7 @@ cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "controlvector")
 memory = Memory(cache_dir, verbose=0)
 
 @memory.cache(ignore=["model", "encoded_batch"])
-def cached_forward(model, encoded_batch, model_str: str, encoded_batch_str: str):
+def cached_forward(model, encoded_batch, model_name: str, encoded_batch_str: str):
     if VERBOSE:
         print("cache bypassed")
     return model(**encoded_batch, output_hidden_states=True)
@@ -36,7 +36,7 @@ def _model_forward(model, encoded_batch, use_cache=True):
         return cached_forward(
             model=model,
             encoded_batch=encoded_batch,
-            model_str=str(model.config.to_dict()),
+            model_name=get_model_name(model),
             encoded_batch_str=str(dict(encoded_batch)),
         )
     else:
