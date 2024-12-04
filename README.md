@@ -1,5 +1,7 @@
 # repeng fork
 
+** NOTE: keep in mind that this is an experimental repo, and a WIP actively maintained. I'm doing this to keep track of what I do. Don't hesitate to reach out for any remarks! But don't expect my code to be always coherent etc**
+
 This is a fork of [repeng](https://github.com/vgel/repeng/) made to organise the investigation mentioned [in this issue](https://github.com/vgel/repeng/issues/27).
 
 Specifically, things I intend to do are:
