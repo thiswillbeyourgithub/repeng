@@ -1,7 +1,12 @@
 import copy
 import typing
+import dataclasses
 
-from .extract import DatasetEntry
+@dataclasses.dataclass
+class DatasetEntry:
+    positive: typing.Union[str, typing.List]
+    negative: typing.Union[str, typing.List]
+
 
 def make_dataset(
     template: typing.Union[str, list],

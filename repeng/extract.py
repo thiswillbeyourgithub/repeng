@@ -14,7 +14,7 @@ import tqdm
 from .control import ControlModel, model_layer_list
 from .saes import Sae
 from .settings import VERBOSE, LOW_MEMORY
-from .utils import autocorrect_chat_templates
+from .utils import autocorrect_chat_templates, DatasetEntry
 
 if not hasattr(np, "float_"):
     np.float_ = np.float64
@@ -41,12 +41,6 @@ def _model_forward(model, encoded_batch, use_cache=True):
         )
     else:
         return model(**encoded_batch, output_hidden_states=True)
-
-@dataclasses.dataclass
-class DatasetEntry:
-    positive: typing.Union[str, typing.List]
-    negative: typing.Union[str, typing.List]
-
 
 @dataclasses.dataclass
 class ControlVector:
