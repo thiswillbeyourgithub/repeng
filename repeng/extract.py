@@ -406,8 +406,6 @@ def read_representations(
             import umap
             from sklearn.cluster import KMeans
             
-            n_clusters = 10
-            
             # First reduce to 2D with UMAP
             umap_model = umap.UMAP(
                 n_components=2,
