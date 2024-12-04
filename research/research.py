@@ -12,7 +12,7 @@ from transformers import BitsAndBytesConfig
 import time
 
 from repeng import ControlVector, ControlModel, DatasetEntry
-from repeng.utils import make_dataset
+from repeng.utils import make_dataset, autocorrect_chat_templates
 
 # model to use:
 fname = None
@@ -165,24 +165,8 @@ scenario = [
         "content": "So, if I were to describe my mind with a single word? It would be '",
     }
 ]
+scenario = autocorrect_chat_templates(messages=scenario, tokenizer=tokenizer, model=model)
 
-templated_scenario = tokenizer.apply_chat_template(conversation=scenario, tokenize=False)
-#
-# Check if all contents of the scenario are in the templated version
-all_contents_present = all(
-    message['content'] in templated_scenario
-    for message in scenario
-)
-
-if all_contents_present:
-    print("All scenario contents are present in the templated version.")
-else:
-    print("Templated scenario:", templated_scenario)
-    print("Warning: Some scenario contents are missing in the templated version.")
-    for message in scenario:
-        if message['content'] not in templated_scenario:
-            print(f"Missing content: {message['content']}")
-assert all_contents_present
 # set the control strength and let inference rip!
 print("Applying strength vectors")
 strengths = [-3, -2, -1] +  [r/10 for r in range(-5, 6, 1)] + [1, 2, 3]
@@ -190,10 +174,9 @@ for strength in strengths:
     print("#" * 20 + f" Strength={strength}")
     model.set_control(trippy_vector, strength)
     out = model.generate(
-        **tokenizer.apply_chat_template(
-            conversation=scenario,
+        **tokenizer(
+            scenario,
             return_tensors="pt",
-            return_dict=True,
             continue_final_message=True,
             tokenize=True,
         ).to(model.device),

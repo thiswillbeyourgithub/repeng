@@ -14,6 +14,7 @@ import tqdm
 from .control import ControlModel, model_layer_list
 from .saes import Sae
 from .settings import VERBOSE, LOW_MEMORY
+from .utils import autocorrect_chat_templates
 
 if not hasattr(np, "float_"):
     np.float_ = np.float64
@@ -296,12 +297,11 @@ def read_representations(
     hidden_layers = [i if i >= 0 else n_layers + i for i in hidden_layers]
 
     # the order is [positive, negative, positive, negative, ...]
-    train_strs = [s for ex in inputs for s in (ex.positive, ex.negative)]
-
-    # apply chat template or not, depending on the type
-    for iex, ex in enumerate(train_strs):
-        if isinstance(ex, list):
-            train_strs[iex] = tokenizer.apply_chat_template(ex, tokenize=False)
+    train_strs = autocorrect_chat_templates(
+        tokenizer=tokenizer,
+        model=model,
+        messages=[s for ex in inputs for s in (ex.positive, ex.negative)],
+    )
 
     layer_hiddens = batched_get_hiddens(
         model, tokenizer, train_strs, hidden_layers, batch_size, use_cache=use_cache
