@@ -154,7 +154,7 @@ trippy_vector = ControlVector.train(
 scenario = [
     {
         "role": "system",
-        "content": "You are the patient, the user is the psychiatrist."
+        "content": "You are the patient, the user is your psychiatrist."
     },
     {
         "role": "user",
