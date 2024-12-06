@@ -306,7 +306,7 @@ def read_representations(
 
     # get directions for each layer using PCA
     directions: dict[int, np.ndarray] = {}
-    for layer in tqdm.tqdm(hidden_layers, desc="Altering direction"):
+    for layer in tqdm.tqdm(hidden_layers, desc="Getting directions for each layer"):
         h = layer_hiddens[layer]
         assert h.shape[0] == len(inputs) * 2
 
