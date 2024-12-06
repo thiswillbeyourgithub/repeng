@@ -351,11 +351,8 @@ def read_representations(
                 min_dist=0.5,
             )
             embedding = umap_model.fit_transform(train)
-            # embedding = umap_model.fit_transform(train.T)
             embedding /= np.abs(embedding.ravel()).max()
-            # newlayer = embedding.squeeze()
             newlayer = np.sum(train * embedding, axis=0) / np.sum(embedding)
-            # newlayer = (train.T @ embedding).squeeze()
 
         elif method == "umap_kmeans_pca_diff":
             import umap
