@@ -93,7 +93,7 @@ class ControlVector:
         dataset: list[DatasetEntry],
         *,
         decode: bool = True,
-        method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap"] = "pca_center",
+        method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap", "umap_kmeans_pca_diff"] = "pca_center",
         **kwargs,
     ) -> "ControlVector":
         """
@@ -112,7 +112,7 @@ class ControlVector:
                 max_batch_size (int, optional): The maximum batch size for training.
                     Defaults to 32. Try reducing this if you're running out of memory.
                 method (str, optional): The training method to use. Can be either
-                    "pca_diff", "pca_center", "umap" or "pacmap". Defaults to "pca_center"! This is different
+                    "pca_diff", "pca_center", "umap", "umap_kmeans_pca_diff" or "pacmap". Defaults to "pca_center"! This is different
                     than ControlVector.train, which defaults to "pca_diff".
 
         Returns:
