@@ -402,7 +402,6 @@ def read_representations(
                         raise Exception("missing pair")
                     
         elif method == "pacmap":
-            # still experimental so don't want to add this as a real dependency yet
             import pacmap  # type: ignore
 
             # documentation: https://github.com/YingfanWang/PaCMAP
