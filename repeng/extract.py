@@ -399,6 +399,8 @@ def read_representations(
                             cluster_direction = pca_model.components_.squeeze()
                             # Weight by number of pairs in cluster
                             newlayer += cluster_direction * len(pairs)
+                        else:
+                            raise Exception("missing difference")
                     else:
                         raise Exception("missing pair")
                     
