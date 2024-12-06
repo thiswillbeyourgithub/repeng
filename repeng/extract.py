@@ -355,6 +355,11 @@ def read_representations(
             newlayer = np.sum(train * embedding, axis=0) / np.sum(embedding)
 
         elif method == "umap_kmeans_pca_diff":
+            # compute pca diff too to compare
+            ref_train = h[::2] - h[1::2]
+            ref_pca_model = PCA(n_components=1, whiten=False).fit(ref_train)
+            ref_layer = ref_pca_model.components_.squeeze(axis=0)
+
             import umap
             from sklearn.cluster import KMeans
 
@@ -418,6 +423,11 @@ def read_representations(
             newlayer = np.sum(train * pm_embedding, axis=0) / np.sum(pm_embedding)
 
         elif method == "pacmap_kmeans_pca_diff":
+            # compute pca diff too to compare
+            ref_train = h[::2] - h[1::2]
+            ref_pca_model = PCA(n_components=1, whiten=False).fit(ref_train)
+            ref_layer = ref_pca_model.components_.squeeze(axis=0)
+
             import pacmap  # type: ignore
             from sklearn.cluster import KMeans
 
@@ -461,6 +471,13 @@ def read_representations(
                             raise Exception("missing difference")
                     else:
                         raise Exception("missing pair")
+
+        if "ref_layer" in locals():
+            cc = np.corrcoef(newlayer, ref_layer)[0, 1]
+            spearman = scipy.stats.spearmanr(newlayer, ref_layer)[0]
+            cossim = np.dot(newlayer, ref_layer) / (np.linalg.norm(newlayer) * np.linalg.norm(ref_layer))
+            ang = np.arccos(cossim) * 180 / np.pi
+            print(f"Comparison between the method and pca_diff: CC={cc:.3f}  Spearman={spearman:.3f} Cosim={cossim:.3f} Angle={ang:.3f}")
 
         newlayer = newlayer.astype(np.float32)
 
