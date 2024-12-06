@@ -163,7 +163,7 @@ scenario = [
     },
     {
         "role": "user",
-        "content": "Now let's talk about your mood. How do you feel?",
+        "content": "Now let's talk about your mood. How do you feel? ",
     },
     {
         "role": "assistant",
