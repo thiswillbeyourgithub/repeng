@@ -424,6 +424,8 @@ def read_representations(
 
         newlayer = newlayer.astype(np.float32)
 
+        assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero, {newlayer}"
+
         directions[layer] = newlayer
 
         # calculate sign
