@@ -469,6 +469,7 @@ def read_representations(
                         raise Exception("missing pair")
 
         if "ref_layer" in locals():
+            import scipy
             cc = np.corrcoef(newlayer, ref_layer)[0, 1]
             spearman = scipy.stats.spearmanr(newlayer, ref_layer)[0]
             cossim = np.dot(newlayer, ref_layer) / (np.linalg.norm(newlayer) * np.linalg.norm(ref_layer))
