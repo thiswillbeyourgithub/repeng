@@ -310,6 +310,8 @@ def read_representations(
         h = layer_hiddens[layer]
         assert h.shape[0] == len(inputs) * 2
 
+        assert not np.isnan(h.ravel()).any(), f"the activation layer '{layer}' contains at least one nan"
+
         if method == "pca_diff":
             train = h[::2] - h[1::2]
         elif method == "pca_center":
