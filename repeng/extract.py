@@ -414,7 +414,6 @@ def read_representations(
                 apply_pca=True,  # wether to start by a pca or not, not the same as 'init'
             )
             pm_embedding = pacmap_model.fit_transform(train.T, init="pca").T
-            pm_embedding /= np.abs(pm_embedding.ravel()).max()
 
             newlayer = np.sum(train * pm_embedding, axis=0) / np.sum(pm_embedding)
 
