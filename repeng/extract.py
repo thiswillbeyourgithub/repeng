@@ -484,10 +484,19 @@ def read_representations(
 
         assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero, {newlayer}"
 
+        # apply the normalization
+        if norm_type == "l2":
+            mag = np.linalg.norm(newlayer)  # l2 is the default
+        else:
+            mag = np.linalg.norm(newlayer, norm_type)
+        assert not np.isclose(mag, 0)
+        assert not np.isinf(mag)
+        newlayer /= mag
+
         directions[layer] = newlayer
 
         # calculate sign
-        projected_hiddens = project_onto_direction(h, directions[layer], norm_type=norm_type)
+        projected_hiddens = project_onto_direction(h, directions[layer])
 
         # order is [positive, negative, positive, negative, ...]
         positive_smaller_mean = np.mean(
@@ -561,11 +570,6 @@ def batched_get_hiddens(
         return {k: torch.vstack(v).cpu().float().numpy() for k, v in hidden_states.items()}
 
 
-def project_onto_direction(H, direction, norm_type: str = "l2"):
+def project_onto_direction(H, direction):
     """Project matrix H (n, d_1) onto direction vector (d_2,)"""
-    if norm_type == "l2":
-        mag = np.linalg.norm(direction)  # l2 is the default
-    else:
-        mag = np.linalg.norm(direction, norm_type)
-    assert not np.isinf(mag)
-    return (H @ direction) / mag
+    return (H @ direction)
