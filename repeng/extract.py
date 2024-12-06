@@ -93,7 +93,7 @@ class ControlVector:
         dataset: list[DatasetEntry],
         *,
         decode: bool = True,
-        method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap", "umap_kmeans_pca_diff"] = "pca_center",
+        method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap", "umap_kmeans_pca_diff", "pacmap_kmeans_pca_diff"] = "pca_center",
         **kwargs,
     ) -> "ControlVector":
         """
@@ -112,7 +112,7 @@ class ControlVector:
                 max_batch_size (int, optional): The maximum batch size for training.
                     Defaults to 32. Try reducing this if you're running out of memory.
                 method (str, optional): The training method to use. Can be either
-                    "pca_diff", "pca_center", "umap", "umap_kmeans_pca_diff" or "pacmap". Defaults to "pca_center"! This is different
+                    "pca_diff", "pca_center", "umap", "umap_kmeans_pca_diff", "pacmap_kmeans_pca_diff" or "pacmap". Defaults to "pca_center"! This is different
                     than ControlVector.train, which defaults to "pca_diff".
 
         Returns:
@@ -324,7 +324,7 @@ def read_representations(
             train = h
             train[::2] -= center
             train[1::2] -= center
-        elif method in ["umap", "pacmap", "umap_kmeans_pca_diff"]:
+        elif method in ["umap", "pacmap", "umap_kmeans_pca_diff", "pacmap_kmeans_pca_diff"]:
             train = h
         else:
             raise ValueError("unknown method " + method)
@@ -416,6 +416,51 @@ def read_representations(
             pm_embedding = pacmap_model.fit_transform(train.T, init="pca").T
 
             newlayer = np.sum(train * pm_embedding, axis=0) / np.sum(pm_embedding)
+
+        elif method == "pacmap_kmeans_pca_diff":
+            import pacmap  # type: ignore
+            from sklearn.cluster import KMeans
+
+            pacmap_model = pacmap.PaCMAP(
+                n_components=2,
+                n_neighbors=20,  # default 10
+                MN_ratio=1,  # default 0.5
+                FP_ratio=4,  # default 2
+                verbose=False,
+                apply_pca=True,  # wether to start by a pca or not, not the same as 'init'
+            )
+            pm_embedding = pacmap_model.fit_transform(train.T, init="pca").T
+
+            # Run KMeans clustering
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+            clusters = kmeans.fit_predict(pm_embedding)
+
+            # For each cluster, run PCA on the differences between positive and negative samples
+            newlayer = np.zeros_like(train[0])
+            for cluster_idx in range(n_clusters):
+                cluster_mask = clusters == cluster_idx
+                if np.sum(cluster_mask) > 1:  # Only process clusters with >1 sample
+                    # Get original indices for this cluster
+                    cluster_indices = np.where(cluster_mask)[0]
+                    # Map back to original pairs (even=positive, odd=negative)
+                    pairs = []
+                    for idx in cluster_indices:
+                        pair_idx = idx // 2 * 2  # Get the even index for this pair
+                        if pair_idx + 1 < len(train):  # Make sure we have both positive and negative
+                            pairs.append((pair_idx, pair_idx + 1))
+                    
+                    if pairs:  # Only process if we have complete pairs
+                        # Calculate differences between positive and negative samples
+                        differences = np.array([train[pos] - train[neg] for pos, neg in pairs])
+                        if len(differences) > 1:  # Need at least 2 samples for PCA
+                            pca_model = PCA(n_components=1, whiten=False).fit(differences)
+                            cluster_direction = pca_model.components_.squeeze()
+                            # Weight by number of pairs in cluster
+                            newlayer += cluster_direction * len(pairs)
+                        else:
+                            raise Exception("missing difference")
+                    else:
+                        raise Exception("missing pair")
 
         newlayer = newlayer.astype(np.float32)
 

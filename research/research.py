@@ -154,7 +154,7 @@ perturb_vector = ControlVector.train(
     # method="umap",
     # method="pacmap",
     # method="umap_kmeans_pca_diff",
-    # method="umap_kmeans_pca_center",
+    # method="pacmap_kmeans_pca_diff",
 )
 scenario = [
     {
