@@ -342,7 +342,7 @@ def read_representations(
             # documentation: https://github.com/lmcinnes/umap
             umap_model = umap.UMAP(
                 n_components=1,
-                # low_memory=True,
+                low_memory=True,
                 random_state=42,
                 transform_seed=42,
                 # densmap=True,
@@ -366,6 +366,7 @@ def read_representations(
             # First reduce to 2D with UMAP
             umap_model = umap.UMAP(
                 n_components=2,
+                low_memory=True,
                 random_state=42,
                 transform_seed=42,
                 # densmap=True,
