@@ -333,7 +333,7 @@ def read_representations(
             # shape (1, n_features)
             pca_model = PCA(n_components=1, whiten=False).fit(train)
             # shape (n_features,)
-            newlayer = pca_model.components_.astype(np.float32).squeeze(axis=0)
+            newlayer = pca_model.components_.squeeze(axis=0)
 
         elif method == "umap":
             # still experimental so don't want to add this as a real dependency yet
@@ -347,8 +347,8 @@ def read_representations(
                 # densmap=True,
                 n_jobs=1,
             )
-            embedding = umap_model.fit_transform(train).astype(np.float32)
-            # embedding = umap_model.fit_transform(train.T).astype(np.float32)
+            embedding = umap_model.fit_transform(train)
+            # embedding = umap_model.fit_transform(train.T)
             embedding /= np.abs(embedding.ravel()).max()
             # newlayer = embedding.squeeze()
             newlayer = np.sum(train * embedding, axis=0) / np.sum(embedding)
@@ -397,8 +397,6 @@ def read_representations(
                     else:
                         raise Exception("missing pair")
                     
-                    newlayer = newlayer.astype(np.float32)
-                    
         elif method == "umap_kmeans_pca_center":
             import umap
             from sklearn.cluster import KMeans
@@ -435,8 +433,6 @@ def read_representations(
                         cluster_direction = pca_model.components_.squeeze()
                         # Weight by number of samples in cluster
                         newlayer += cluster_direction * len(centered_samples)
-            
-            newlayer = newlayer.astype(np.float32)
 
         elif method == "pacmap":
             # still experimental so don't want to add this as a real dependency yet
@@ -447,8 +443,8 @@ def read_representations(
                 verbose=False,
                 apply_pca=True,  # wether to start by a pca or not, not the same as 'init'
             )
-            pm_embedding = pacmap_model.fit_transform(train.T, init="pca").T.astype(np.float32)
-            # pm_embedding = pacmap_model.fit_transform(train.T, init="random").T.astype(np.float32)
+            pm_embedding = pacmap_model.fit_transform(train.T, init="pca").T
+            # pm_embedding = pacmap_model.fit_transform(train.T, init="random").T
             pm_embedding /= np.abs(pm_embedding.ravel()).max()
 
             newlayer = np.sum(train * pm_embedding, axis=0) / np.sum(pm_embedding)
