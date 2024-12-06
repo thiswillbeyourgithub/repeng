@@ -403,6 +403,9 @@ def read_representations(
 
             pacmap_model = pacmap.PaCMAP(
                 n_components=1,
+                n_neighbors=20,  # default 10
+                MN_ratio=1,  # default 0.5
+                FP_ratio=4,  # default 2
                 verbose=False,
                 apply_pca=True,  # wether to start by a pca or not, not the same as 'init'
             )
