@@ -346,6 +346,7 @@ def read_representations(
                 transform_seed=42,
                 # densmap=True,
                 n_jobs=1,
+                n_neighbors=20,
             )
             embedding = umap_model.fit_transform(train)
             # embedding = umap_model.fit_transform(train.T)
@@ -365,6 +366,7 @@ def read_representations(
                 transform_seed=42,
                 # densmap=True,
                 n_jobs=1,
+                n_neighbors=20,
             )
             umap_embedding = umap_model.fit_transform(train)
 
