@@ -93,7 +93,7 @@ dataset = make_dataset(
         },
         {
             "role": "user",
-            "content": "Write a short paragraph about {suffix}",
+            "content": "Write a short paragraph about {suffix}. ",
         }
     ],
     positive_personas=[
