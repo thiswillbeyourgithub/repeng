@@ -339,6 +339,7 @@ def read_representations(
             # still experimental so don't want to add this as a real dependency yet
             import umap  # type: ignore
 
+            # documentation: https://github.com/lmcinnes/umap
             umap_model = umap.UMAP(
                 n_components=1,
                 # low_memory=True,
@@ -405,6 +406,7 @@ def read_representations(
             # still experimental so don't want to add this as a real dependency yet
             import pacmap  # type: ignore
 
+            # documentation: https://github.com/YingfanWang/PaCMAP
             pacmap_model = pacmap.PaCMAP(
                 n_components=1,
                 n_neighbors=20,  # default 10
