@@ -70,7 +70,7 @@ class ControlVector:
                 norm_type (str, optional): The type of normalization to use when projecting
                     onto the direction vector. Can be either "l1" or "l2". Defaults to "l2".
                 n_clusters (int, optional): The number of clusters to use when method is
-                    "umap_kmeans_pca_diff" or "umap_kmeans_pca_center". Defaults to 2.
+                    "umap_kmeans_pca_diff". Defaults to 2.
 
         Returns:
             ControlVector: The trained vector.
@@ -273,7 +273,7 @@ def read_representations(
     hidden_layers: typing.Iterable[int] | None = None,
     batch_size: int = 32,
     use_cache: bool = True,
-    method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap", "umap_kmeans_pca_diff", "umap_kmeans_pca_center"] = "pca_diff",
+    method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap", "umap_kmeans_pca_diff"] = "pca_diff",
     transform_hiddens: (
         typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
     ) = None,
@@ -324,7 +324,7 @@ def read_representations(
             train = h
             train[::2] -= center
             train[1::2] -= center
-        elif method in ["umap", "pacmap", "umap_kmeans_pca_diff", "umap_kmeans_pca_center"]:
+        elif method in ["umap", "pacmap", "umap_kmeans_pca_diff"]:
             train = h
         else:
             raise ValueError("unknown method " + method)
@@ -397,43 +397,6 @@ def read_representations(
                     else:
                         raise Exception("missing pair")
                     
-        elif method == "umap_kmeans_pca_center":
-            import umap
-            from sklearn.cluster import KMeans
-            
-            # First reduce to 2D with UMAP
-            umap_model = umap.UMAP(
-                n_components=2,
-                random_state=42,
-                transform_seed=42,
-                # densmap=True,
-                n_jobs=1,
-            )
-            umap_embedding = umap_model.fit_transform(train)
-            
-            # Run KMeans clustering
-            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-            clusters = kmeans.fit_predict(umap_embedding)
-            
-            # For each cluster, run PCA with centering
-            newlayer = np.zeros_like(train[0])
-            for cluster_idx in range(n_clusters):
-                cluster_mask = clusters == cluster_idx
-                if np.sum(cluster_mask) > 1:  # Only process clusters with >1 sample
-                    cluster_samples = train[cluster_mask]
-                    
-                    # Calculate center of the cluster
-                    cluster_center = np.mean(cluster_samples, axis=0)
-                    
-                    # Center the samples
-                    centered_samples = cluster_samples - cluster_center
-                    
-                    if len(centered_samples) > 1:  # Need at least 2 samples for PCA
-                        pca_model = PCA(n_components=1, whiten=False).fit(centered_samples)
-                        cluster_direction = pca_model.components_.squeeze()
-                        # Weight by number of samples in cluster
-                        newlayer += cluster_direction * len(centered_samples)
-
         elif method == "pacmap":
             # still experimental so don't want to add this as a real dependency yet
             import pacmap  # type: ignore
