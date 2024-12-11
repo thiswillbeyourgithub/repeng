@@ -472,8 +472,11 @@ def read_representations(
 
         if preserve_scale:
             # make sure train and the newlayer have the same scale
-            med = np.median(train, axis=0)
-            newlayer = np.interp(newlayer, (newlayer.min(), newlayer.max()), (med.min(), med.max()))
+            newlayer = np.interp(
+                newlayer,
+                (newlayer.min(), newlayer.max()),
+                (np.median(train.min(axis=0)), np.median(train.max(axis=0))),
+            )
 
         assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero after normalization, {newlayer}"
 
