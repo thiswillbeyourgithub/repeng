@@ -1,8 +1,10 @@
-# repeng fork
+# repeng - Research Fork
 
-** NOTE: keep in mind that this is an experimental repo, and a WIP actively maintained. I'm doing this to keep track of what I do. Don't hesitate to reach out for any remarks! But don't expect my code to be always coherent etc**
+**This is an experimental repo where I experiment with [repeng](https://github.com/vgel/repeng).**
 
-This is a fork of [repeng](https://github.com/vgel/repeng/) made to organise the investigation mentioned [in this issue](https://github.com/vgel/repeng/issues/27).
+**It was made to organise the investigation mentioned [in this issue](https://github.com/vgel/repeng/issues/27).**
+
+**NOTE: keep in mind that this is an experimental repo, and a WIP actively maintained. I'm doing this to keep track of what I do. Don't hesitate to reach out for any remarks! But don't expect my code to be always coherent etc**
 
 Specifically, things I intend to do are:
 
