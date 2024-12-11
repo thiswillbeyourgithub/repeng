@@ -35,6 +35,7 @@ model_name = "mistralai/Mistral-Nemo-Instruct-2407"
 #
 # model_name = "unsloth/Llama-3.2-11B-Vision-Instruct"
 
+model_name = "Qwen/Qwen2.5-7B-Instruct"
 
 token=os.environ["HUGGINGFACE_API_TOKEN"]
 assert token
