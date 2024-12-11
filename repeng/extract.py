@@ -327,7 +327,6 @@ def read_representations(
         if method in ["pca_center", "pca_diff"]:
             # shape (1, n_features)
             pca_model = PCA(n_components=1, whiten=False).fit(train)
-            # shape (n_features,)
             newlayer = pca_model.components_.squeeze(axis=0)
 
         elif method == "umap":
@@ -479,6 +478,12 @@ def read_representations(
         newlayer = newlayer.astype(np.float32)
 
         assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero, {newlayer}"
+
+        # Shapes reminder:
+        # train: shape is (n_layer, n_features)
+        # each direction is stored in newlayer and must be of shape (n_features,)
+        newlayer = newlayer.squeeze()
+        assert len(newlayer.shape) == 1 and newlayer.shape[0] == train.shape[1], f"newlayer is of shape {newlayer.shape} but should be ({train.shape[1]},)"
 
         # apply the normalization
         if norm_type == "l2":
