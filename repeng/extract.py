@@ -347,7 +347,7 @@ def read_representations(
                 transform_seed=42,
                 densmap=True,
                 n_jobs=1,
-                n_neighbors=50,
+                n_neighbors=max(5, min(50, train.shape[0] // 4)),
                 min_dist=0.2,
             )
 
@@ -378,7 +378,7 @@ def read_representations(
                 transform_seed=42,
                 densmap=True,
                 n_jobs=1,
-                n_neighbors=50,
+                n_neighbors=max(5, min(50, train.shape[0] // 4)),
                 min_dist=0.2,
             )
             umap_embedding = umap_model.fit_transform(train.T).squeeze()
