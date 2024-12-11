@@ -539,6 +539,8 @@ def read_representations(
 
         if positive_smaller_mean > positive_larger_mean:  # type: ignore
             directions[layer] *= -1
+            if VERBOSE:
+                print(f"Reversed the direction of layer {layer}")
 
     return directions
 
