@@ -29,7 +29,7 @@ def cached_forward(model, encoded_batch, model_name: str, encoded_batch_str: str
         print("cache bypassed")
     return model(**encoded_batch, output_hidden_states=True, **kwargs)
 
-def _model_forward(model, encoded_batch, tokenizer, use_cache=True):
+def _model_forward(model, encoded_batch, use_cache=True):
     """Model forward pass with optional caching"""
     if use_cache:
         # the joblib cache can't handle pickling models etc so we just take the string of the dict
@@ -38,10 +38,6 @@ def _model_forward(model, encoded_batch, tokenizer, use_cache=True):
             encoded_batch=encoded_batch,
             model_name=get_model_name(model),
             encoded_batch_str=str(dict(encoded_batch)),
-            do_sample=False,
-            max_new_tokens=128,
-            repetition_penalty=1.5,
-            pad_token_id=tokenizer.eos_token_id,
         )
     else:
         return model(**encoded_batch, output_hidden_states=True)
@@ -553,7 +549,7 @@ def batched_get_hiddens(
         for batch in tqdm.tqdm(batched_inputs, desc="Getting activations"):
             # get the last token, handling right padding if present
             encoded_batch = tokenizer(batch, padding=True, return_tensors="pt").to(model.device)
-            out = _model_forward(model, encoded_batch, tokenizer, use_cache=use_cache)
+            out = _model_forward(model, encoded_batch, use_cache=use_cache)
 
             attention_mask = encoded_batch["attention_mask"]
             for i in range(len(batch)):
