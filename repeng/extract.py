@@ -420,7 +420,7 @@ def read_representations(
             # documentation: https://github.com/YingfanWang/PaCMAP
             pacmap_model = pacmap.PaCMAP(
                 n_components=1,
-                n_neighbors=20,  # default 10
+                n_neighbors=max(10, min(50, train.shape[0] // 4)),  # defaults to 10
                 MN_ratio=1,  # default 0.5
                 FP_ratio=4,  # default 2
                 verbose=False,
@@ -441,7 +441,7 @@ def read_representations(
 
             pacmap_model = pacmap.PaCMAP(
                 n_components=2,
-                n_neighbors=20,  # default 10
+                n_neighbors=max(10, min(50, train.shape[0] // 4)),  # defaults to 10
                 MN_ratio=1,  # default 0.5
                 FP_ratio=4,  # default 2
                 verbose=False,
