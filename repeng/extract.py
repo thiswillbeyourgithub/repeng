@@ -400,7 +400,7 @@ def read_representations(
                         pair_idx = idx // 2 * 2  # Get the even index for this pair
                         if pair_idx + 1 < len(train):  # Make sure we have both positive and negative
                             pairs.append((pair_idx, pair_idx + 1))
-                    
+
                     if pairs:  # Only process if we have complete pairs
                         # Calculate differences between positive and negative samples
                         differences = np.array([train[pos] - train[neg] for pos, neg in pairs])
@@ -413,7 +413,7 @@ def read_representations(
                             raise Exception("missing difference")
                     else:
                         raise Exception("missing pair")
-                    
+
         elif method == "pacmap":
             import pacmap  # type: ignore
 
@@ -466,7 +466,7 @@ def read_representations(
                         pair_idx = idx // 2 * 2  # Get the even index for this pair
                         if pair_idx + 1 < len(train):  # Make sure we have both positive and negative
                             pairs.append((pair_idx, pair_idx + 1))
-                    
+
                     if pairs:  # Only process if we have complete pairs
                         # Calculate differences between positive and negative samples
                         differences = np.array([train[pos] - train[neg] for pos, neg in pairs])
@@ -523,7 +523,7 @@ def read_representations(
         # calculate sign
         projected_hiddens = project_onto_direction(h, directions[layer])
 
-        # order is [positive, negative, positive, negative, ...]
+        # order of examples is [positive, negative, positive, negative, ...]
         positive_smaller_mean = np.mean(
             [
                 projected_hiddens[i] < projected_hiddens[i + 1]
