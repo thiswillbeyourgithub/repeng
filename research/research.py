@@ -13,6 +13,9 @@ import time
 
 from repeng import ControlVector, ControlModel, DatasetEntry
 from repeng.utils import make_dataset, autocorrect_chat_templates
+import repeng.settings
+
+repeng.settings.VERBOSE = True
 
 # model to use:
 fname = None
