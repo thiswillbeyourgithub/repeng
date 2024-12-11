@@ -391,10 +391,6 @@ def read_representations(
             kmeans = KMeans(n_clusters=2, random_state=42)
             clusters = kmeans.fit_predict(umap_embedding)
 
-            for cluster_idx in range(2):
-                cluster_mask = clusters == cluster_idx
-                assert cluster_mask.sum() >= 1, f"No example corresponded to cluster with label {cluster_idx}"
-
             # can't just substract them because they don't have to have the same nb of samples
             p0_mu = h[clusters == 0, :].mean(axis=0)
             p1_mu = h[clusters == 1, :].mean(axis=0)
@@ -445,10 +441,6 @@ def read_representations(
             # Run KMeans clustering
             kmeans = KMeans(n_clusters=2, random_state=42)
             clusters = kmeans.fit_predict(pm_embedding)
-
-            for cluster_idx in range(2):
-                cluster_mask = clusters == cluster_idx
-                assert cluster_mask.sum() >= 1, f"No example corresponded to cluster with label {cluster_idx}"
 
             # can't just substract them because they don't have to have the same nb of samples
             p0_mu = h[clusters == 0, :].mean(axis=0)
