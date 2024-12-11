@@ -344,9 +344,16 @@ def read_representations(
                 n_neighbors=50,
                 min_dist=0.2,
             )
-            embedding = umap_model.fit_transform(train)
-            embedding /= np.abs(embedding.ravel()).max()
-            newlayer = np.sum(train * embedding, axis=0) / np.sum(embedding)
+
+            # method 1: use umap output directly
+            newlayer = umap_model.fit_transform(train.T).squeeze()
+
+            # # method 2: use umap and train:
+            # # note: in my tests, it appears that using this second method makes
+            # # the strength a lot stronger (meaning +5 makes it output
+            # # gibberish) and not necessarily better
+            # embedding = umap_model.fit_transform(train).squeeze()
+            # newlayer = np.sum(train * embedding.reshape(-1, 1), axis=0) / np.sum(embedding)
 
         elif method == "umap_kmeans_pca_diff":
             # compute pca diff too to compare
@@ -368,7 +375,7 @@ def read_representations(
                 n_neighbors=50,
                 min_dist=0.2,
             )
-            umap_embedding = umap_model.fit_transform(train)
+            umap_embedding = umap_model.fit_transform(train.T).squeeze()
 
             # Run KMeans clustering
             kmeans = KMeans(n_clusters=n_clusters, random_state=42)
