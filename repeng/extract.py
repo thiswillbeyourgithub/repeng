@@ -71,8 +71,6 @@ class ControlVector:
                     onto the direction vector. Can be either "l1", "l2" or "auto"
                     to use the norm that seems to correspond the most to the one
                     used in the original layer. Defaults to "auto".
-                n_clusters (int, optional): The number of clusters to use when method is
-                    "umap_kmeans_pca_diff". Defaults to 2.
                 preserve_scale (bool, optional): Wether to interpolate the computed
                     direction to preserve a reasonnable max and min values
                     according to the train activations. Defaults to True.
@@ -283,7 +281,6 @@ def read_representations(
         typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
     ) = None,
     norm_type: typing.Literal["l1", "l2", "auto"] = "auto",
-    n_clusters: int = 2,
     preserve_scale: bool = True,
     ) -> dict[int, np.ndarray]:
     """
@@ -372,49 +369,35 @@ def read_representations(
             import umap
             from sklearn.cluster import KMeans
 
-            # First reduce to 2D with UMAP
+            # First reduce to 2D with UMAP by reducing the features, not the samples
             umap_model = umap.UMAP(
-                n_components=2,
+                n_components=3,
                 low_memory=True,
                 random_state=42,
                 transform_seed=42,
                 densmap=True,
                 n_jobs=1,
                 n_neighbors=max(5, min(50, train.shape[0] // 4)),
-                min_dist=0.2,
+                min_dist=0.3,
             )
-            umap_embedding = umap_model.fit_transform(train.T).squeeze()
+            umap_embedding = umap_model.fit_transform(train).squeeze()
 
             # Run KMeans clustering
-            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+            kmeans = KMeans(n_clusters=2, random_state=42)
             clusters = kmeans.fit_predict(umap_embedding)
 
-            # For each cluster, run PCA on the differences between positive and negative samples
-            newlayer = np.zeros_like(train[0])
-            for cluster_idx in range(n_clusters):
+            for cluster_idx in range(2):
                 cluster_mask = clusters == cluster_idx
-                if np.sum(cluster_mask) > 1:  # Only process clusters with >1 sample
-                    # Get original indices for this cluster
-                    cluster_indices = np.where(cluster_mask)[0]
-                    # Map back to original pairs (even=positive, odd=negative)
-                    pairs = []
-                    for idx in cluster_indices:
-                        pair_idx = idx // 2 * 2  # Get the even index for this pair
-                        if pair_idx + 1 < len(train):  # Make sure we have both positive and negative
-                            pairs.append((pair_idx, pair_idx + 1))
+                assert cluster_mask.sum() >= 1, f"No example corresponded to cluster with label {cluster_idx}"
 
-                    if pairs:  # Only process if we have complete pairs
-                        # Calculate differences between positive and negative samples
-                        differences = np.array([train[pos] - train[neg] for pos, neg in pairs])
-                        if len(differences) > 1:  # Need at least 2 samples for PCA
-                            pca_model = PCA(n_components=1, whiten=False).fit(differences)
-                            cluster_direction = pca_model.components_.squeeze()
-                            # Weight by number of pairs in cluster
-                            newlayer += cluster_direction * len(pairs)
-                        else:
-                            raise Exception("missing difference")
-                    else:
-                        raise Exception("missing pair")
+            # can't just substract them because they don't have to have the same nb of samples
+            p0_mu = h[clusters == 0, :].mean(axis=0)
+            p1_mu = h[clusters == 1, :].mean(axis=0)
+            diffs = h.copy()
+            diffs[clusters == 0] -= p1_mu
+            diffs[clusters == 1] = p0_mu - diffs[clusters == 1]  # try to substract in the same direction
+            pca_model = PCA(n_components=1, whiten=False).fit(diffs)
+            newlayer = pca_model.components_.squeeze(axis=0)
 
         elif method == "pacmap":
             import pacmap  # type: ignore
@@ -450,35 +433,21 @@ def read_representations(
             pm_embedding = pacmap_model.fit_transform(train.T, init="pca").squeeze()
 
             # Run KMeans clustering
-            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+            kmeans = KMeans(n_clusters=2, random_state=42)
             clusters = kmeans.fit_predict(pm_embedding)
 
-            # For each cluster, run PCA on the differences between positive and negative samples
-            newlayer = np.zeros_like(train[0])
-            for cluster_idx in range(n_clusters):
+            for cluster_idx in range(2):
                 cluster_mask = clusters == cluster_idx
-                if np.sum(cluster_mask) > 1:  # Only process clusters with >1 sample
-                    # Get original indices for this cluster
-                    cluster_indices = np.where(cluster_mask)[0]
-                    # Map back to original pairs (even=positive, odd=negative)
-                    pairs = []
-                    for idx in cluster_indices:
-                        pair_idx = idx // 2 * 2  # Get the even index for this pair
-                        if pair_idx + 1 < len(train):  # Make sure we have both positive and negative
-                            pairs.append((pair_idx, pair_idx + 1))
+                assert cluster_mask.sum() >= 1, f"No example corresponded to cluster with label {cluster_idx}"
 
-                    if pairs:  # Only process if we have complete pairs
-                        # Calculate differences between positive and negative samples
-                        differences = np.array([train[pos] - train[neg] for pos, neg in pairs])
-                        if len(differences) > 1:  # Need at least 2 samples for PCA
-                            pca_model = PCA(n_components=1, whiten=False).fit(differences)
-                            cluster_direction = pca_model.components_.squeeze()
-                            # Weight by number of pairs in cluster
-                            newlayer += cluster_direction * len(pairs)
-                        else:
-                            raise Exception("missing difference")
-                    else:
-                        raise Exception("missing pair")
+            # can't just substract them because they don't have to have the same nb of samples
+            p0_mu = h[clusters == 0, :].mean(axis=0)
+            p1_mu = h[clusters == 1, :].mean(axis=0)
+            diffs = h.copy()
+            diffs[clusters == 0] -= p1_mu
+            diffs[clusters == 1] = p0_mu - diffs[clusters == 1]  # try to substract in the same direction
+            pca_model = PCA(n_components=1, whiten=False).fit(diffs)
+            newlayer = pca_model.components_.squeeze(axis=0)
 
         newlayer = newlayer.astype(np.float32)
         assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero before normalization, {newlayer}"
