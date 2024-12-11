@@ -6,7 +6,7 @@ This is a fork of [repeng](https://github.com/vgel/repeng/) made to organise the
 
 Specifically, things I intend to do are:
 
-- Take as reference the model llama3.2 8B
+- Take one model as a reference
 - Benchmark the model using langtest to get its reference scores on things like MMLU
 - do the following comparisons also with the instruct vs base versions
 - Run the benchmark again after applying the following vector to measure how badly we crippled the LLM:
