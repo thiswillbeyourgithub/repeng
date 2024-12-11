@@ -513,7 +513,7 @@ def read_representations(
             print(f"Comparison between the method and pca_diff: CC={cc:.3f}  Spearman={spearman:.3f} Cosim={cossim:.3f} Angle={ang:.3f}")
 
         # Shapes reminder:
-        # train: shape is (n_layer, n_features)
+        # train: shape is (n_samples, n_features)
         # each direction is stored in newlayer and must be of shape (n_features,)
         newlayer = newlayer.squeeze()
         assert len(newlayer.shape) == 1 and newlayer.shape[0] == train.shape[1], f"newlayer is of shape {newlayer.shape} but should be ({train.shape[1]},)"
