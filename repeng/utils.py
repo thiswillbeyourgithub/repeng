@@ -1,6 +1,7 @@
 import copy
 import typing
 import dataclasses
+import numpy as np
 
 from .settings import VERBOSE
 
@@ -228,3 +229,39 @@ def autocorrect_chat_templates(
             raise Exception("Some chat messages are still missing after correcting chat template")
 
     return templated
+
+def detect_norm_type(input_array: np.ndarray) -> typing.Union[str, int, float]:
+    """
+    Detect the most likely norm type used in the input array.
+
+    This function attempts to determine which norm (1, 2, infinity, negative infinity, or Frobenius)
+    was most likely used to normalize the input array. It does this by scaling the input array
+    and comparing the magnitude of different norms to 1.
+
+    Args:
+        input_array (np.ndarray): The input array to analyze.
+
+    Returns:
+        Union[str, int, float]: The detected norm type. It can be one of the following:
+            - 1: L1 norm
+            - 2: L2 norm
+            - np.inf: Infinity norm
+            - -np.inf: Negative infinity norm
+            - 'fro': Frobenius norm
+
+    Note:
+        The function scales the input array by its maximum value before performing the analysis.
+        The norm type that results in a magnitude closest to 1 is considered the most likely.
+    """
+    norms_to_check = [1, 2, np.inf, -np.inf, 'fro']
+    results = {}
+
+    # Scale by the maximum absolute value to handle negative values
+    scale_factor = np.abs(input_array).max()
+    scaled = input_array / scale_factor if scale_factor != 0 else input_array
+
+    for norm in norms_to_check:
+        magnitude = np.linalg.norm(scaled, ord=norm)
+        results[norm] = abs(magnitude - 1)
+
+    return min(results.items(), key=lambda x: x[1])[0]

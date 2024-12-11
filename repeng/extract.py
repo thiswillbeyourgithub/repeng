@@ -14,7 +14,7 @@ import tqdm
 from .control import ControlModel, model_layer_list
 from .saes import Sae
 from .settings import VERBOSE, LOW_MEMORY
-from .utils import autocorrect_chat_templates, DatasetEntry, get_model_name
+from .utils import autocorrect_chat_templates, DatasetEntry, get_model_name, detect_norm_type
 
 if not hasattr(np, "float_"):
     np.float_ = np.float64
@@ -68,9 +68,14 @@ class ControlVector:
                 method (str, optional): The training method to use. Can be either
                     "pca_diff" or "pca_center". Defaults to "pca_diff".
                 norm_type (str, optional): The type of normalization to use when projecting
-                    onto the direction vector. Can be either "l1" or "l2". Defaults to "l2".
+                    onto the direction vector. Can be either "l1", "l2" or "auto"
+                    to use the norm that seems to correspond the most to the one
+                    used in the original layer. Defaults to "auto".
                 n_clusters (int, optional): The number of clusters to use when method is
                     "umap_kmeans_pca_diff". Defaults to 2.
+                preserve_scale (bool, optional): Wether to interpolate the computed
+                    direction to preserve a reasonnable max and min values
+                    according to the train activations. Defaults to True.
 
         Returns:
             ControlVector: The trained vector.
@@ -277,8 +282,9 @@ def read_representations(
     transform_hiddens: (
         typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
     ) = None,
-    norm_type: typing.Literal["l1", "l2"] = "l2",
+    norm_type: typing.Literal["l1", "l2", "auto"] = "auto",
     n_clusters: int = 2,
+    preserve_scale: bool = True,
     ) -> dict[int, np.ndarray]:
     """
     Extract the representations based on the contrast dataset.
@@ -474,6 +480,30 @@ def read_representations(
                     else:
                         raise Exception("missing pair")
 
+        newlayer = newlayer.astype(np.float32)
+        assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero before normalization, {newlayer}"
+
+        # apply the normalization
+        if norm_type == "auto":
+            detected_norm = detect_norm_type(train)
+            if VERBOSE:
+                print(f"Detected norm_type: {detected_norm}")
+            mag = np.linalg.norm(newlayer, detected_norm)
+        elif norm_type == "l2":
+            mag = np.linalg.norm(newlayer)  # l2 is the default
+        else:
+            mag = np.linalg.norm(newlayer, norm_type)
+        assert not np.isclose(mag, 0)
+        assert not np.isinf(mag)
+        newlayer /= mag
+
+        if preserve_scale:
+            # make sure train and the newlayer have the same scale
+            med = np.median(train, axis=0)
+            newlayer = np.interp(newlayer, (newlayer.min(), newlayer.max()), (med.min(), med.max()))
+
+        assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero after normalization, {newlayer}"
+
         if "ref_layer" in locals():
             import scipy
             cc = np.corrcoef(newlayer, ref_layer)[0, 1]
@@ -482,24 +512,11 @@ def read_representations(
             ang = np.arccos(cossim) * 180 / np.pi
             print(f"Comparison between the method and pca_diff: CC={cc:.3f}  Spearman={spearman:.3f} Cosim={cossim:.3f} Angle={ang:.3f}")
 
-        newlayer = newlayer.astype(np.float32)
-
-        assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero, {newlayer}"
-
         # Shapes reminder:
         # train: shape is (n_layer, n_features)
         # each direction is stored in newlayer and must be of shape (n_features,)
         newlayer = newlayer.squeeze()
         assert len(newlayer.shape) == 1 and newlayer.shape[0] == train.shape[1], f"newlayer is of shape {newlayer.shape} but should be ({train.shape[1]},)"
-
-        # apply the normalization
-        if norm_type == "l2":
-            mag = np.linalg.norm(newlayer)  # l2 is the default
-        else:
-            mag = np.linalg.norm(newlayer, norm_type)
-        assert not np.isclose(mag, 0)
-        assert not np.isinf(mag)
-        newlayer /= mag
 
         directions[layer] = newlayer
 
