@@ -339,6 +339,11 @@ def read_representations(
             newlayer = pca_model.components_.squeeze(axis=0)
 
         elif method == "umap":
+            # compute pca diff too to compare
+            ref_train = h[::2] - h[1::2]
+            ref_pca_model = PCA(n_components=1, whiten=False).fit(ref_train)
+            ref_layer = ref_pca_model.components_.squeeze(axis=0)
+
             # still experimental so don't want to add this as a real dependency yet
             import umap  # type: ignore
 
@@ -404,6 +409,11 @@ def read_representations(
             newlayer = pca_model.components_.squeeze(axis=0)
 
         elif method == "pacmap":
+            # compute pca diff too to compare
+            ref_train = h[::2] - h[1::2]
+            ref_pca_model = PCA(n_components=1, whiten=False).fit(ref_train)
+            ref_layer = ref_pca_model.components_.squeeze(axis=0)
+
             import pacmap  # type: ignore
 
             # documentation: https://github.com/YingfanWang/PaCMAP
