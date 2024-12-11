@@ -35,10 +35,10 @@ model_name = "mistralai/Mistral-Nemo-Instruct-2407"
 # fname = "mistral-7b-instruct-v0.1.Q2_K.gguf"
 # model_name = "bartowski/Llama-3.2-1B-Instruct-GGUF"
 # fname = "Llama-3.2-1B-Instruct-Q4_K_S.gguf"
-#
 # model_name = "unsloth/Llama-3.2-11B-Vision-Instruct"
 
-model_name = "Qwen/Qwen2.5-7B-Instruct"
+# model_name = "Qwen/Qwen2.5-7B-Instruct"
+
 
 token=os.environ["HUGGINGFACE_API_TOKEN"]
 assert token
@@ -82,8 +82,8 @@ model = ControlModel(
     # layer_ids="middle",
     # layer_ids="only_middle",
     # layer_ids="0.5-0.9",
-    # layer_ids="0.1-0.5",
     layer_ids="0.1-0.3",
+    # layer_ids="0.1-0.7",
 )
 
 # generate a dataset with closely-opposite paired statements
@@ -155,9 +155,9 @@ perturb_vector = ControlVector.train(
     batch_size=1,
     # method="pca_diff",
     # method="pca_center",
-    method="umap",
-    # method="pacmap",
+    # method="umap",
     # method="umap_kmeans_pca_diff",
+    method="pacmap",
     # method="pacmap_kmeans_pca_diff",
 )
 scenario = [
@@ -198,7 +198,6 @@ for strength in strengths:
         pad_token_id=tokenizer.eos_token_id,
         max_new_tokens=128,
         repetition_penalty=1.5,
-        # do_sample=False,
         do_sample=False,
         # temperature=1.0,  # must only be set if do_sample is True
         use_cache=True,  # default to True
