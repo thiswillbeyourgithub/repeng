@@ -426,9 +426,7 @@ def read_representations(
                 verbose=False,
                 apply_pca=True,  # wether to start by a pca or not, not the same as 'init'
             )
-            pm_embedding = pacmap_model.fit_transform(train.T, init="pca").T
-
-            newlayer = np.sum(train * pm_embedding, axis=0) / np.sum(pm_embedding)
+            newlayer = pacmap_model.fit_transform(train.T, init="pca").squeeze()
 
         elif method == "pacmap_kmeans_pca_diff":
             # compute pca diff too to compare
@@ -447,7 +445,7 @@ def read_representations(
                 verbose=False,
                 apply_pca=True,  # wether to start by a pca or not, not the same as 'init'
             )
-            pm_embedding = pacmap_model.fit_transform(train.T, init="pca").T
+            pm_embedding = pacmap_model.fit_transform(train.T, init="pca").squeeze()
 
             # Run KMeans clustering
             kmeans = KMeans(n_clusters=n_clusters, random_state=42)
