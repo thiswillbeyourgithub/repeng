@@ -342,8 +342,8 @@ def read_representations(
                 transform_seed=42,
                 densmap=True,
                 n_jobs=1,
-                n_neighbors=20,
-                min_dist=0.5,
+                n_neighbors=50,
+                min_dist=0.2,
             )
             embedding = umap_model.fit_transform(train)
             embedding /= np.abs(embedding.ravel()).max()
@@ -366,8 +366,8 @@ def read_representations(
                 transform_seed=42,
                 densmap=True,
                 n_jobs=1,
-                n_neighbors=20,
-                min_dist=0.5,
+                n_neighbors=50,
+                min_dist=0.2,
             )
             umap_embedding = umap_model.fit_transform(train)
 
