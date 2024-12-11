@@ -347,7 +347,7 @@ def read_representations(
                 densmap=True,
                 n_jobs=1,
                 n_neighbors=max(5, min(50, train.shape[0] // 4)),
-                min_dist=0.2,
+                min_dist=0.3,
             )
 
             # method 1: use umap output directly
