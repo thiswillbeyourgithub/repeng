@@ -296,7 +296,7 @@ def read_representations(
     n_layers = len(model_layer_list(model))
     hidden_layers = [i if i >= 0 else n_layers + i for i in hidden_layers]
 
-    # the order is [positive, negative, positive, negative, ...]
+    # the order of example is [positive valence, negative, positive, negative, ...]
     train_strs = autocorrect_chat_templates(
         messages=[s for ex in inputs for s in (ex.positive, ex.negative)],
         tokenizer=tokenizer,
@@ -309,6 +309,8 @@ def read_representations(
 
     if transform_hiddens is not None:
         layer_hiddens = transform_hiddens(layer_hiddens)
+
+    n_sample = len(train_strs)
 
     # get directions for each layer using PCA
     directions: dict[int, np.ndarray] = {}
@@ -521,7 +523,7 @@ def read_representations(
         # calculate sign
         projected_hiddens = project_onto_direction(h, directions[layer])
 
-        # order of examples is [positive, negative, positive, negative, ...]
+        # order of examples is [positive valence, negative, positive, negative, ...]
         positive_smaller_mean = np.mean(
             [
                 projected_hiddens[i] < projected_hiddens[i + 1]
