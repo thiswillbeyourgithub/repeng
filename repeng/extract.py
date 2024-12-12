@@ -404,6 +404,11 @@ def read_representations(
             if flipped_matches > current_matches:
                 clusters = 1 - clusters
             
+            # Calculate and print agreement percentage
+            best_matches = max(current_matches, flipped_matches)
+            agreement_percentage = (best_matches / len(positive_indices)) * 100
+            print(f"UMAP Clustering agreement with pos/neg labels: {agreement_percentage:.1f}%")
+            
             # can't just substract them because they don't have to have the same nb of samples
             p0_mu = h[clusters == 0, :].mean(axis=0)
             p1_mu = h[clusters == 1, :].mean(axis=0)
@@ -467,6 +472,11 @@ def read_representations(
             # Flip cluster labels if it improves matching
             if flipped_matches > current_matches:
                 clusters = 1 - clusters
+            
+            # Calculate and print agreement percentage
+            best_matches = max(current_matches, flipped_matches)
+            agreement_percentage = (best_matches / len(positive_indices)) * 100
+            print(f"PaCMAP Clustering agreement with pos/neg labels: {agreement_percentage:.1f}%")
             
             # can't just substract them because they don't have to have the same nb of samples
             p0_mu = h[clusters == 0, :].mean(axis=0)
