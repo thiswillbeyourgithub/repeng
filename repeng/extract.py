@@ -436,7 +436,7 @@ def read_representations(
                 verbose=False,
                 apply_pca=True,  # wether to start by a pca or not, not the same as 'init'
             )
-            pm_embedding = pacmap_model.fit_transform(train.T, init="pca").squeeze()
+            pm_embedding = pacmap_model.fit_transform(train, init="pca").squeeze()
 
             # Run KMeans clustering
             kmeans = KMeans(n_clusters=2, random_state=42)
