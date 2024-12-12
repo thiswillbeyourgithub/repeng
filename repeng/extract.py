@@ -276,7 +276,7 @@ def read_representations(
     hidden_layers: typing.Iterable[int] | None = None,
     batch_size: int = 32,
     use_cache: bool = True,
-    method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap", "umap_kmeans_pca_diff"] = "pca_diff",
+    method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap", "umap_kmeans_pca_diff", "pacmap_kmeans_pca_diff"] = "pca_diff",
     transform_hiddens: (
         typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
     ) = None,
