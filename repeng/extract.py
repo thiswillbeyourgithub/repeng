@@ -390,7 +390,20 @@ def read_representations(
             # Run KMeans clustering
             kmeans = KMeans(n_clusters=2, random_state=42)
             clusters = kmeans.fit_predict(umap_embedding)
-
+            
+            # Remap clusters to match positive/negative samples
+            # Remember samples are ordered: positive, negative, positive, negative...
+            positive_indices = np.arange(0, len(clusters), 2)
+            negative_indices = np.arange(1, len(clusters), 2)
+            
+            # Count matches for current mapping vs flipped mapping
+            current_matches = (clusters[positive_indices] == 1).sum() + (clusters[negative_indices] == 0).sum()
+            flipped_matches = (clusters[positive_indices] == 0).sum() + (clusters[negative_indices] == 1).sum()
+            
+            # Flip cluster labels if it improves matching
+            if flipped_matches > current_matches:
+                clusters = 1 - clusters
+            
             # can't just substract them because they don't have to have the same nb of samples
             p0_mu = h[clusters == 0, :].mean(axis=0)
             p1_mu = h[clusters == 1, :].mean(axis=0)
@@ -441,7 +454,20 @@ def read_representations(
             # Run KMeans clustering
             kmeans = KMeans(n_clusters=2, random_state=42)
             clusters = kmeans.fit_predict(pm_embedding)
-
+            
+            # Remap clusters to match positive/negative samples
+            # Remember samples are ordered: positive, negative, positive, negative...
+            positive_indices = np.arange(0, len(clusters), 2)
+            negative_indices = np.arange(1, len(clusters), 2)
+            
+            # Count matches for current mapping vs flipped mapping
+            current_matches = (clusters[positive_indices] == 1).sum() + (clusters[negative_indices] == 0).sum()
+            flipped_matches = (clusters[positive_indices] == 0).sum() + (clusters[negative_indices] == 1).sum()
+            
+            # Flip cluster labels if it improves matching
+            if flipped_matches > current_matches:
+                clusters = 1 - clusters
+            
             # can't just substract them because they don't have to have the same nb of samples
             p0_mu = h[clusters == 0, :].mean(axis=0)
             p1_mu = h[clusters == 1, :].mean(axis=0)
