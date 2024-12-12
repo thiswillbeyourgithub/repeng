@@ -409,6 +409,14 @@ def read_representations(
             agreement_percentage = (best_matches / len(clusters)) * 100
             print(f"UMAP Clustering agreement with pos/neg labels: {agreement_percentage:.1f}%")
             
+            # Filter clusters based on even/odd index condition
+            kept = len(clusters)
+            for i in range(len(clusters)):
+                if (i % 2 == 0 and clusters[i] != 1) or (i % 2 == 1 and clusters[i] != 0):
+                    clusters[i] -= 2  # turn 1 into -1 and 0 into -2
+                    kept -= 1
+            print(f"Kept {kept} samples out of {len(clusters)}")
+            
             # can't just substract them because they don't have to have the same nb of samples
             p1_mu = np.median(h[clusters == 1, :], axis=0)
             diffs = h.copy()
@@ -475,6 +483,14 @@ def read_representations(
             best_matches = max(current_matches, flipped_matches)
             agreement_percentage = (best_matches / len(clusters)) * 100
             print(f"PaCMAP Clustering agreement with pos/neg labels: {agreement_percentage:.1f}%")
+
+            # Filter clusters based on even/odd index condition
+            kept = len(clusters)
+            for i in range(len(clusters)):
+                if (i % 2 == 0 and clusters[i] != 1) or (i % 2 == 1 and clusters[i] != 0):
+                    clusters[i] -= 2  # turn 1 into -1 and 0 into -2
+                    kept -= 1
+            print(f"Kept {kept} samples out of {len(clusters)}")
             
             # can't just substract them because they don't have to have the same nb of samples
             p1_mu = np.median(h[clusters == 1, :], axis=0)
