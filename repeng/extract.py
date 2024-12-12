@@ -406,7 +406,7 @@ def read_representations(
             
             # Calculate and print agreement percentage
             best_matches = max(current_matches, flipped_matches)
-            agreement_percentage = (best_matches / len(positive_indices)) * 100
+            agreement_percentage = (best_matches / len(clusters)) * 100
             print(f"UMAP Clustering agreement with pos/neg labels: {agreement_percentage:.1f}%")
             
             # can't just substract them because they don't have to have the same nb of samples
@@ -475,7 +475,7 @@ def read_representations(
             
             # Calculate and print agreement percentage
             best_matches = max(current_matches, flipped_matches)
-            agreement_percentage = (best_matches / len(positive_indices)) * 100
+            agreement_percentage = (best_matches / len(clusters)) * 100
             print(f"PaCMAP Clustering agreement with pos/neg labels: {agreement_percentage:.1f}%")
             
             # can't just substract them because they don't have to have the same nb of samples
