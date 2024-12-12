@@ -429,7 +429,7 @@ def read_representations(
             from sklearn.cluster import KMeans
 
             pacmap_model = pacmap.PaCMAP(
-                n_components=2,
+                n_components=3,
                 n_neighbors=max(10, min(50, train.shape[0] // 4)),  # defaults to 10
                 MN_ratio=1,  # default 0.5
                 FP_ratio=4,  # default 2
