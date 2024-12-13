@@ -187,7 +187,7 @@ strengths = [-5, -3, -2, -1]
 # strengths += [0]
 strengths += [r/10 for r in range(-5, 6, 1)]
 strengths += [1, 2, 3, 5]
-for strength in strengths:
+for strength in tqdm(strengths, unit="strength"):
     print("#" * 20 + f" Strength={strength}")
     model.set_control(
         perturb_vector,
