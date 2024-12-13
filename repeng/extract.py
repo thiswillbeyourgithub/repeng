@@ -496,6 +496,28 @@ def read_representations(
 
             assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero after normalization, {newlayer}"
 
+            # calculate sign
+            projected_hiddens = project_onto_direction(h, newlayer)
+
+            # order of examples is [positive valence, negative, positive, negative, ...]
+            positive_smaller_mean = np.mean(
+                [
+                    projected_hiddens[i] < projected_hiddens[i + 1]
+                    for i in range(0, len(inputs) * 2, 2)
+                ]
+            )
+            positive_larger_mean = np.mean(
+                [
+                    projected_hiddens[i] > projected_hiddens[i + 1]
+                    for i in range(0, len(inputs) * 2, 2)
+                ]
+            )
+
+            if positive_smaller_mean > positive_larger_mean:  # type: ignore
+                newlayer *= -1
+                if VERBOSE:
+                    print(f"Reversed the direction of layer {layer}")
+
             if "ref_layer" in locals():
                 import scipy
                 cc = np.corrcoef(newlayer, ref_layer)[0, 1]
@@ -512,28 +534,6 @@ def read_representations(
 
         assert layer not in directions, layer
         directions[layer] = newlayer
-
-        # calculate sign
-        projected_hiddens = project_onto_direction(h, directions[layer])
-
-        # order of examples is [positive valence, negative, positive, negative, ...]
-        positive_smaller_mean = np.mean(
-            [
-                projected_hiddens[i] < projected_hiddens[i + 1]
-                for i in range(0, len(inputs) * 2, 2)
-            ]
-        )
-        positive_larger_mean = np.mean(
-            [
-                projected_hiddens[i] > projected_hiddens[i + 1]
-                for i in range(0, len(inputs) * 2, 2)
-            ]
-        )
-
-        if positive_smaller_mean > positive_larger_mean:  # type: ignore
-            directions[layer] *= -1
-            if VERBOSE:
-                print(f"Reversed the direction of layer {layer}")
 
     return directions
 
