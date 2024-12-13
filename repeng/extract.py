@@ -457,7 +457,7 @@ def read_representations(
                 print(f"Ignored layer because only {kept/len(clusters)*100:.2f}% label matched the truth")
                 newlayer = np.zeros_like(train[0]).squeeze()
             else:
-                print(f"Kept {kept} samples out of {len(clusters)}")
+                print(f"Kept {kept/len(clusters)*100:.2f}% samples because their label matched the truth ({kept}/{len(clusters)})")
 
                 # can't just substract them because they don't have to have the same nb of samples
                 p1_mu = np.median(h[clusters == 1, :], axis=0)
