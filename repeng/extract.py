@@ -311,6 +311,7 @@ def read_representations(
 
     # get directions for each layer using PCA
     directions: dict[int, np.ndarray] = {}
+    quality: dict[int, int] = {}
     for layer in tqdm.tqdm(hidden_layers, desc="Computing direction for samples", unit="layer"):
         h = layer_hiddens[layer]
         assert h.shape[0] == len(inputs) * 2
@@ -453,11 +454,13 @@ def read_representations(
                     clusters[i] -= 2  # turn 1 into -1 and 0 into -2
                     kept -= 1
 
-            if kept / len(clusters) <= 0.6:
-                print(f"Ignored layer because only {kept/len(clusters)*100:.2f}% label matched the truth")
+            qual = kept / len(clusters)
+            quality[layer] = qual
+            if qual <= 0.6:
+                print(f"Ignored layer because only {qual*100:.2f}% label matched the truth")
                 newlayer = np.zeros_like(train[0]).squeeze()
             else:
-                print(f"Kept {kept/len(clusters)*100:.2f}% samples because their label matched the truth ({kept}/{len(clusters)})")
+                print(f"Kept {qual * 100:.2f}% samples because their label matched the truth ({kept}/{len(clusters)})")
 
                 # can't just substract them because they don't have to have the same nb of samples
                 p1_mu = np.median(h[clusters == 1, :], axis=0)
@@ -535,6 +538,16 @@ def read_representations(
         assert layer not in directions, layer
         directions[layer] = newlayer
 
+    if quality:
+        vals = sorted(quality.values())
+        vals = vals[-1:]
+        for layer, q in quality.items():
+            if q not in vals:
+                directions[layer] = np.zeros_like(train[0]).squeeze()
+                # print(f"Removing layer {layer} after filtering")
+            else:
+                print(f"Kept layer {layer} after filtering")
+                assert not np.isclose(np.abs(directions[layer].ravel()).sum(), 0), layer
     return directions
 
 
