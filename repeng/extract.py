@@ -365,65 +365,6 @@ def read_representations(
             # embedding = umap_model.fit_transform(train).squeeze()
             # newlayer = np.sum(train * embedding.reshape(-1, 1), axis=0) / np.sum(embedding)
 
-        elif method == "umap_kmeans_pca_diff":
-            # compute pca diff too to compare
-            ref_train = h[::2] - h[1::2]
-            ref_pca_model = PCA(n_components=1, whiten=False).fit(ref_train)
-            ref_layer = ref_pca_model.components_.squeeze(axis=0)
-
-            import umap
-            from sklearn.cluster import KMeans
-
-            # First reduce to 2D with UMAP by reducing the features, not the samples
-            umap_model = umap.UMAP(
-                n_components=3,
-                low_memory=True,
-                random_state=42,
-                transform_seed=42,
-                densmap=True,
-                n_jobs=1,
-                n_neighbors=max(5, min(50, train.shape[0] // 4)),
-                min_dist=0.3,
-            )
-            umap_embedding = umap_model.fit_transform(train).squeeze()
-
-            # Run KMeans clustering
-            kmeans = KMeans(n_clusters=2, random_state=42)
-            clusters = kmeans.fit_predict(umap_embedding)
-            
-            # Remap clusters to match positive/negative samples
-            # Remember samples are ordered: positive, negative, positive, negative...
-            positive_indices = np.arange(0, len(clusters), 2)
-            negative_indices = np.arange(1, len(clusters), 2)
-            
-            # Count matches for current mapping vs flipped mapping
-            current_matches = (clusters[positive_indices] == 1).sum() + (clusters[negative_indices] == 0).sum()
-            flipped_matches = (clusters[positive_indices] == 0).sum() + (clusters[negative_indices] == 1).sum()
-            
-            # Flip cluster labels if it improves matching
-            if flipped_matches > current_matches:
-                clusters = 1 - clusters
-            
-            # Calculate and print agreement percentage
-            best_matches = max(current_matches, flipped_matches)
-            agreement_percentage = (best_matches / len(clusters)) * 100
-            print(f"UMAP Clustering agreement with pos/neg labels: {agreement_percentage:.1f}%")
-            
-            # Filter clusters based on even/odd index condition
-            kept = len(clusters)
-            for i in range(len(clusters)):
-                if (i % 2 == 0 and clusters[i] != 1) or (i % 2 == 1 and clusters[i] != 0):
-                    clusters[i] -= 2  # turn 1 into -1 and 0 into -2
-                    kept -= 1
-            print(f"Kept {kept} samples out of {len(clusters)}")
-            
-            # can't just substract them because they don't have to have the same nb of samples
-            p1_mu = np.median(h[clusters == 1, :], axis=0)
-            diffs = h.copy()
-            diffs[clusters == 0] -= p1_mu
-            pca_model = PCA(n_components=1, whiten=False).fit(diffs)
-            newlayer = pca_model.components_.squeeze(axis=0)
-
         elif method == "pacmap":
             # compute pca diff too to compare
             ref_train = h[::2] - h[1::2]
@@ -443,46 +384,67 @@ def read_representations(
             )
             newlayer = pacmap_model.fit_transform(train.T, init="pca").squeeze()
 
-        elif method == "pacmap_kmeans_pca_diff":
+        elif method == "umap_kmeans_pca_diff" or method == "pacmap_kmeans_pca_diff":
             # compute pca diff too to compare
             ref_train = h[::2] - h[1::2]
             ref_pca_model = PCA(n_components=1, whiten=False).fit(ref_train)
             ref_layer = ref_pca_model.components_.squeeze(axis=0)
 
-            import pacmap  # type: ignore
-            from sklearn.cluster import KMeans
+            if method == "umap_kmeans_pca_diff":
+                import umap
+                from sklearn.cluster import KMeans
 
-            pacmap_model = pacmap.PaCMAP(
-                n_components=3,
-                n_neighbors=max(10, min(50, train.shape[0] // 4)),  # defaults to 10
-                MN_ratio=1,  # default 0.5
-                FP_ratio=4,  # default 2
-                verbose=False,
-                apply_pca=True,  # wether to start by a pca or not, not the same as 'init'
-            )
-            pm_embedding = pacmap_model.fit_transform(train, init="pca").squeeze()
+                # First reduce to 2D with UMAP by reducing the features, not the samples
+                umap_model = umap.UMAP(
+                    n_components=3,
+                    low_memory=True,
+                    random_state=42,
+                    transform_seed=42,
+                    densmap=True,
+                    n_jobs=1,
+                    n_neighbors=max(5, min(50, train.shape[0] // 4)),
+                    min_dist=0.3,
+                )
+                embedding = umap_model.fit_transform(train).squeeze()
+
+            elif method == "pacmap_kmeans_pca_diff":
+                import pacmap  # type: ignore
+                from sklearn.cluster import KMeans
+
+                pacmap_model = pacmap.PaCMAP(
+                    n_components=3,
+                    n_neighbors=max(10, min(50, train.shape[0] // 4)),  # defaults to 10
+                    MN_ratio=1,  # default 0.5
+                    FP_ratio=4,  # default 2
+                    verbose=False,
+                    apply_pca=True,  # wether to start by a pca or not, not the same as 'init'
+                )
+                embedding = pacmap_model.fit_transform(train, init="pca").squeeze()
+
+            else:
+                raise ValueError(method)
 
             # Run KMeans clustering
             kmeans = KMeans(n_clusters=2, random_state=42)
-            clusters = kmeans.fit_predict(pm_embedding)
-            
+            clusters = kmeans.fit_predict(embedding)
+
             # Remap clusters to match positive/negative samples
             # Remember samples are ordered: positive, negative, positive, negative...
             positive_indices = np.arange(0, len(clusters), 2)
             negative_indices = np.arange(1, len(clusters), 2)
-            
+
             # Count matches for current mapping vs flipped mapping
             current_matches = (clusters[positive_indices] == 1).sum() + (clusters[negative_indices] == 0).sum()
             flipped_matches = (clusters[positive_indices] == 0).sum() + (clusters[negative_indices] == 1).sum()
-            
+
             # Flip cluster labels if it improves matching
             if flipped_matches > current_matches:
                 clusters = 1 - clusters
-            
+
             # Calculate and print agreement percentage
             best_matches = max(current_matches, flipped_matches)
             agreement_percentage = (best_matches / len(clusters)) * 100
-            print(f"PaCMAP Clustering agreement with pos/neg labels: {agreement_percentage:.1f}%")
+            print(f"UMAP Clustering agreement with pos/neg labels: {agreement_percentage:.1f}%")
 
             # Filter clusters based on even/odd index condition
             kept = len(clusters)
@@ -490,50 +452,57 @@ def read_representations(
                 if (i % 2 == 0 and clusters[i] != 1) or (i % 2 == 1 and clusters[i] != 0):
                     clusters[i] -= 2  # turn 1 into -1 and 0 into -2
                     kept -= 1
-            print(f"Kept {kept} samples out of {len(clusters)}")
-            
-            # can't just substract them because they don't have to have the same nb of samples
-            p1_mu = np.median(h[clusters == 1, :], axis=0)
-            diffs = h.copy()
-            diffs[clusters == 0] -= p1_mu
-            pca_model = PCA(n_components=1, whiten=False).fit(diffs)
-            newlayer = pca_model.components_.squeeze(axis=0)
-            del diffs
+
+            if kept / len(clusters) <= 0.6:
+                print(f"Ignored layer because only {kept/len(clusters)*100:.2f}% label matched the truth")
+                newlayer = np.zeros_like(train[0]).squeeze()
+            else:
+                print(f"Kept {kept} samples out of {len(clusters)}")
+
+                # can't just substract them because they don't have to have the same nb of samples
+                p1_mu = np.median(h[clusters == 1, :], axis=0)
+                diffs = h.copy()
+                diffs[clusters == 0] -= p1_mu
+                pca_model = PCA(n_components=1, whiten=False).fit(diffs)
+                newlayer = pca_model.components_.squeeze(axis=0)
+        else:
+            raise ValueError(method)
 
         newlayer = newlayer.astype(np.float32)
-        assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero before normalization, {newlayer}"
+        if not (newlayer == 0).all():
+            assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero before normalization, {newlayer}"
 
-        # apply the normalization
-        if norm_type == "auto":
-            detected_norm = detect_norm_type(train)
-            if VERBOSE:
-                print(f"Detected norm_type: {detected_norm}")
-            mag = np.linalg.norm(newlayer, detected_norm)
-        elif norm_type == "l2":
-            mag = np.linalg.norm(newlayer)  # l2 is the default
-        else:
-            mag = np.linalg.norm(newlayer, norm_type)
-        assert not np.isclose(mag, 0)
-        assert not np.isinf(mag)
-        newlayer /= mag
+            # apply the normalization
+            if norm_type == "auto":
+                detected_norm = detect_norm_type(train)
+                if VERBOSE:
+                    print(f"Detected norm_type: {detected_norm}")
+                mag = np.linalg.norm(newlayer, detected_norm)
+            elif norm_type == "l2":
+                mag = np.linalg.norm(newlayer)  # l2 is the default
+            else:
+                mag = np.linalg.norm(newlayer, norm_type)
+            assert not np.isclose(mag, 0)
+            assert not np.isinf(mag)
+            newlayer /= mag
 
-        if preserve_scale:
-            # make sure train and the newlayer have the same scale
-            newlayer = np.interp(
-                newlayer,
-                (newlayer.min(), newlayer.max()),
-                (np.median(train.min(axis=0)), np.median(train.max(axis=0))),
-            )
+            if preserve_scale:
+                # make sure train and the newlayer have the same scale
+                newlayer = np.interp(
+                    newlayer,
+                    (newlayer.min(), newlayer.max()),
+                    (np.median(train.min(axis=0)), np.median(train.max(axis=0))),
+                )
 
-        assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero after normalization, {newlayer}"
+            assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero after normalization, {newlayer}"
 
-        if "ref_layer" in locals():
-            import scipy
-            cc = np.corrcoef(newlayer, ref_layer)[0, 1]
-            spearman = scipy.stats.spearmanr(newlayer, ref_layer)[0]
-            cossim = np.dot(newlayer, ref_layer) / (np.linalg.norm(newlayer) * np.linalg.norm(ref_layer))
-            ang = np.arccos(cossim) * 180 / np.pi
-            print(f"Comparison between the method and pca_diff: CC={cc:.3f}  Spearman={spearman:.3f} Cosim={cossim:.3f} Angle={ang:.3f}")
+            if "ref_layer" in locals():
+                import scipy
+                cc = np.corrcoef(newlayer, ref_layer)[0, 1]
+                spearman = scipy.stats.spearmanr(newlayer, ref_layer)[0]
+                cossim = np.dot(newlayer, ref_layer) / (np.linalg.norm(newlayer) * np.linalg.norm(ref_layer))
+                ang = np.arccos(cossim) * 180 / np.pi
+                print(f"Comparison between the method and pca_diff: CC={cc:.3f}  Spearman={spearman:.3f} Cosim={cossim:.3f} Angle={ang:.3f}")
 
         # Shapes reminder:
         # train: shape is (n_samples, n_features)
@@ -541,6 +510,7 @@ def read_representations(
         newlayer = newlayer.squeeze()
         assert len(newlayer.shape) == 1 and newlayer.shape[0] == train.shape[1], f"newlayer is of shape {newlayer.shape} but should be ({train.shape[1]},)"
 
+        assert layer not in directions, layer
         directions[layer] = newlayer
 
         # calculate sign
