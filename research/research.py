@@ -20,6 +20,7 @@ repeng.settings.VERBOSE = True
 with open("../notebooks/data/all_truncated_outputs.json", "r") as f:
     all_suffixes = json.load(f)
     all_suffixes = [s for s in all_suffixes if s.strip()]
+    all_suffixes = all_suffixes[:50]
 
 # model to use:
 fname = None
