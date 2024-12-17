@@ -144,12 +144,11 @@ class ControlModel(torch.nn.Module):
 
         layers = model_layer_list(self.model)
         for layer_id in self.layer_ids:
-            if layer_id not in control:
-                print(f"Missing control layer with id '{layer_id}', skipping it.")
-                continue
             layer: ControlModule = layers[layer_id]  # type: ignore
             if control is None:
                 layer.reset()
+            elif layer_id not in control:
+                print(f"Missing control layer with id '{layer_id}', skipping it.")
             else:
                 layer.set_control(BlockControlParams(control[layer_id], **kwargs))
 
