@@ -3,10 +3,21 @@ import json
 import pathlib
 import tempfile
 
-from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizerBase
+from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizerBase, BitsAndBytesConfig
+try:
+    from . import ControlModel, ControlVector, DatasetEntry
+    from .utils import make_dataset, autocorrect_chat_templates
+    from .control import model_layer_list
+    from . import settings
+# alternative import method if using python directly instead of pytest
+except ImportError:
+    print("Using alternative import method")
+    from repeng import ControlModel, ControlVector, DatasetEntry
+    from repeng.utils import make_dataset, autocorrect_chat_templates
+    from repeng.control import model_layer_list
+    from repeng import settings
 
-from . import ControlModel, ControlVector, DatasetEntry
-from .control import model_layer_list
+settings.VERBOSE = True
 
 
 def test_layer_list():
@@ -201,3 +212,15 @@ def project_root() -> pathlib.Path:
         if (parent / "pyproject.toml").exists():
             return parent
     raise RuntimeError("couldn't find project root")
+
+# To run the tests either use "python -m pytest tests" or "python tests.py"
+if __name__ == "__main__":
+    print("\n\n\n\nTesting layer lists")
+    test_layer_list()
+    print("\n\n\n\nTesting round trip gguf")
+    test_round_trip_gguf()
+    print("\n\n\n\nTesting training of gpt2")
+    test_train_gpt2()
+    print("\n\n\n\nTesting training of tinystories")
+    test_train_llama_tinystories()
+    print("\n\n\n\nAll tests succeeded!")
