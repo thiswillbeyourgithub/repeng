@@ -553,6 +553,11 @@ def read_representations(
                 print(f"Removing layer {layer} after filtering")
             else:
                 print(f"Kept layer {layer} after filtering")
+
+    assert not all(
+            np.isclose(np.abs(lay.ravel()).sum(), 0)
+            for lay in directions.values()
+    ), "All computed direction are mostly zero"
     return directions
 
 
