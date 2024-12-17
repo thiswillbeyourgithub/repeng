@@ -545,6 +545,9 @@ def read_representations(
         vals = sorted(qualities.values())
         vals = vals[-quality_filter_n:]
         for layer, q in qualities.items():
+            if q <= quality_threshold:
+                # this layer was already ignored
+                continue
             if q not in vals:
                 directions[layer] = np.zeros_like(train[0]).squeeze()
                 print(f"Removing layer {layer} after filtering")
