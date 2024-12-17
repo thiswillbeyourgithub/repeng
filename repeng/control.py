@@ -19,7 +19,7 @@ class ControlModel(torch.nn.Module):
     def __init__(
             self,
             model: PreTrainedModel,
-            layer_ids: typing.Union[typing.Iterable[int], typing.Literal['all', 'middle_third', 'middle_slice'], str] = "all",
+            layer_ids: typing.Union[typing.Iterable[int], typing.Literal['all', 'middle_third', 'middle_slice'], str] = "middle_third",
     ):
         """
         **This mutates the wrapped `model`! Be careful using `model` after passing it to this class.**
