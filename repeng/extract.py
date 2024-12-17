@@ -530,7 +530,7 @@ def read_representations(
                 spearman = scipy.stats.spearmanr(newlayer, ref_layer)[0]
                 cossim = np.dot(newlayer, ref_layer) / (np.linalg.norm(newlayer) * np.linalg.norm(ref_layer))
                 ang = np.arccos(cossim) * 180 / np.pi
-                print(f"Comparison between the method and pca_diff: CC={cc:.3f}  Spearman={spearman:.3f} Cosim={cossim:.3f} Angle={ang:.3f}")
+                print(f"Comparison between {method} and pca_diff: CC={cc:.3f}  Spearman={spearman:.3f} Cosim={cossim:.3f} Angle={ang:.3f}")
 
         # Shapes reminder:
         # train: shape is (n_samples, n_features)
