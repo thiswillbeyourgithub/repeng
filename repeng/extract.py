@@ -282,8 +282,8 @@ def read_representations(
     ) = None,
     norm_type: typing.Literal["l1", "l2", "auto"] = "auto",
     preserve_scale: bool = True,
-    quality_threshold: float = 0.7,
-    quality_filter_n: typing.Optional[int] = 20,
+    quality_threshold: float = 0.6,
+    quality_filter_n: typing.Optional[int] = 10,
     ) -> dict[int, np.ndarray]:
     """
     Extract the representations based on the contrast dataset.
