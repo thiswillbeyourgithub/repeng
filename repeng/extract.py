@@ -73,9 +73,15 @@ class ControlVector:
                     onto the direction vector. Can be either "l1", "l2" or "auto"
                     to use the norm that seems to correspond the most to the one
                     used in the original layer. Defaults to "auto".
-                preserve_scale (bool, optional): Wether to interpolate the computed
-                    direction to preserve a reasonnable max and min values
+                preserve_scale (bool, optional): Whether to interpolate the computed
+                    direction to preserve a reasonable max and min values
                     according to the train activations. Defaults to True.
+                quality_threshold (float, optional): Minimum quality score (0-1) for keeping 
+                    a layer's direction. Layers below this threshold will have zero 
+                    directions. Defaults to 0.6.
+                quality_filter_n (int | None, optional): If set, only keep the top N highest 
+                    quality layers. Other layers will have zero directions. Set to None to 
+                    keep all layers above quality_threshold. Defaults to 10.
 
         Returns:
             ControlVector: The trained vector.
