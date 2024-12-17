@@ -153,7 +153,7 @@ def autocorrect_chat_templates(
 
     templated = tokenizer.apply_chat_template(messages, tokenize=False, **kwargs)
 
-    if not all(message["content"] in templated for message in messages):
+    if not all(message["content"].strip() in templated for message in messages):
 
         # see if moving the system message at the end is enough to fix the issue
         copied_mes = copy.deepcopy(messages)
@@ -174,7 +174,7 @@ def autocorrect_chat_templates(
 
         copied_mes = copy.deepcopy(messages)
         for message in messages:
-            if message["content"] not in templated:
+            if message["content"].strip() not in templated:
                 if VERBOSE:
                     print(f"Message '{message['content']}' with role '{message['role']}' is missing after chat template application")
         copied_mes = [e for e in copied_mes if e["role"] != "system"]
@@ -221,10 +221,10 @@ def autocorrect_chat_templates(
 
         templated = tokenizer.apply_chat_template(copied_mes, tokenize=False, **kwargs)
 
-        if not all(message["content"] in templated for message in messages):
+        if not all(message["content"].strip() in templated for message in messages):
             missings = ""
             for message in messages:
-                if message["content"] not in templated:
+                if message["content"].strip() not in templated:
                     missings += f"- Missing content '{message['content']}' (role '{message['role']}')\n"
                     if VERBOSE:
                         print(f"Message '{message['content']}' with role '{message['role']}' is STILL missing after chat template application")
