@@ -78,13 +78,10 @@ print("Creating control model...")
 model = ControlModel(
     model,
     # layer_ids=list(range(-5, -18, -1))
-    layer_ids="all",
-    # layer_ids="middle",
-    # layer_ids="only_middle",
+    # layer_ids="middle_slice",
+    # layer_ids="middle_third",
+    layer_ids="0.33-0.66",
     # layer_ids="0.5-0.9",
-    # layer_ids="0.1-0.3",
-    # layer_ids="0.1-0.7",
-    # layer_ids="0.01-0.9",
 )
 
 # generate a dataset with closely-opposite paired statements
