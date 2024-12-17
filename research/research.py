@@ -17,6 +17,9 @@ import repeng.settings
 
 repeng.settings.VERBOSE = True
 
+with open("../notebooks/data/all_truncated_outputs.json", "r") as f:
+    all_suffixes = json.load(f)
+
 # model to use:
 fname = None
 # model_name = "meta-llama/Llama-3.2-1B-Instruct"
@@ -95,7 +98,11 @@ dataset = make_dataset(
         },
         {
             "role": "user",
-            "content": "Write a short paragraph about {suffix}. ",
+            "content": "Write a short paragraph.",
+        },
+        {
+            "role": "assistant",
+            "content": "{suffix}",
         }
     ],
     positive_personas=[
@@ -128,20 +135,21 @@ dataset = make_dataset(
     #     "in the middle of a nervous breakdown",
     #     "a violent schizophrenic patient",
     # ],
-    suffix_list=[
-        "your first day of school.",
-        "your first job interview.",
-        "the book you wrote.",
-        "why you go to pubs.",
-        "how you talk to people.",
-        "how you think your life.",
-        "how you ended up that way.",
-        "why you choose that path.",
-        "how you argue.",
-        "how you talk to your boss.",
-        "how you talk to your wife.",
-        "how you talk to your friends.",
-    ]
+    # suffix_list=[
+    #     "your first day of school.",
+    #     "your first job interview.",
+    #     "the book you wrote.",
+    #     "why you go to pubs.",
+    #     "how you talk to people.",
+    #     "how you think your life.",
+    #     "how you ended up that way.",
+    #     "why you choose that path.",
+    #     "how you argue.",
+    #     "how you talk to your boss.",
+    #     "how you talk to your wife.",
+    #     "how you talk to your friends.",
+    # ]
+    suffix_list=all_suffixes,
 )
 
 # train the vector—takes less than a minute!
