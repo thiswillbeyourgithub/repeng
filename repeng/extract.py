@@ -282,6 +282,8 @@ def read_representations(
     ) = None,
     norm_type: typing.Literal["l1", "l2", "auto"] = "auto",
     preserve_scale: bool = True,
+    quality_threshold: float = 0.7,
+    quality_filter_n: typing.Optional[int] = 20,
     ) -> dict[int, np.ndarray]:
     """
     Extract the representations based on the contrast dataset.
@@ -311,7 +313,7 @@ def read_representations(
 
     # get directions for each layer using PCA
     directions: dict[int, np.ndarray] = {}
-    quality: dict[int, int] = {}
+    qualities: dict[int, int] = {}
     for layer in tqdm.tqdm(hidden_layers, desc="Computing direction for samples", unit="layer"):
         h = layer_hiddens[layer]
         assert h.shape[0] == len(inputs) * 2
@@ -455,14 +457,13 @@ def read_representations(
                     kept -= 1
 
             qual = kept / len(clusters)
-            quality[layer] = qual
-            if qual <= 0.6:
-                print(f"Ignored layer because only {qual*100:.2f}% label matched the truth")
+            qualities[layer] = qual
+            if qual <= quality_threshold:
+                print(f"Ignored layer because only {qual*100:.2f}% label matched the truth (<{quality_threshold})")
                 newlayer = np.zeros_like(train[0]).squeeze()
             else:
                 print(f"Kept {qual * 100:.2f}% samples because their label matched the truth ({kept}/{len(clusters)})")
 
-                # can't just substract them because they don't have to have the same nb of samples
                 p1_mu = np.median(h[clusters == 1, :], axis=0)
                 diffs = h.copy()
                 diffs[clusters == 0] -= p1_mu
@@ -538,16 +539,15 @@ def read_representations(
         assert layer not in directions, layer
         directions[layer] = newlayer
 
-    if quality:
-        vals = sorted(quality.values())
-        vals = vals[-1:]
-        for layer, q in quality.items():
+    if qualities and quality_filter_n:
+        vals = sorted(qualities.values())
+        vals = vals[-quality_filter_n:]
+        for layer, q in qualities.items():
             if q not in vals:
                 directions[layer] = np.zeros_like(train[0]).squeeze()
-                # print(f"Removing layer {layer} after filtering")
+                print(f"Removing layer {layer} after filtering")
             else:
                 print(f"Kept layer {layer} after filtering")
-                assert not np.isclose(np.abs(directions[layer].ravel()).sum(), 0), layer
     return directions
 
 
