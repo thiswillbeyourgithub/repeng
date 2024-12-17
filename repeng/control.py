@@ -19,7 +19,7 @@ class ControlModel(torch.nn.Module):
     def __init__(
             self,
             model: PreTrainedModel,
-            layer_ids: typing.Union[typing.Iterable[int], typing.Literal['all', 'middle', 'only_middle'], str] = "all",
+            layer_ids: typing.Union[typing.Iterable[int], typing.Literal['all', 'middle_half', 'middle_slice'], str] = "all",
     ):
         """
         **This mutates the wrapped `model`! Be careful using `model` after passing it to this class.**
@@ -36,10 +36,10 @@ class ControlModel(torch.nn.Module):
 
         if not layer_ids or layer_ids == "all":
             layer_ids = range(-1, -num_layers, -1)
-        elif layer_ids == "middle":  # keep only the middle half
+        elif layer_ids == "middle_half":  # keep only the middle half
             layer_ids = [li for li in range(-1, -num_layers, -1)]
             layer_ids = layer_ids[len(layer_ids)//4:-len(layer_ids)//4]
-        elif layer_ids == "only_middle":  # keep only the middle layer
+        elif layer_ids == "middle_slice":  # keep only the middle layer
             layer_ids = [li for li in range(-1, -num_layers, -1)]
             layer_ids = [layer_ids[len(layer_ids)//2]]
         elif isinstance(layer_ids, str) and '-' in layer_ids:
