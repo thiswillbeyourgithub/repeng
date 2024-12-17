@@ -53,6 +53,7 @@ class ControlVector:
         model: "PreTrainedModel | ControlModel",
         tokenizer: PreTrainedTokenizerBase,
         dataset: list[DatasetEntry],
+        method: typing.Literal["pca_diff", "pca_center", "umap", "pacmap", "umap_kmeans_pca_diff", "pacmap_kmeans_pca_diff"] = "pca_center",
         **kwargs,
     ) -> "ControlVector":
         """
@@ -62,11 +63,12 @@ class ControlVector:
             model (PreTrainedModel | ControlModel): The model to train against.
             tokenizer (PreTrainedTokenizerBase): The tokenizer to tokenize the dataset.
             dataset (list[DatasetEntry]): The dataset used for training.
+            method (str, optional): The training method to use. Can be either
+                "pca_diff", "pca_center", "umap", "umap_kmeans_pca_diff", "pacmap_kmeans_pca_diff" or "pacmap". Defaults to "pca_center"! This is different
+                than ControlVector.train, which defaults to "pca_diff".
             **kwargs: Additional keyword arguments.
                 max_batch_size (int, optional): The maximum batch size for training.
                     Defaults to 32. Try reducing this if you're running out of memory.
-                method (str, optional): The training method to use. Can be either
-                    "pca_diff" or "pca_center". Defaults to "pca_diff".
                 norm_type (str, optional): The type of normalization to use when projecting
                     onto the direction vector. Can be either "l1", "l2" or "auto"
                     to use the norm that seems to correspond the most to the one
@@ -100,23 +102,13 @@ class ControlVector:
         **kwargs,
     ) -> "ControlVector":
         """
-        Like ControlVector.train, but using an SAE. It's better! WIP.
+        Like ControlVector.train, but using an SAE. It's better!
 
-
-        Args:
-            model (PreTrainedModel | ControlModel): The model to train against.
-            tokenizer (PreTrainedTokenizerBase): The tokenizer to tokenize the dataset.
+        The only args that differ from ControlVector.train are:
             sae (saes.Sae): See the `saes` module for how to load this.
-            dataset (list[DatasetEntry]): The dataset used for training.
-            **kwargs: Additional keyword arguments.
-                decode (bool, optional): Whether to decode the vector to make it immediately usable.
-                    If not, keeps it as monosemantic SAE features for introspection, but you will need to decode it manually
-                    to use it. Defaults to True.
-                max_batch_size (int, optional): The maximum batch size for training.
-                    Defaults to 32. Try reducing this if you're running out of memory.
-                method (str, optional): The training method to use. Can be either
-                    "pca_diff", "pca_center", "umap", "umap_kmeans_pca_diff", "pacmap_kmeans_pca_diff" or "pacmap". Defaults to "pca_center"! This is different
-                    than ControlVector.train, which defaults to "pca_diff".
+            decode (bool, optional): Whether to decode the vector to make it immediately usable.
+                If not, keeps it as monosemantic SAE features for introspection, but you will need to decode it manually
+                to use it. Defaults to True.
 
         Returns:
             ControlVector: The trained vector.
