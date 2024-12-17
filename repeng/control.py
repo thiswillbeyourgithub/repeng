@@ -27,8 +27,12 @@ class ControlModel(torch.nn.Module):
         Build a new ControlModel around a model instance, initializing control on
         the layers specified in `layer_ids`.
 
-        `layer_ids` can now also be a string in the format "start-end" where start and end
-        are floats between 0 and 1, indicating the percentage range of layers to select.
+        `layer_ids` can be 'all' to  use all layers ( not recommended as it
+        often corrupts the tokens), 'middle_third' to use the middle third layers
+        (the default), 'middle_slice' to only use a single layer at the middle,
+        and also be a string in the format "start-end" where start and end
+        are floats between 0 and 1, indicating the percentage range of layers
+        to select for example "0.33-0.66" is equivalent to middle_third.
         """
         super().__init__()
         self.model = model
