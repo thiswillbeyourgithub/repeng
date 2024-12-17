@@ -30,7 +30,7 @@ fname = None
 # model_name = "mistralai/Mistral-7B-Instruct-v0.1"
 # model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 # model_name = "mistralai/Mistral-Nemo-Base-2407"
-model_name = "mistralai/Mistral-Nemo-Instruct-2407"
+# model_name = "mistralai/Mistral-Nemo-Instruct-2407"
 
 # # GGUF don't always work because there is a dequantization step. See here: https://github.com/huggingface/transformers/issues/34417
 # model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
@@ -42,7 +42,7 @@ model_name = "mistralai/Mistral-Nemo-Instruct-2407"
 # fname = "Llama-3.2-1B-Instruct-Q4_K_S.gguf"
 # model_name = "unsloth/Llama-3.2-11B-Vision-Instruct"
 
-# model_name = "Qwen/Qwen2.5-7B-Instruct"
+model_name = "Qwen/Qwen2.5-7B-Instruct"
 
 
 token=os.environ["HUGGINGFACE_API_TOKEN"]
