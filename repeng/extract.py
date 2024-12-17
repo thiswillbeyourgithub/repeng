@@ -484,8 +484,10 @@ def read_representations(
                 mag = np.linalg.norm(newlayer, detected_norm)
             elif norm_type == "l2":
                 mag = np.linalg.norm(newlayer)  # l2 is the default
+            elif norm_type == "l1":
+                mag = np.linalg.norm(newlayer, 1)
             else:
-                mag = np.linalg.norm(newlayer, norm_type)
+                raise ValueError(norm_type)
             assert not np.isclose(mag, 0)
             assert not np.isinf(mag)
             newlayer /= mag
