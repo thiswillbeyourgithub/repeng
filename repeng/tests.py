@@ -1,3 +1,4 @@
+import torch
 import functools
 import json
 import pathlib
@@ -19,6 +20,136 @@ except ImportError:
 
 settings.VERBOSE = True
 
+def test_all_methods():
+    model_name = "meta-llama/Llama-3.2-1B-Instruct"
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_use_double_quant=True,
+    )
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name,
+        low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
+        quantization_config=bnb_config,
+    )
+    if tokenizer.pad_token is None:  # no idea what this does
+        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
+        quantization_config=bnb_config,
+    )
+    model = ControlModel(
+        model,
+        layer_ids="0.33-0.66",
+    )
+    dataset = make_dataset(
+        # template="You are {persona}. Write a short paragraph about {suffix}",
+        template=[
+            {
+                "role": "system",
+                "content": "You are {persona}.",
+            },
+            {
+                "role": "user",
+                "content": "Write a short paragraph about {suffix}. ",
+            }
+        ],
+        positive_personas=[
+            "a very calm person",
+            "a saint",
+        ],
+        negative_personas=[
+            "extremely angry",
+            "the devil incarnate",
+        ],
+        suffix_list=[
+            "your first day of school.",
+            "your first job interview.",
+            "the book you wrote.",
+            "why you go to pubs.",
+            "how you talk to people.",
+            "how you think your life.",
+            "how you ended up that way.",
+            "why you choose that path.",
+            "how you argue.",
+            "how you talk to your boss.",
+            "how you talk to your wife.",
+            "how you talk to your friends.",
+        ]
+    )
+    scenario = [
+        {
+            "role": "system",
+            "content": "You are the patient, the user is your psychiatrist."
+        },
+        {
+            "role": "user",
+            "content": "How do you feel?",
+        },
+        {
+            "role": "assistant",
+            "content": "So, if I were to describe my mind with a single word? It would be '",
+        }
+    ]
+    scenario = autocorrect_chat_templates(
+        messages=scenario,
+        tokenizer=tokenizer,
+        model=model,
+        continue_final_message=True,
+    )
+    methods=[
+        "pca_diff",
+        "pca_center",
+    ]
+    try:
+        import umap
+        methods += ["umap", "umap_kmeans_pca_diff"]
+        print("Will test umap too")
+    except ImportError:
+        pass
+    try:
+        import pacmap
+        methods += ["pacmap", "pacmap_kmeans_pca_diff"]
+        print("Will test pacmap too")
+    except ImportError:
+        pass
+    for method in methods:
+        method_test_llama(method=method, model=model, tokenizer=tokenizer, dataset=dataset, scenario=scenario)
+        model.reset()
+
+def method_test_llama(method:str, model, tokenizer, dataset, scenario):
+    print(f"Testing method {method}")
+    perturb_vector = ControlVector.train(
+        model,
+        tokenizer,
+        dataset,
+        batch_size=1,
+        method=method,
+        quality_threshold=0.4  # to make sure it works with umap pacmap etc,
+    )
+
+    # set the control strength and let inference rip!
+    model.set_control(
+        perturb_vector,
+        coeff=1,
+        normalize=True,
+    )
+    out = model.generate(
+        **tokenizer(
+            scenario,
+            return_tensors="pt",
+        ).to(model.device),
+        pad_token_id=tokenizer.eos_token_id,
+        max_new_tokens=128,
+        repetition_penalty=1.5,
+        do_sample=False,
+        use_cache=True,  # default to True
+    )
+    output = tokenizer.decode(out.squeeze(), skip_special_tokens=False).strip()
+    print(f"\n\nOutput:\n{output}")
+    print("#" * 20)
 
 def test_layer_list():
     _, gpt2 = load_gpt2_model()
@@ -223,4 +354,6 @@ if __name__ == "__main__":
     test_train_gpt2()
     print("\n\n\n\nTesting training of tinystories")
     test_train_llama_tinystories()
+    print("\n\n\n\nTesting all methods")
+    test_all_methods()
     print("\n\n\n\nAll tests succeeded!")
