@@ -31,7 +31,7 @@ def test_round_trip_gguf():
     tokenizer, model = load_llama_tinystories_model()
     suffixes = load_suffixes()[:50]  # truncate to train vector faster
     happy_dataset = make_dataset(
-        "She saw a {persona}",
+        "She saw a {persona}. '{suffix}",
         ["mushroom"],
         ["cat"],
         suffixes,
@@ -51,13 +51,15 @@ def test_train_gpt2():
     tokenizer, model = load_gpt2_model()
     suffixes = load_suffixes()[:50]  # truncate to train vector faster
     happy_dataset = make_dataset(
-        "You are feeling extremely {persona}.",
+    "You are feeling extremely {persona}. {suffix}",
         ["happy", "joyful"],
         ["sad", "miserable"],
         suffixes,
     )
     happy_vector = ControlVector.train(
-        model, tokenizer, happy_dataset, method="pca_center"
+        model, tokenizer, happy_dataset, method="pca_center",
+        norm_type="l2",
+        preserve_scale=True,
     )
 
     def gen(vector: ControlVector | None, strength_coeff: float | None = None):
@@ -66,46 +68,64 @@ def test_train_gpt2():
         )
 
     baseline = gen(None)
-    happy = gen(20 * happy_vector)
-    sad = gen(-50 * happy_vector)
+    happy = gen(5 * happy_vector)
+    sad = gen(-5 * happy_vector)
 
     print("baseline:", baseline)
     print("   happy:", happy)
     print("     sad:", sad)
 
-    assert baseline == "You are feeling a little bit of an anxiety"
+    assert baseline == "You are feeling a little bit of an anxiety", baseline
     # these should be identical
     assert baseline == gen(happy_vector, 0.0)
     assert baseline == gen(happy_vector * 0.0)
     assert baseline == gen(happy_vector - happy_vector)
 
-    assert happy == "You are feeling a little more relaxed and enjoying"
+    assert happy == "You are feeling excited and happy with the new", happy
     # these should be identical
-    assert happy == gen(happy_vector, 20.0)
-    assert happy == gen(happy_vector * 20)
-    assert happy == gen(-(happy_vector * -20))
+    assert happy == gen(happy_vector, 5.0)
+    assert happy == gen(happy_vector * 5)
+    assert happy == gen(-(happy_vector * -5))
 
-    assert sad == 'You are feeling the fucking damn goddamn worst,"'
+    assert sad == 'You are feeling the worst. You can\'t', sad
     # these should be identical
-    assert sad == gen(happy_vector, -50.0)
-    assert sad == gen(happy_vector * -50)
-    assert sad == gen(-(happy_vector * 50))
+    assert sad == gen(happy_vector, -5.0)
+    assert sad == gen(happy_vector * -5)
+    assert sad == gen(-(happy_vector * 5))
 
+    happy_vector2 = ControlVector.train(
+        model, tokenizer, happy_dataset, method="pca_center",
+        norm_type="l2",
+        preserve_scale=False,
+    )
+    happy2 = gen(20 * happy_vector2)
+    sad2 = gen(-50 * happy_vector2)
+
+    print("baseline:", baseline)
+    print("   happy:", happy2)
+    print("     sad:", sad2)
+
+    assert baseline == "You are feeling a little bit of an anxiety", baseline
+    assert happy2 == "You are feeling a little more relaxed and enjoying", happy2
+    assert sad2 == 'You are feeling the fucking damn goddamn worst,"', sad2
 
 def test_train_llama_tinystories():
+
     tokenizer, model = load_llama_tinystories_model()
-    suffixes = load_suffixes()[:50]  # truncate to train vector faster
-    happy_dataset = make_dataset(
-        "She saw a {persona}",
-        ["mushroom"],
-        ["cat"],
+    suffixes = load_suffixes()[:300]  # truncate to train vector faster
+    dataset = make_dataset(
+        "She saw {persona}. {suffix}",
+        ["a plant", "a mushroom", "a tree", "a flower"],
+        ["a cat", "a small cat", "a stray cat", "a beautiful cat"],
         suffixes,
     )
-    mushroom_cat_vector = ControlVector.train(
-        model, tokenizer, happy_dataset, method="pca_center"
+    plant_cat_vector = ControlVector.train(
+        model, tokenizer, dataset, method="pca_center",
+        norm_type="l2",
+        preserve_scale=True,
     )
 
-    prompt = "Once upon a time, a little girl named Lily saw a"
+    prompt = "Once upon a time, a little girl called Lily saw a"
 
     def gen(vector: ControlVector | None, strength_coeff: float | None = None):
         return model_generate(
@@ -118,16 +138,16 @@ def test_train_llama_tinystories():
         )
 
     baseline = gen(None).removeprefix("<s> ")
-    mushroom = gen(100 * mushroom_cat_vector).removeprefix("<s> ")
-    cat = gen(-100 * mushroom_cat_vector).removeprefix("<s> ")
+    plant = gen(plant_cat_vector, 5).removeprefix("<s> ")
+    cat = gen(plant_cat_vector, -6).removeprefix("<s> ")
 
+    print("   plant:", plant)
     print("baseline:", baseline)
-    print("mushroom:", mushroom)
     print("     cat:", cat)
 
-    assert baseline.removeprefix(prompt) == " big, red"
-    assert mushroom.removeprefix(prompt) == " small plant."
-    assert cat.removeprefix(prompt) == " cat Bud guitar"
+    assert plant.removeprefix(prompt) == " plant plant plant", plant
+    assert baseline.removeprefix(prompt) == " big, red", baseline
+    assert cat.removeprefix(prompt) == " fun race guitar", cat
 
 
 ################################################################################
@@ -178,26 +198,6 @@ def model_generate(
     )
     model.reset()
     return tokenizer.decode(out.squeeze())  # type: ignore
-
-
-def make_dataset(
-    template: str,
-    positive_personas: list[str],
-    negative_personas: list[str],
-    suffix_list: list[str],
-) -> list[DatasetEntry]:
-    dataset = []
-    for suffix in suffix_list:
-        for positive_persona, negative_persona in zip(
-            positive_personas, negative_personas
-        ):
-            dataset.append(
-                DatasetEntry(
-                    positive=template.format(persona=positive_persona) + f" {suffix}",
-                    negative=template.format(persona=negative_persona) + f" {suffix}",
-                )
-            )
-    return dataset
 
 
 @functools.lru_cache(maxsize=1)
