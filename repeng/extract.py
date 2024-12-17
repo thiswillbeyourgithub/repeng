@@ -458,7 +458,7 @@ def read_representations(
 
             qual = kept / len(clusters)
             qualities[layer] = qual
-            if qual <= quality_threshold:
+            if qual < quality_threshold:
                 print(f"Ignored layer because only {qual*100:.2f}% label matched the truth (<{quality_threshold})")
                 newlayer = np.zeros_like(train[0]).squeeze()
             else:
