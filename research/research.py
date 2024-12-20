@@ -42,7 +42,9 @@ fname = None
 # fname = "Llama-3.2-1B-Instruct-Q4_K_S.gguf"
 # model_name = "unsloth/Llama-3.2-11B-Vision-Instruct"
 
-model_name = "Qwen/Qwen2.5-7B-Instruct"
+# model_name = "Qwen/Qwen2.5-7B-Instruct"
+
+model_name = "tiiuae/Falcon3-10B-Instruct-1.58bit"
 
 
 token=os.environ["HUGGINGFACE_API_TOKEN"]
@@ -65,6 +67,7 @@ tokenizer = AutoTokenizer.from_pretrained(
     device_map="auto",  # may oom on low vram, otherwise use all available gpus I think
     low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
     quantization_config=bnb_config,
+    torch_dtype=torch.bfloat16,
 )
 if tokenizer.pad_token is None:  # no idea what this does
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
@@ -77,6 +80,7 @@ model = AutoModelForCausalLM.from_pretrained(
     # device_map="cuda",  # may oom on low vram, otherwise use all available gpus I think
     low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
     quantization_config=bnb_config,
+    torch_dtype=torch.bfloat16,
 )
 
 print("Creating control model...")
