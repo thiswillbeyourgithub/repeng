@@ -42,9 +42,9 @@ fname = None
 # fname = "Llama-3.2-1B-Instruct-Q4_K_S.gguf"
 # model_name = "unsloth/Llama-3.2-11B-Vision-Instruct"
 
-# model_name = "Qwen/Qwen2.5-7B-Instruct"
+model_name = "Qwen/Qwen2.5-7B-Instruct"
 
-model_name = "tiiuae/Falcon3-10B-Instruct-1.58bit"
+# model_name = "tiiuae/Falcon3-10B-Instruct-1.58bit"
 
 
 token=os.environ["HUGGINGFACE_API_TOKEN"]
@@ -164,9 +164,9 @@ perturb_vector = ControlVector.train(
     # method="pca_diff",
     # method="pca_center",
     # method="umap",
-    # method="umap_kmeans_pca_diff",
     # method="pacmap",
-    method="pacmap_kmeans_pca_diff",
+    method="umap_kmeans_pca_diff",
+    # method="pacmap_kmeans_pca_diff",
 )
 scenario = [
     {
@@ -192,8 +192,10 @@ scenario = autocorrect_chat_templates(
 
 # set the control strength and let inference rip!
 print("Applying strength vectors")
-strengths = [-5, -3, -2, -1]
-# strengths += [0]
+strengths = []
+strengths += [r/10 for r in range(-10, 11, 1)]
+strengths += [-5, -3, -2, -1]
+# strengths += [-1, 0, 1]
 strengths += [r/10 for r in range(-5, 6, 1)]
 strengths += [1, 2, 3, 5]
 for strength in tqdm(strengths, unit="strength"):
