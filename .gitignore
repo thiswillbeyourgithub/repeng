@@ -20,3 +20,5 @@ Thumbs.db
 
 # lm_harness cache
 model_cache_*.db
+research/results.json
+research/simple_scores.json
