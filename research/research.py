@@ -8,7 +8,7 @@ from huggingface_hub import login
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import BitsAndBytesConfig
 # from transformers import AutoModel, AutoTokenizer
-# from langtest import Harness
+import lm_eval
 import time
 
 from repeng import ControlVector, ControlModel, DatasetEntry
@@ -218,16 +218,26 @@ for strength in tqdm(strengths, unit="strength"):
     print(tokenizer.decode(out.squeeze(), skip_special_tokens=False).strip())
     print("#" * 20)
 
-# print("Now proceeding to test the model")
-# harness = Harness(
-#     model={'model': model, "hub": "custom"},
-#     # task="text-classification",
-#     # # data={'data_source': 'test.csv'},
-#     # config='config.yml',
-#
-#     task="question-answering", 
-#     data={"data_source" :"BoolQ", "split":"test-tiny"}
-# )
-#
-# # Generate, run and get a report on your test cases
-# h.generate().run().report()
+print("Now proceeding to test the model")
+# doc: https://github.com/EleutherAI/lm-evaluation-harness/blob/main/docs/interface.md
+eval_model = lm_eval.models.huggingface(
+    pretrained=model,
+    tokenizer=tokenizer,
+    device=model.device,
+)
+results = lm_eval.simple_evaluate(
+    model=eval_model,
+    tasks=["hellaswag", "mmlu"],
+    num_fewshot=0,
+    bach_size=1,
+    device=model.device,
+    use_cache="model_cache",
+    cache_requests=True,
+    log_samples=False,
+    apply_chat_template=True,
+    fewshot_as_multiturn=False,
+    random_seed=42,
+    torch_random_seed=42,
+    numpy_random_seed=42,
+    fewshot_random_seed=42,
+)
