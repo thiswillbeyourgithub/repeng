@@ -251,6 +251,7 @@ strengths = [
 ]
 for strength in tqdm(strengths, unit="strength"):
     print("#" * 20 + f" Strength={strength}")
+    model.reset()  # just in case
     model.set_control(
         perturb_vector,
         coeff=strength,
