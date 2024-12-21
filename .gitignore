@@ -17,3 +17,6 @@ __pycache__/
 Thumbs.db
 .env
 .aider*
+
+# lm_harness cache
+model_cache_*.db
