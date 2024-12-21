@@ -284,6 +284,7 @@ for strength in tqdm(strengths, unit="strength"):
     scores[strength] = lm_eval.simple_evaluate(
         model=eval_model,
         tasks=[
+            # list tof tasks here: https://github.com/EleutherAI/lm-evaluation-harness/tree/main/lm_eval/tasks
             # "hellaswag",
             "mmlu",
         ],
