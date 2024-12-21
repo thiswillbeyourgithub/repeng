@@ -249,6 +249,19 @@ strengths = [
     5,
     10,
 ]
+tasks=[
+    # full list of tasks here: https://github.com/EleutherAI/lm-evaluation-harness/tree/main/lm_eval/tasks
+    "mmlu",
+    "hellaswag",
+    # "winogrande",  # bugged
+    "piqa",
+    # # "arc",  # somehow cant ge found
+    "nq_open",
+    "triviaqa",
+    # "mathqa",  # needs trust remote code somewhere
+    "gsm8k",
+]
+# list of mmlu values : https://paperswithcode.com/sota/multi-task-language-understanding-on-mmlu
 scores = {}
 simple_scores = {}
 for strength in tqdm(strengths, unit="strength"):
