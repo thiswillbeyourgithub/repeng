@@ -314,6 +314,8 @@ for strength in tqdm(strengths, unit="strength"):
     scores[strength]["config"]["device"] = str(scores[strength]["config"]["device"])  # otherwise json can't dump
     with open("results.json", "w") as f:
         json.dump(scores, f, ensure_ascii=False, indent=2)
-    simple_scores[strength] = scores[strength]["results"]["mmlu"]
+    simple_scores[strength] = {}
+    for t in tasks:
+        simple_scores[strength][t] = scores[strength]["results"][t]
     with open("simple_scores.json", "w") as f:
         json.dump(simple_scores, f, ensure_ascii=False, indent=2)
