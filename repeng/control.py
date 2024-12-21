@@ -74,6 +74,10 @@ class ControlModel(torch.nn.Module):
                     "Trying to rewrap a wrapped model! Probably not what you want! Try calling .unwrap first."
                 )
 
+        # needed by some abstractions like lm_eval
+        self.name_or_path = str(model.name_or_path) + "_repeng"
+        self.tie_weights = model.model.tie_weights
+
     @property
     def config(self) -> PretrainedConfig:
         return self.model.config
