@@ -249,6 +249,7 @@ strengths = [
     # 5,
     # 10,
 ]
+scores = {}
 for strength in tqdm(strengths, unit="strength"):
     print("#" * 20 + f" Strength={strength}")
     model.reset()  # just in case
@@ -272,29 +273,32 @@ for strength in tqdm(strengths, unit="strength"):
     print(tokenizer.decode(out.squeeze(), skip_special_tokens=False).strip())
     print("#" * 20)
 
-print("Now proceeding to test the model")
-# doc: https://github.com/EleutherAI/lm-evaluation-harness/blob/main/docs/interface.md
-eval_model = lm_eval.models.huggingface.HFLM(
-    pretrained=model,
-    tokenizer=tokenizer,
-    device=model.device,
-)
-results: dict = lm_eval.simple_evaluate(
-    model=eval_model,
-    tasks=[
-        # "hellaswag",
-        "mmlu",
-    ],
-    num_fewshot=0,
-    batch_size=1,
-    device=model.device,
-    use_cache="model_cache",
-    cache_requests=True,
-    log_samples=False,
-    apply_chat_template=True,
-    fewshot_as_multiturn=False,
-    random_seed=42,
-    torch_random_seed=42,
-    numpy_random_seed=42,
-    fewshot_random_seed=42,
-)
+    print(f"Now proceeding to test the model at strength {strength}")
+    # doc: https://github.com/EleutherAI/lm-evaluation-harness/blob/main/docs/interface.md
+    eval_model = lm_eval.models.huggingface.HFLM(
+        pretrained=model,
+        tokenizer=tokenizer,
+        device=model.device,
+    )
+    scores[strength] = lm_eval.simple_evaluate(
+        model=eval_model,
+        tasks=[
+            # "hellaswag",
+            "mmlu",
+        ],
+        num_fewshot=0,
+        batch_size=1,
+        device=model.device,
+        use_cache="model_cache",
+        cache_requests=True,
+        log_samples=False,
+        apply_chat_template=True,
+        fewshot_as_multiturn=False,
+        random_seed=42,
+        torch_random_seed=42,
+        numpy_random_seed=42,
+        fewshot_random_seed=42,
+        limit=10,  # only process n documents, for testing
+    )
+    with open("results.json", "w") as f:
+        json.dump(scores, f, ensure_ascii=False, indent=2)
