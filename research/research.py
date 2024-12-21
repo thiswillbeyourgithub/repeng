@@ -23,7 +23,7 @@ with open("../notebooks/data/all_truncated_outputs.json", "r") as f:
     all_suffixes = all_suffixes[:50]
 
 # model to use:
-# model_name = "meta-llama/Llama-3.2-1B-Instruct"
+model_name = "meta-llama/Llama-3.2-1B-Instruct"
 # model_name = "meta-llama/Llama-3.2-3B-Instruct"
 
 # model_name = "mistralai/Mistral-7B-Instruct-v0.1"
@@ -42,7 +42,7 @@ fname = None
 # fname = "Llama-3.2-1B-Instruct-Q4_K_S.gguf"
 # model_name = "unsloth/Llama-3.2-11B-Vision-Instruct"
 
-model_name = "Qwen/Qwen2.5-7B-Instruct"
+# model_name = "Qwen/Qwen2.5-7B-Instruct"
 
 # model_name = "tiiuae/Falcon3-10B-Instruct-1.58bit"
 
@@ -256,9 +256,12 @@ eval_model = lm_eval.models.huggingface.HFLM(
     tokenizer=tokenizer,
     device=model.device,
 )
-results = lm_eval.simple_evaluate(
+results: dict = lm_eval.simple_evaluate(
     model=eval_model,
-    tasks=["hellaswag", "mmlu"],
+    tasks=[
+        # "hellaswag",
+        "mmlu",
+    ],
     num_fewshot=0,
     batch_size=1,
     device=model.device,
