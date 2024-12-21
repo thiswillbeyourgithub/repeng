@@ -309,7 +309,7 @@ for strength in tqdm(strengths, unit="strength"):
         torch_random_seed=42,
         numpy_random_seed=42,
         fewshot_random_seed=42,
-        limit=10,  # only process n documents, for testing
+        limit=20,  # only process n documents, for testing
     )
     scores[strength]["config"]["device"] = str(scores[strength]["config"]["device"])  # otherwise json can't dump
     with open("results.json", "w") as f:
