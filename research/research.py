@@ -222,7 +222,7 @@ for strength in tqdm(strengths, unit="strength"):
 
 print("Now proceeding to test the model")
 # doc: https://github.com/EleutherAI/lm-evaluation-harness/blob/main/docs/interface.md
-eval_model = lm_eval.models.huggingface(
+eval_model = lm_eval.models.huggingface.HFLM(
     pretrained=model,
     tokenizer=tokenizer,
     device=model.device,
