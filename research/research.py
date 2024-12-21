@@ -272,20 +272,20 @@ for strength in tqdm(strengths, unit="strength"):
         coeff=strength,
         normalize=True,
     )
-    out = model.generate(
-        **tokenizer(
-            scenario,
-            return_tensors="pt",
-        ).to(model.device),
-        pad_token_id=tokenizer.eos_token_id,
-        max_new_tokens=128,
-        repetition_penalty=1.5,
-        do_sample=False,
-        # temperature=1.0,  # must only be set if do_sample is True
-        use_cache=True,  # default to True
-    )
-    print(tokenizer.decode(out.squeeze(), skip_special_tokens=False).strip())
-    print("#" * 20)
+    # out = model.generate(
+    #     **tokenizer(
+    #         scenario,
+    #         return_tensors="pt",
+    #     ).to(model.device),
+    #     pad_token_id=tokenizer.eos_token_id,
+    #     max_new_tokens=128,
+    #     repetition_penalty=1.5,
+    #     do_sample=False,
+    #     # temperature=1.0,  # must only be set if do_sample is True
+    #     use_cache=True,  # default to True
+    # )
+    # print(tokenizer.decode(out.squeeze(), skip_special_tokens=False).strip())
+    # print("#" * 20)
 
     print(f"Now proceeding to test the model at strength {strength}")
     # doc: https://github.com/EleutherAI/lm-evaluation-harness/blob/main/docs/interface.md
