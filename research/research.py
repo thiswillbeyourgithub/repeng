@@ -289,7 +289,7 @@ for strength in tqdm(strengths, unit="strength"):
             "mmlu",
         ],
         num_fewshot=0,
-        batch_size=1,
+        batch_size=10,
         device=model.device,
         # use_cache="model_cache",
         cache_requests=False,  # otherwise will return the salme valuess
