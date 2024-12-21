@@ -23,7 +23,6 @@ with open("../notebooks/data/all_truncated_outputs.json", "r") as f:
     all_suffixes = all_suffixes[:50]
 
 # model to use:
-fname = None
 # model_name = "meta-llama/Llama-3.2-1B-Instruct"
 # model_name = "meta-llama/Llama-3.2-3B-Instruct"
 
@@ -33,6 +32,7 @@ fname = None
 # model_name = "mistralai/Mistral-Nemo-Instruct-2407"
 
 # # GGUF don't always work because there is a dequantization step. See here: https://github.com/huggingface/transformers/issues/34417
+fname = None
 # model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
 # fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
 # fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
