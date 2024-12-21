@@ -250,6 +250,7 @@ strengths = [
     # 10,
 ]
 scores = {}
+simple_scores = {}
 for strength in tqdm(strengths, unit="strength"):
     print("#" * 20 + f" Strength={strength}")
     model.reset()  # just in case
@@ -300,5 +301,9 @@ for strength in tqdm(strengths, unit="strength"):
         fewshot_random_seed=42,
         limit=10,  # only process n documents, for testing
     )
+    scores[strength]["config"]["device"] = str(scores[strength]["config"]["device"])  # otherwise json can't dump
     with open("results.json", "w") as f:
         json.dump(scores, f, ensure_ascii=False, indent=2)
+    simple_scores[strength] = scores[strength]["results"]["mmlu"]
+    with open("simple_scores.json", "w") as f:
+        json.dump(simple_scores, f, ensure_ascii=False, indent=2)
