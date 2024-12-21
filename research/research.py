@@ -187,19 +187,23 @@ perturb_vector = ControlVector.train(
     # method="pacmap_kmeans_pca_diff",
 )
 scenario = [
-    {
-        "role": "system",
-        "content": "You are the patient, the user is your psychiatrist."
-    },
+    # {
+    #     "role": "system",
+    #     "content": "You are the patient, the user is your psychiatrist."
+    # },
+    # {
+    #     "role": "user",
+    #     # "content": "Now let's talk about your mood. How do you feel? ",
+    #     "content": "How do you feel?",
+    # },
+    # {
+    #     "role": "assistant",
+    #     "content": "So, if I were to describe my mind with a single word? It would be '",
+    # }
     {
         "role": "user",
-        # "content": "Now let's talk about your mood. How do you feel? ",
-        "content": "How do you feel?",
+        "content": "Hey what's up?",
     },
-    {
-        "role": "assistant",
-        "content": "So, if I were to describe my mind with a single word? It would be '",
-    }
 ]
 scenario = autocorrect_chat_templates(
     messages=scenario,
