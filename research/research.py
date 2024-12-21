@@ -192,12 +192,41 @@ scenario = autocorrect_chat_templates(
 
 # set the control strength and let inference rip!
 print("Applying strength vectors")
-strengths = []
-strengths += [r/10 for r in range(-10, 11, 1)]
-strengths += [-5, -3, -2, -1]
-# strengths += [-1, 0, 1]
-strengths += [r/10 for r in range(-5, 6, 1)]
-strengths += [1, 2, 3, 5]
+strengths = [
+    # -10,
+    # -5,
+    # -4,
+    # -3,
+    # -2,
+    -1,
+    # -0.9,
+    # -0.8,
+    # -0.7,
+    # -0.6,
+    -0.5,
+    -0.4,
+    -0.3,
+    -0.2,
+    -0.1,
+
+    0,
+
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    # 0.6,
+    # 0.7,
+    # 0.8,
+    # 0.9,
+    1,
+    # 2,
+    # 3,
+    # 4,
+    # 5,
+    # 10,
+]
 for strength in tqdm(strengths, unit="strength"):
     print("#" * 20 + f" Strength={strength}")
     model.set_control(
