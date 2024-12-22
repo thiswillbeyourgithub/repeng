@@ -259,14 +259,14 @@ strength = sorted(strength, key=random.random())
 tasks=[
     # full list of tasks here: https://github.com/EleutherAI/lm-evaluation-harness/tree/main/lm_eval/tasks
     "mmlu",
-    "hellaswag",
-    # "winogrande",  # bugged
-    "piqa",
-    # # "arc",  # somehow cant ge found
-    "nq_open",
-    "triviaqa",
-    # "mathqa",  # needs trust remote code somewhere
-    "gsm8k",
+    # "hellaswag",
+    # # "winogrande",  # bugged
+    # "piqa",
+    # # # "arc",  # somehow cant ge found
+    # "nq_open",
+    # "triviaqa",
+    # # "mathqa",  # needs trust remote code somewhere
+    # "gsm8k",
 ]
 # list of mmlu values : https://paperswithcode.com/sota/multi-task-language-understanding-on-mmlu
 scores = {}
