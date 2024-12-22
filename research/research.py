@@ -1,3 +1,4 @@
+import random
 import copy
 import typing
 import os
@@ -249,6 +250,7 @@ strengths = [
     5,
     10,
 ]
+strength = sorted(strength, key=random.random())
 tasks=[
     # full list of tasks here: https://github.com/EleutherAI/lm-evaluation-harness/tree/main/lm_eval/tasks
     "mmlu",
