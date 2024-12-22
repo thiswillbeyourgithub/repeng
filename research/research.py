@@ -90,7 +90,8 @@ model = ControlModel(
     # layer_ids=list(range(-5, -18, -1))
     # layer_ids="middle_slice",
     # layer_ids="middle_third",
-    layer_ids="0.33-0.66",
+    # layer_ids="0.33-0.66",
+    layer_ids="0.4-0.6",
     # layer_ids="0.5-0.9",
 )
 
