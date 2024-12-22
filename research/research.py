@@ -214,13 +214,15 @@ scenario = autocorrect_chat_templates(
 )
 
 # set the control strength and let inference rip!
-print("Applying strength vectors")
+print("Testing each strength vectors")
+scores = {}
+simple_scores = {}
 strengths = [
-    # -10,
-    # -5,
-    # -4,
-    # -3,
-    # -2,
+    -10,
+    -5,
+    -4,
+    -3,
+    -2,
     -1,
     # -0.9,
     -0.8,
