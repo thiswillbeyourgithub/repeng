@@ -269,8 +269,6 @@ tasks=[
     # "gsm8k",
 ]
 # list of mmlu values : https://paperswithcode.com/sota/multi-task-language-understanding-on-mmlu
-scores = {}
-simple_scores = {}
 for strength in tqdm(strengths, unit="strength"):
     print("#" * 20 + f" Strength={strength}")
     model.reset()  # just in case
