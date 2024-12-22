@@ -250,6 +250,9 @@ strengths = [
     5,
     10,
 ]
+for s in strength:
+    simple_scores[s] = None
+    scores[s] = None
 strength = sorted(strength, key=random.random())
 tasks=[
     # full list of tasks here: https://github.com/EleutherAI/lm-evaluation-harness/tree/main/lm_eval/tasks
