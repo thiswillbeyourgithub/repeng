@@ -71,10 +71,6 @@ class ControlVector:
             **kwargs: Additional keyword arguments.
                 max_batch_size (int, optional): The maximum batch size for training.
                     Defaults to 32. Try reducing this if you're running out of memory.
-                norm_type (str, optional): The type of normalization to use when projecting
-                    onto the direction vector. Can be either "l1", "l2" or "auto"
-                    to use the norm that seems to correspond the most to the one
-                    used in the original layer. Defaults to "auto".
                 quality_threshold (float, optional): Minimum quality score (0-1) for keeping 
                     a layer's direction. Layers below this threshold will have zero 
                     directions. Defaults to 0.6.
@@ -470,25 +466,7 @@ def read_representations(
             raise ValueError(method)
 
         newlayer = newlayer.astype(np.float32)
-        assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero before normalization, {newlayer}"
-
-        # apply the normalization
-        if norm_type == "auto":
-            detected_norm = detect_norm_type(train)
-            if VERBOSE:
-                print(f"Detected norm_type: {detected_norm}")
-            mag = np.linalg.norm(newlayer, detected_norm)
-        elif norm_type == "l2":
-            mag = np.linalg.norm(newlayer)  # l2 is the default
-        elif norm_type == "l1":
-            mag = np.linalg.norm(newlayer, 1)
-        else:
-            raise ValueError(norm_type)
-        assert not np.isclose(mag, 0)
-        assert not np.isinf(mag)
-        newlayer /= mag
-
-        assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero after normalization, {newlayer}"
+        assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero {newlayer}"
 
         # calculate sign
         projected_hiddens = project_onto_direction(h, newlayer)
@@ -604,4 +582,6 @@ def batched_get_hiddens(
 
 def project_onto_direction(H, direction):
     """Project matrix H (n, d_1) onto direction vector (d_2,)"""
-    return (H @ direction)
+    mag = np.linalg.norm(direction)
+    assert not np.isinf(mag)
+    return (H @ direction) / mag
