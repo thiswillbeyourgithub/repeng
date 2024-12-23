@@ -38,6 +38,8 @@ class ControlModel(torch.nn.Module):
         self.model = model
         num_layers = model.config.num_hidden_layers
 
+        assert num_layers > 2, f"Suspiciously low number of layers: {num_layers}"
+
         if not layer_ids or layer_ids == "all":
             layer_ids = range(-1, -num_layers, -1)
         elif layer_ids == "middle_third":  # keep only the middle third
