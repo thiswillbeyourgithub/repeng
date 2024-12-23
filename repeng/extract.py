@@ -3,6 +3,7 @@ import os
 import typing
 import warnings
 from joblib import Memory
+from pathlib import Path
 
 import gguf
 import numpy as np
@@ -20,7 +21,7 @@ if not hasattr(np, "float_"):
     np.float_ = np.float64
 
 # Setup cache
-cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "controlvector")
+cache_dir = Path.home() / ".cache" / "repeng"
 memory = Memory(cache_dir, verbose=0)
 
 @memory.cache(ignore=["model", "encoded_batch"])
