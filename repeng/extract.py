@@ -44,6 +44,32 @@ def _model_forward(model, encoded_batch, batch, use_cache=True):
     else:
         return model(**encoded_batch, output_hidden_states=True)
 
+def safe_to_cuda(tensor, device):
+    "checks the available vram before sending the direction to device"
+    if isinstance(tensor, np.ndarray):
+        tensor = torch.from_numpy(tensor)
+
+    tensor = tensor.to(dtype)
+
+    if not device.type == 'cuda':
+        return tensor.to(device)
+
+    torch.cuda.empty_cache()
+    # Get current free memory in bytes
+    free_mem, _ = torch.cuda.mem_get_info(device)
+    # Estimate tensor memory requirement (size * element_size)
+    tensor_mem = tensor.numel() * tensor.element_size()
+
+    if tensor_mem < free_mem * 0.9:
+        try:
+            return tensor.to(device)
+        except RuntimeError as e:
+            if "out of memory" in str(e):
+                torch.cuda.empty_cache()
+                return tensor
+    else:
+        return tensor  # dont sent specifically to cuda
+
 @dataclasses.dataclass
 class ControlVector:
     model_type: str
@@ -559,6 +585,11 @@ def read_representations(
             for lay in directions.values()
             if lay is not None
     ), "All computed direction are mostly zero"
+
+    if model.device.type == "cuda":
+        for k, v in directions,items():
+            if v is not None:
+                directions[k] = safe_to_cuda(v, model.device, model.dtype)
     return directions
 
 
