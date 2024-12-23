@@ -25,7 +25,7 @@ cache_dir = Path.home() / ".cache" / "repeng"
 memory = Memory(cache_dir, verbose=0)
 
 @memory.cache(ignore=["model", "encoded_batch"])
-def cached_forward(model, encoded_batch, model_name: str, batch: typing.List[str], **kwargs):
+def cached_forward(model, encoded_batch, model_name: str, device: str, batch: typing.List[str], **kwargs):
     if VERBOSE:
         print("cache bypassed")
     return model(**encoded_batch, output_hidden_states=True, **kwargs)
