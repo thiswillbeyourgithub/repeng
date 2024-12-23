@@ -79,7 +79,7 @@ class ControlVector:
                     a layer's direction. Layers below this threshold will have zero 
                     directions. Defaults to 0.6.
                 quality_filter_n (int | None, optional): If set, only keep the top N highest 
-                    quality layers. Other layers will have zero directions. Set to None to 
+                    quality layers. Other layers will be set to None. Set to None to 
                     keep all layers above quality_threshold. Defaults to 10.
 
         Returns:
@@ -456,7 +456,8 @@ def read_representations(
             qualities[layer] = qual
             if qual < quality_threshold:
                 print(f"Ignored layer because only {qual*100:.2f}% label matched the truth (<{quality_threshold})")
-                newlayer = np.zeros_like(train[0]).squeeze()
+                directions[layer] = None
+                continue
             else:
                 print(f"Kept {qual * 100:.2f}% samples because their label matched the truth ({kept}/{len(clusters)})")
 
@@ -469,56 +470,55 @@ def read_representations(
             raise ValueError(method)
 
         newlayer = newlayer.astype(np.float32)
-        if not (newlayer == 0).all():
-            assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero before normalization, {newlayer}"
+        assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero before normalization, {newlayer}"
 
-            # apply the normalization
-            if norm_type == "auto":
-                detected_norm = detect_norm_type(train)
-                if VERBOSE:
-                    print(f"Detected norm_type: {detected_norm}")
-                mag = np.linalg.norm(newlayer, detected_norm)
-            elif norm_type == "l2":
-                mag = np.linalg.norm(newlayer)  # l2 is the default
-            elif norm_type == "l1":
-                mag = np.linalg.norm(newlayer, 1)
-            else:
-                raise ValueError(norm_type)
-            assert not np.isclose(mag, 0)
-            assert not np.isinf(mag)
-            newlayer /= mag
+        # apply the normalization
+        if norm_type == "auto":
+            detected_norm = detect_norm_type(train)
+            if VERBOSE:
+                print(f"Detected norm_type: {detected_norm}")
+            mag = np.linalg.norm(newlayer, detected_norm)
+        elif norm_type == "l2":
+            mag = np.linalg.norm(newlayer)  # l2 is the default
+        elif norm_type == "l1":
+            mag = np.linalg.norm(newlayer, 1)
+        else:
+            raise ValueError(norm_type)
+        assert not np.isclose(mag, 0)
+        assert not np.isinf(mag)
+        newlayer /= mag
 
-            assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero after normalization, {newlayer}"
+        assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero after normalization, {newlayer}"
 
-            # calculate sign
-            projected_hiddens = project_onto_direction(h, newlayer)
+        # calculate sign
+        projected_hiddens = project_onto_direction(h, newlayer)
 
-            # order of examples is [positive valence, negative, positive, negative, ...]
-            positive_smaller_mean = np.mean(
-                [
-                    projected_hiddens[i] < projected_hiddens[i + 1]
-                    for i in range(0, len(inputs) * 2, 2)
-                ]
-            )
-            positive_larger_mean = np.mean(
-                [
-                    projected_hiddens[i] > projected_hiddens[i + 1]
-                    for i in range(0, len(inputs) * 2, 2)
-                ]
-            )
+        # order of examples is [positive valence, negative, positive, negative, ...]
+        positive_smaller_mean = np.mean(
+            [
+                projected_hiddens[i] < projected_hiddens[i + 1]
+                for i in range(0, len(inputs) * 2, 2)
+            ]
+        )
+        positive_larger_mean = np.mean(
+            [
+                projected_hiddens[i] > projected_hiddens[i + 1]
+                for i in range(0, len(inputs) * 2, 2)
+            ]
+        )
 
-            if positive_smaller_mean > positive_larger_mean:  # type: ignore
-                newlayer *= -1
-                if VERBOSE:
-                    print(f"Reversed the direction of layer {layer}")
+        if positive_smaller_mean > positive_larger_mean:  # type: ignore
+            newlayer *= -1
+            if VERBOSE:
+                print(f"Reversed the direction of layer {layer}")
 
-            if "ref_layer" in locals():
-                import scipy
-                cc = np.corrcoef(newlayer, ref_layer)[0, 1]
-                spearman = scipy.stats.spearmanr(newlayer, ref_layer)[0]
-                cossim = np.dot(newlayer, ref_layer) / (np.linalg.norm(newlayer) * np.linalg.norm(ref_layer))
-                ang = np.arccos(cossim) * 180 / np.pi
-                print(f"Comparison between {method} and pca_diff: CC={cc:.3f}  Spearman={spearman:.3f} Cosim={cossim:.3f} Angle={ang:.3f}")
+        if "ref_layer" in locals():
+            import scipy
+            cc = np.corrcoef(newlayer, ref_layer)[0, 1]
+            spearman = scipy.stats.spearmanr(newlayer, ref_layer)[0]
+            cossim = np.dot(newlayer, ref_layer) / (np.linalg.norm(newlayer) * np.linalg.norm(ref_layer))
+            ang = np.arccos(cossim) * 180 / np.pi
+            print(f"Comparison between {method} and pca_diff: CC={cc:.3f}  Spearman={spearman:.3f} Cosim={cossim:.3f} Angle={ang:.3f}")
 
         # Shapes reminder:
         # train: shape is (n_samples, n_features)
