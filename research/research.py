@@ -18,6 +18,11 @@ import repeng.settings
 
 repeng.settings.VERBOSE = True
 
+# source: https://pytorch.org/docs/stable/notes/cuda.html#environment-variables
+torch.backends.cuda.matmul.allow_tf32 = True
+
+os.environ['PYTORCH_CUDA_ALLOC_CONF']="expandable_segments:True"
+
 with open("../notebooks/data/all_truncated_outputs.json", "r") as f:
     all_suffixes = json.load(f)
     all_suffixes = [s for s in all_suffixes if s.strip()]
