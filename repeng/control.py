@@ -117,6 +117,9 @@ class ControlModel(torch.nn.Module):
             if layer_id not in control.directions:
                 print(f"Missing control layer with id '{layer_id}', skipping it.")
                 continue
+            if control.directions[layer_id] is None:
+                if VERBOSE:
+                    print(f"Skipped layer {layer_id} because None")
             raw_control[layer_id] = torch.tensor(
                 coeff * control.directions[layer_id]
             ).to(self.model.device, dtype=self.model.dtype)

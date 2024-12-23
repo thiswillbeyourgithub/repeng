@@ -549,7 +549,7 @@ def read_representations(
                 # this layer was already ignored
                 continue
             if q not in vals:
-                directions[layer] = np.zeros_like(train[0]).squeeze()
+                directions[layer] = None
                 print(f"Removing layer {layer} after filtering")
             else:
                 print(f"Kept layer {layer} after filtering")
@@ -557,6 +557,7 @@ def read_representations(
     assert not all(
             np.isclose(np.abs(lay.ravel()).sum(), 0)
             for lay in directions.values()
+            if lay is not None
     ), "All computed direction are mostly zero"
     return directions
 
