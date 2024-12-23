@@ -252,6 +252,7 @@ def model_layer_list(model: ControlModel | PreTrainedModel) -> torch.nn.ModuleLi
     if isinstance(model, ControlModel):
         model = model.model
 
+    assert not (hasattr(model, "model") and hasattr(model, "transformer")), "ambiguous model, not sure where to find the layers"
     if hasattr(model, "model"):  # mistral-like
         return model.model.layers
     elif hasattr(model, "transformer"):  # gpt-2-like
