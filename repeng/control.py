@@ -144,7 +144,7 @@ class ControlModel(torch.nn.Module):
 
         Additional kwargs:
         - `normalize: bool`: track the magnitude of the non-modified activation, and rescale the
-          activation to that magnitude after control (default: `False`)
+          activation to that magnitude after control (default: `True`)
         - `operator: Union[str, Callable[[Tensor, Tensor], Tensor]]`: how to combine the base output and control
           (default: +)
         """
@@ -172,7 +172,7 @@ class ControlModel(torch.nn.Module):
 @dataclasses.dataclass
 class BlockControlParams:
     control: torch.Tensor | None = None
-    normalize: bool = False
+    normalize: bool = True
     operator: typing.Union[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = "+"
 
     @classmethod
