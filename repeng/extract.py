@@ -75,9 +75,6 @@ class ControlVector:
                     onto the direction vector. Can be either "l1", "l2" or "auto"
                     to use the norm that seems to correspond the most to the one
                     used in the original layer. Defaults to "auto".
-                preserve_scale (bool, optional): Whether to interpolate the computed
-                    direction to preserve a reasonable max and min values
-                    according to the train activations. Defaults to True.
                 quality_threshold (float, optional): Minimum quality score (0-1) for keeping 
                     a layer's direction. Layers below this threshold will have zero 
                     directions. Defaults to 0.6.
@@ -281,7 +278,6 @@ def read_representations(
         typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
     ) = None,
     norm_type: typing.Literal["l1", "l2", "auto"] = "auto",
-    preserve_scale: bool = True,
     quality_threshold: float = 0.6,
     quality_filter_n: typing.Optional[int] = 10,
     ) -> dict[int, np.ndarray]:
@@ -491,14 +487,6 @@ def read_representations(
             assert not np.isclose(mag, 0)
             assert not np.isinf(mag)
             newlayer /= mag
-
-            if preserve_scale:
-                # make sure train and the newlayer have the same scale
-                newlayer = np.interp(
-                    newlayer,
-                    (newlayer.min(), newlayer.max()),
-                    (np.median(train.min(axis=0)), np.median(train.max(axis=0))),
-                )
 
             assert not np.isclose(np.abs(newlayer.ravel()).sum(), 0), f"Computed direction is mostly zero after normalization, {newlayer}"
 
