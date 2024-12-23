@@ -22,3 +22,4 @@ Thumbs.db
 model_cache_*.db
 research/results.json
 research/simple_scores.json
+research/assets
