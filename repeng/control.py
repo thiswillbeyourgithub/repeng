@@ -108,7 +108,7 @@ class ControlModel(torch.nn.Module):
         Additional kwargs:
         - `normalize: bool`: track the magnitude of the non-modified activation, and rescale the
           activation to that magnitude after control (default: `False`)
-        - `operator: Callable[[Tensor, Tensor], Tensor]`: how to combine the base output and control
+        - `operator: Union[str, Callable[[Tensor, Tensor], Tensor]]`: how to combine the base output and control
           (default: +)
         """
 
@@ -142,7 +142,7 @@ class ControlModel(torch.nn.Module):
         Additional kwargs:
         - `normalize: bool`: track the magnitude of the non-modified activation, and rescale the
           activation to that magnitude after control (default: `False`)
-        - `operator: Callable[[Tensor, Tensor], Tensor]`: how to combine the base output and control
+        - `operator: Union[str, Callable[[Tensor, Tensor], Tensor]]`: how to combine the base output and control
           (default: +)
         """
 
@@ -170,9 +170,7 @@ class ControlModel(torch.nn.Module):
 class BlockControlParams:
     control: torch.Tensor | None = None
     normalize: bool = False
-    operator: typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor] = (
-        lambda current, control: current + control
-    )
+    operator: typing.Union[str, typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = "+"
 
     @classmethod
     def default(cls) -> "BlockControlParams":
@@ -226,9 +224,16 @@ class ControlModule(torch.nn.Module):
                 .reshape(target_shape[0], target_shape[1], 1)
             )
             mask = mask.to(modified.dtype).to(modified.device)
-            modified = self.params.operator(modified, control * mask)
+
+            if isinstance(self.params.operator, str) and self.params.operator == "+":
+                modified = modified + control * mask
+            else:
+                modified = self.params.operator(modified, control * mask)
         else:
-            modified = self.params.operator(modified, control)
+            if isinstance(self.params.operator, str) and self.params.operator == "+":
+                modified = modified + control
+            else:
+                modified = self.params.operator(modified, control)
 
 
         if self.params.normalize:
