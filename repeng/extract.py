@@ -38,6 +38,7 @@ def _model_forward(model, encoded_batch, use_cache=True):
             encoded_batch=encoded_batch,
             model_name=get_model_name(model),
             encoded_batch_str=str(dict(encoded_batch)),
+            device=str(model.device),
         )
     else:
         return model(**encoded_batch, output_hidden_states=True)
