@@ -35,6 +35,7 @@ Specifically, things I intend to do are:
 - git clone this repo
 - cd into it
 - `uv venv` then activate the venv
+- Install dependencies from `research/requirements.txt` with `uv pip install -r research/requirements.txt`
 - install my slightly modified repeng into the venv with `uv pip install -e .`
 - Also might be needed:
     - `uv pip install -U gguf`
