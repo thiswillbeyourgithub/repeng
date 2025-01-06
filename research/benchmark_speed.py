@@ -54,7 +54,7 @@ def benchmark_generation(model, tokenizer, prompts, num_tokens=50, repetitions=1
         ).to(model.device)
         start_time = time.time()
         _ = model.generate(
-            **inputs,
+            input_ids=inputs,
             max_new_tokens=num_tokens,
             pad_token_id=tokenizer.eos_token_id,
             use_cache=False,
