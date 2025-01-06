@@ -44,7 +44,7 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 
 # Benchmark function
-def benchmark_generation(model, tokenizer, prompts, num_tokens=100, repetitions=10):
+def benchmark_generation(model, tokenizer, prompts, num_tokens=100, repetitions=15):
     """Benchmark generation speed for given prompts"""
     times = []
     for prompt in tqdm(prompts * repetitions, desc="Benchmarking"):
