@@ -54,8 +54,8 @@ def benchmark_generation(model, tokenizer, prompts, num_tokens=100, repetitions=
             **inputs,
             max_new_tokens=num_tokens,
             pad_token_id=tokenizer.eos_token_id,
-            use_cache=True,
-            do_sample=False
+            use_cache=False,
+            do_sample=True
         )
         times.append(time.time() - start_time)
     return sum(times) / len(times)
