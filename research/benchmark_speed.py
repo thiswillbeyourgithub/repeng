@@ -44,11 +44,14 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 
 # Benchmark function
-def benchmark_generation(model, tokenizer, prompts, num_tokens=100, repetitions=1):
+def benchmark_generation(model, tokenizer, prompts, num_tokens=50, repetitions=1):
     """Benchmark generation speed for given prompts"""
     times = []
     for prompt in tqdm(prompts * repetitions, desc="Benchmarking"):
-        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+        inputs = tokenizer.apply_chat_template(
+            prompt,
+            return_tensors="pt"
+        ).to(model.device)
         start_time = time.time()
         _ = model.generate(
             **inputs,
@@ -60,24 +63,44 @@ def benchmark_generation(model, tokenizer, prompts, num_tokens=100, repetitions=
         times.append(time.time() - start_time)
     return sum(times) / len(times)
 
-# Test prompts
+# Test prompts using chat template format
 test_prompts = [
-    "Explain quantum computing in simple terms",
-    "What are the benefits of exercise?",
-    "Describe the process of photosynthesis",
-    "How does a blockchain work?",
-    "What is the capital of France?",
-    "Explain the theory of relativity",
-    "What are the main causes of climate change?",
-    "How do neural networks work?",
-    "What is the difference between AI and ML?",
-    "Describe the water cycle"
+    [
+        {"role": "user", "content": "Explain quantum computing in simple terms"}
+    ],
+    [
+        {"role": "user", "content": "What are the benefits of exercise?"}
+    ],
+    [
+        {"role": "user", "content": "Describe the process of photosynthesis"}
+    ],
+    [
+        {"role": "user", "content": "How does a blockchain work?"}
+    ],
+    [
+        {"role": "user", "content": "What is the capital of France?"}
+    ],
+    [
+        {"role": "user", "content": "Explain the theory of relativity"}
+    ],
+    [
+        {"role": "user", "content": "What are the main causes of climate change?"}
+    ],
+    [
+        {"role": "user", "content": "How do neural networks work?"}
+    ],
+    [
+        {"role": "user", "content": "What is the difference between AI and ML?"}
+    ],
+    [
+        {"role": "user", "content": "Describe the water cycle"}
+    ]
 ]
 
-# Benchmark base model
-print("\nBenchmarking base model...")
-base_time = benchmark_generation(model, tokenizer, test_prompts)
-print(f"Base model average generation time: {base_time:.4f}s per 100 tokens")
+# # Benchmark base model
+# print("\nBenchmarking base model...")
+# base_time = benchmark_generation(model, tokenizer, test_prompts)
+# print(f"Base model average generation time: {base_time:.4f}s per 100 tokens")
 
 # Create control model and benchmark again
 print("\nCreating control model...")
@@ -89,7 +112,7 @@ control_model = ControlModel(
 # Create dataset and train control vector
 print("Creating dataset and training control vector...")
 with open("../notebooks/data/all_truncated_outputs.json", "r") as f:
-    all_suffixes = json.load(f)[:100]
+    all_suffixes = json.load(f)[:10]
 
 dataset = make_dataset(
     template=[
