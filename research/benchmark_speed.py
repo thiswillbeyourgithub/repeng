@@ -98,9 +98,9 @@ test_prompts = [
 ]
 
 # Benchmark base model
-print("\nBenchmarking base model...")
-base_time = benchmark_generation(model, tokenizer, test_prompts)
-print(f"Base model average generation time: {base_time:.4f}s per 100 tokens")
+# print("\nBenchmarking base model...")
+# base_time = benchmark_generation(model, tokenizer, test_prompts)
+# print(f"Base model average generation time: {base_time:.4f}s per 100 tokens")
 
 # Create control model and benchmark again
 print("\nCreating control model...")
@@ -112,13 +112,13 @@ control_model = ControlModel(
 # Create dataset and train control vector
 print("Creating dataset and training control vector...")
 with open("../notebooks/data/all_truncated_outputs.json", "r") as f:
-    all_suffixes = json.load(f)[:10]
+    all_suffixes = [s for s in json.load(f)[:10] if s.strip()]
 
 dataset = make_dataset(
     template=[
         {"role": "system", "content": "You are {persona}."},
         {"role": "user", "content": "Write a short paragraph."},
-        {"role": "assistant", "content": "{suffix}"}
+        {"role": "assistant", "content": "{suffix}."}
     ],
     positive_personas=["a genius", "very smart", "wise"],
     negative_personas=["mentally challenged", "dumb", "stupid"],
