@@ -97,10 +97,10 @@ test_prompts = [
     ]
 ]
 
-# # Benchmark base model
-# print("\nBenchmarking base model...")
-# base_time = benchmark_generation(model, tokenizer, test_prompts)
-# print(f"Base model average generation time: {base_time:.4f}s per 100 tokens")
+# Benchmark base model
+print("\nBenchmarking base model...")
+base_time = benchmark_generation(model, tokenizer, test_prompts)
+print(f"Base model average generation time: {base_time:.4f}s per 100 tokens")
 
 # Create control model and benchmark again
 print("\nCreating control model...")
