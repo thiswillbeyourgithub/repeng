@@ -1,0 +1,14 @@
+torch>=2.0.0
+transformers>=4.30.0
+numpy>=1.23.0
+dataclasses>=0.6
+typing-extensions>=4.5.0
+safetensors>=0.3.0
+umap-learn>=0.5.0
+pacmap>=0.7.0
+scikit-learn>=1.2.0
+tqdm>=4.0.0
+huggingface_hub>=0.0.0
+scikit-learn-intelex>=0.0.0
+daal4py>=0.0.0
+bitsandbytes>=0.0.0
