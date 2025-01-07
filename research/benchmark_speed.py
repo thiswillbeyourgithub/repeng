@@ -100,7 +100,8 @@ test_prompts = [
 print("\nCreating control model...")
 control_model = ControlModel(
     model,
-    layer_ids="0.4-0.6",
+    # layer_ids="0.4-0.6",
+    layer_ids="all",
 )
 
 # Create dataset and train control vector
