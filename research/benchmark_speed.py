@@ -96,12 +96,6 @@ test_prompts = [
         {"role": "user", "content": "Describe the water cycle"}
     ]
 ]
-
-# Benchmark base model
-print("\nBenchmarking base model...")
-base_time = benchmark_generation(model, tokenizer, test_prompts)
-print(f"Base model average generation time: {base_time:.4f}s per 100 tokens")
-
 # Create control model and benchmark again
 print("\nCreating control model...")
 control_model = ControlModel(
@@ -138,6 +132,11 @@ print("\nBenchmarking with control model...")
 control_model.set_control(perturb_vector, coeff=1.0, normalize=True)
 control_time = benchmark_generation(control_model, tokenizer, test_prompts)
 print(f"Control model average generation time: {control_time:.4f}s per 100 tokens")
+
+# Benchmark base model
+print("\nBenchmarking base model...")
+base_time = benchmark_generation(model, tokenizer, test_prompts)
+print(f"Base model average generation time: {base_time:.4f}s per 100 tokens")
 
 # Print comparison
 print("\nPerformance comparison:")
