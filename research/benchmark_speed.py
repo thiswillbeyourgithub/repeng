@@ -45,15 +45,16 @@ model = AutoModelForCausalLM.from_pretrained(
 
 # Benchmark function
 def benchmark_generation(model, tokenizer, prompts, num_tokens=50, repetitions=1):
-    """Benchmark generation speed for given prompts"""
+    """Benchmark generation speed for given prompts and return outputs"""
     times = []
+    outputs = []
     for prompt in tqdm(prompts * repetitions, desc="Benchmarking"):
         inputs = tokenizer.apply_chat_template(
             prompt,
             return_tensors="pt"
         ).to(model.device)
         start_time = time.time()
-        _ = model.generate(
+        generated = model.generate(
             input_ids=inputs,
             max_new_tokens=num_tokens,
             pad_token_id=tokenizer.eos_token_id,
@@ -61,7 +62,8 @@ def benchmark_generation(model, tokenizer, prompts, num_tokens=50, repetitions=1
             do_sample=True
         )
         times.append(time.time() - start_time)
-    return sum(times) / len(times)
+        outputs.append(tokenizer.decode(generated.squeeze(), skip_special_tokens=True))
+    return sum(times) / len(times), outputs
 
 # Test prompts using chat template format
 test_prompts = [
@@ -131,12 +133,12 @@ perturb_vector = ControlVector.train(
 # Apply control and benchmark again
 print("\nBenchmarking with control model...")
 control_model.set_control(perturb_vector, coeff=1.0, normalize=True)
-control_time = benchmark_generation(control_model, tokenizer, test_prompts)
+control_time, control_outputs = benchmark_generation(control_model, tokenizer, test_prompts)
 print(f"Control model average generation time: {control_time:.4f}s per 100 tokens")
 
 # Benchmark base model
 print("\nBenchmarking base model...")
-base_time = benchmark_generation(model, tokenizer, test_prompts)
+base_time, base_outputs = benchmark_generation(model, tokenizer, test_prompts)
 print(f"Base model average generation time: {base_time:.4f}s per 100 tokens")
 
 # Print comparison
@@ -144,3 +146,23 @@ print("\nPerformance comparison:")
 print(f"Base model: {base_time:.4f}s per 100 tokens")
 print(f"Control model: {control_time:.4f}s per 100 tokens")
 print(f"Overhead: {(control_time - base_time):.4f}s ({((control_time - base_time)/base_time)*100:.2f}%)")
+
+# Compare outputs
+try:
+    assert base_outputs != control_outputs, "Outputs should be different between base and control models"
+except AssertionError:
+    print("\nERROR: Outputs are identical between base and control models!")
+    print("\nBase model outputs:")
+    for i, output in enumerate(base_outputs):
+        print(f"{i+1}: {output}")
+    print("\nControl model outputs:")
+    for i, output in enumerate(control_outputs):
+        print(f"{i+1}: {output}")
+    raise
+
+print("\nBase model outputs:")
+for i, output in enumerate(base_outputs):
+    print(f"{i+1}: {output}")
+print("\nControl model outputs:")
+for i, output in enumerate(control_outputs):
+    print(f"{i+1}: {output}")
