@@ -44,10 +44,27 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 
 # Benchmark function
-def benchmark_generation(model, tokenizer, prompts, num_tokens=50, repetitions=1):
-    """Benchmark generation speed for given prompts and return outputs"""
-    times = []
-    outputs = []
+def benchmark_generation(
+    model: AutoModelForCausalLM | ControlModel,
+    tokenizer: AutoTokenizer,
+    prompts: list[list[dict[str, str]]],
+    num_tokens: int = 50,
+    repetitions: int = 1
+) -> tuple[float, list[str]]:
+    """Benchmark generation speed for given prompts and return outputs
+    
+    Args:
+        model: The language model to benchmark
+        tokenizer: The tokenizer for the model
+        prompts: List of prompts in chat format
+        num_tokens: Number of tokens to generate
+        repetitions: Number of times to repeat each prompt
+        
+    Returns:
+        tuple: (average time per generation in seconds, list of decoded outputs)
+    """
+    times: list[float] = []
+    outputs: list[str] = []
     for prompt in tqdm(prompts * repetitions, desc="Benchmarking"):
         inputs = tokenizer.apply_chat_template(
             prompt,
