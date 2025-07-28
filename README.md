@@ -41,3 +41,13 @@ Specifically, things I intend to do are:
     - `uv pip install -U gguf`
     - installing `umap-learn` by following [those instructions](https://pypi.org/project/umap-learn/)
     - installing `pacmap` by following [those instructions](https://pypi.org/project/pacmap/)
+
+
+# Update
+
+- New aim:
+    - I intend to make a clean PR to repeng to improve it
+    - ask the model to estimate it's IQ. As IQ is defined by gaussian statistics, it would be nice to see that value move depending on which layer was repeng'ed on a dump<->smart vector. This would be a way to validate the depth most impacted by a model.
+        - Other idea: on a young<->old vector, we could ask it to estimate its age.
+    - then map out the parameter space of how well the repeng vector works (i.e. visually show how much the vector at depth X moves the IQ/age estimation if we give the vector a strength of 1).
+    - then do so for each other techniques (PCA, UMAP, with or without scaling, etc).
