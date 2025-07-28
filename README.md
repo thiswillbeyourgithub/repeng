@@ -51,3 +51,4 @@ Specifically, things I intend to do are:
         - Other idea: on a young<->old vector, we could ask it to estimate its age.
     - then map out the parameter space of how well the repeng vector works (i.e. visually show how much the vector at depth X moves the IQ/age estimation if we give the vector a strength of 1).
     - then do so for each other techniques (PCA, UMAP, with or without scaling, etc).
+    - then do so for a few other models for comparison
