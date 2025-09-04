@@ -36,11 +36,7 @@ class ControlVector:
             model (PreTrainedModel | ControlModel): The model to train against.
             tokenizer (PreTrainedTokenizerBase): The tokenizer to tokenize the dataset.
             dataset (list[DatasetEntry]): The dataset used for training.
-            **kwargs: Additional keyword arguments.
-                max_batch_size (int, optional): The maximum batch size for training.
-                    Defaults to 32. Try reducing this if you're running out of memory.
-                method (str, optional): The training method to use. Can be either
-                    "pca_diff" or "pca_center". Defaults to "pca_diff".
+            **kwargs: Additional keyword arguments. See help(repeng.extract.read_representations) for details.
 
         Returns:
             ControlVector: The trained vector.
@@ -249,6 +245,13 @@ def read_representations(
 ) -> dict[int, np.ndarray]:
     """
     Extract the representations based on the contrast dataset.
+    Called by ControlVector.train
+
+    Args:
+        max_batch_size (int, optional): The maximum batch size for training.
+            Defaults to 32. Try reducing this if you're running out of memory.
+        method (str, optional): The training method to use. Can be either
+            "pca_diff" or "pca_center". Defaults to "pca_diff".
     """
     if not hidden_layers:
         hidden_layers = range(-1, -model.config.num_hidden_layers, -1)
