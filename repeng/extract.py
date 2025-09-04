@@ -17,7 +17,6 @@ from .utils import DatasetEntry, autocorrect_chat_templates
 __VERSION__ = "0.4.0"
 
 
-
 @dataclasses.dataclass
 class ControlVector:
     model_type: str
@@ -250,10 +249,19 @@ def read_representations(
     Called by ControlVector.train
 
     Args:
-        max_batch_size (int, optional): The maximum batch size for training.
+        hidden_layers (Iterable[int] | None, optional): Which model layers to extract
+            representations from. If None, defaults to all transformer layers in reverse
+            order. Negative indices are supported (e.g., -1 for last layer).
+            Defaults to None.
+        batch_size (int, optional): The maximum batch size for training.
             Defaults to 32. Try reducing this if you're running out of memory.
         method (str, optional): The training method to use. Can be either
             "pca_diff" or "pca_center". Defaults to "pca_diff".
+        transform_hiddens (Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None, optional):
+            Optional function to transform the extracted hidden states before computing
+            directions. Takes a dict mapping layer indices to hidden state arrays and
+            returns a transformed dict with the same structure. Used for SAE encoding.
+            Defaults to None.
     """
     if not hidden_layers:
         hidden_layers = range(-1, -model.config.num_hidden_layers, -1)
@@ -350,7 +358,9 @@ def batched_get_hiddens(
     with torch.no_grad():
         for batch in tqdm.tqdm(batched_inputs):
             # get the last token, handling right padding if present
-            encoded_batch = tokenizer(batch, padding=True, return_tensors="pt").to(model.device)
+            encoded_batch = tokenizer(batch, padding=True, return_tensors="pt").to(
+                model.device
+            )
             out = model(**encoded_batch, output_hidden_states=True)
             attention_mask = encoded_batch["attention_mask"]
             for i in range(len(batch)):
