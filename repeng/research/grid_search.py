@@ -327,7 +327,9 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
         # Log plot to tensorboard
         writer.add_figure(
-            f"plots/{method}_zones_{zones_tag}/iq_score_plot", plt.gcf(), global_step=combo_idx
+            f"plots/{method}_zones_{zones_tag}/iq_score_plot",
+            plt.gcf(),
+            global_step=combo_idx,
         )
 
         # Save plot
@@ -363,17 +365,19 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
             # Log hyperparameters and metrics for easy filtering
             hparam_dict = {
                 "method": method,
-                "layer_zones_str": str(layer_zones),  # String representation for filtering
+                "layer_zones_str": str(
+                    layer_zones
+                ),  # String representation for filtering
                 "num_layer_zones": len(layer_zones),  # Number of zone pairs
                 "combo_idx": combo_idx,  # Unique identifier for this combination
             }
-            
+
             # Add individual zone boundaries as separate hyperparameters for easier filtering
             for zone_idx, zone in enumerate(layer_zones):
                 hparam_dict[f"zone_{zone_idx}_start"] = zone[0]
                 hparam_dict[f"zone_{zone_idx}_end"] = zone[1]
                 hparam_dict[f"zone_{zone_idx}_width"] = zone[1] - zone[0]
-            
+
             metric_dict = {
                 "hparam/mean_score": mean_score,
                 "hparam/max_score": max_score,
@@ -383,17 +387,19 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
                 "hparam/correlation_p_value": correlation_p_value,
                 "hparam/num_valid_scores": len(scores_list),
             }
-            
+
             # Log hyperparameters with metrics - this allows filtering in TensorBoard
             writer.add_hparams(hparam_dict, metric_dict)
-            
+
             # Also log individual parameters as scalars for time-series analysis
             writer.add_scalar("params/combo_idx", combo_idx, combo_idx)
             writer.add_scalar("params/num_layer_zones", len(layer_zones), combo_idx)
             for zone_idx, zone in enumerate(layer_zones):
                 writer.add_scalar(f"params/zone_{zone_idx}_start", zone[0], combo_idx)
                 writer.add_scalar(f"params/zone_{zone_idx}_end", zone[1], combo_idx)
-                writer.add_scalar(f"params/zone_{zone_idx}_width", zone[1] - zone[0], combo_idx)
+                writer.add_scalar(
+                    f"params/zone_{zone_idx}_width", zone[1] - zone[0], combo_idx
+                )
 
             # Use combination index as the x-axis for summary stats
             writer.add_scalar(
@@ -406,7 +412,9 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
                 f"summary/{method}_zones_{zones_tag}/min_score", min_score, combo_idx
             )
             writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/score_range", score_range, combo_idx
+                f"summary/{method}_zones_{zones_tag}/score_range",
+                score_range,
+                combo_idx,
             )
             writer.add_scalar(
                 f"summary/{method}_zones_{zones_tag}/correlation_coeff",
