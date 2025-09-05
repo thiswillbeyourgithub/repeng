@@ -263,7 +263,7 @@ def read_representations(
     hidden_layers = [i if i >= 0 else n_layers + i for i in hidden_layers]
 
     # the order is [positive, negative, positive, negative, ...]
-    train_strs = autocorrect_chat_templates(
+    train_strs: list[str] = autocorrect_chat_templates(
         messages=[s for ex in inputs for s in (ex.positive, ex.negative)],
         tokenizer=tokenizer,
         model=model,
