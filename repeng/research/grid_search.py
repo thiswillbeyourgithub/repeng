@@ -267,6 +267,13 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
         plt.legend()
         plt.tight_layout()
 
+        # Log plot to tensorboard
+        writer.add_figure(
+            f"plots/{method}_zones_{zones_tag}/iq_score_plot",
+            plt.gcf(),
+            global_step=i
+        )
+
         # Save plot
         plot_filename = f"./plots/grid_search/iq_score_{method}_{zones_tag}.png"
         plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
