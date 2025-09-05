@@ -1,5 +1,8 @@
 from pprint import pprint
+import re
+import os
 import torch
+import matplotlib.pyplot as plt
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from repeng import ControlVector, ControlModel, DatasetEntry
@@ -164,4 +167,51 @@ for strength in strengths:
 
 
 
+# Extract scores using regex to find the first number in each output
+def extract_first_number(text: str) -> float | None:
+    """Extract the first number from text using regex."""
+    match = re.search(r'\d+(?:\.\d+)?', text)
+    if match:
+        return float(match.group())
+    return None
+
+# Process outputs to extract scores
+scores = {}
+for strength, output in outputs.items():
+    score = extract_first_number(output)
+    if score is not None:
+        scores[strength] = score
+        print(f"Strength {strength}: Score {score}")
+    else:
+        print(f"Strength {strength}: No score found in output")
+
+# Create plots directory
+os.makedirs("./plots/first", exist_ok=True)
+
+# Create the plot
+plt.figure(figsize=(12, 8))
+strengths_list = sorted(scores.keys())
+scores_list = [scores[s] for s in strengths_list]
+
+plt.plot(strengths_list, scores_list, 'bo-', linewidth=2, markersize=6)
+plt.xlabel('Control Strength', fontsize=12)
+plt.ylabel('Extracted IQ Score', fontsize=12)
+plt.title(f'IQ Score vs Control Strength\nModel: {model_name}\nDataset: dumb_genius_paragraph', fontsize=14)
+plt.grid(True, alpha=0.3)
+
+# Add some styling
+plt.axhline(y=100, color='r', linestyle='--', alpha=0.5, label='Average IQ (100)')
+plt.axvline(x=0, color='g', linestyle='--', alpha=0.5, label='No Control (0)')
+
+plt.legend()
+plt.tight_layout()
+
+# Save the plot
+plot_filename = f"./plots/first/iq_score_vs_strength_{model_name.replace('/', '_')}.png"
+plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+print(f"Plot saved to: {plot_filename}")
+
+plt.show()
+
 pprint(outputs)
+pprint(scores)
