@@ -9,7 +9,8 @@ import torch
 
 # Set matplotlib backend before importing pyplot to ensure non-interactive plotting
 import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend for file output
+
+matplotlib.use("Agg")  # Use non-interactive backend for file output
 import matplotlib.pyplot as plt
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -389,7 +390,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
         print(f"  Creating plot with {len(valid_data)} valid data points")
         strengths_list, scores_list = zip(*valid_data)
-        
+
         # Debug: Print the data being plotted
         print(f"  Plotting strengths: {strengths_list}")
         print(f"  Plotting scores: {scores_list}")
@@ -421,7 +422,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
         ax.legend()
         plt.tight_layout()
-        
+
         # Explicitly draw the figure to ensure it's rendered
         fig.canvas.draw()
 
@@ -442,9 +443,9 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
         )
         try:
             # Save using the figure object directly
-            fig.savefig(plot_filename, dpi=300, bbox_inches="tight", facecolor='white')
+            fig.savefig(plot_filename, dpi=300, bbox_inches="tight", facecolor="white")
             print(f"  Plot saved: {plot_filename}")
-            
+
             # Check if file was actually created and has content
             if os.path.exists(plot_filename):
                 file_size = os.path.getsize(plot_filename)
