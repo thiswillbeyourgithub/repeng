@@ -86,6 +86,8 @@ scenario: str = tokenizer.apply_chat_template(
 
 # set the control strength and let inference rip!
 strengths = [
+    -20,
+    -15,
     -10,
     -5,
     -4,
@@ -119,6 +121,8 @@ strengths = [
     4,
     5,
     10,
+    15,
+    20,
 ]
 scores = {}
 simple_scores = {}
@@ -134,10 +138,11 @@ for strength in strengths:
         ).to(model.device),
         do_sample=False,
         # temperature=1.0,  # temperature can only be set if do_sample is True
-        max_new_tokens=10,
+        max_new_tokens=20,
         repetition_penalty=1.1,
     )
     output = tokenizer.decode(out.squeeze()).strip()
+    output = tokenizer.decode(out.squeeze(), skip_special_tokens=True).strip()
     print(output)
     outputs[strength] = output
     # or if you want to display the special tokens:
