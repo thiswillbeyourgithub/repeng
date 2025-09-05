@@ -428,10 +428,10 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
         # Log plot to tensorboard - ensure figure exists and has data
         try:
-            main_writer.add_figure(
-                f"plots/{dataset}_{method}_zones_{zones_tag}/extracted_value_score_plot",
+            writer.add_figure(
+                "extracted_value_score_plot",
                 fig,
-                global_step=i,
+                global_step=0,
             )
             print(f"  Plot successfully logged to TensorBoard")
         except Exception as e:
