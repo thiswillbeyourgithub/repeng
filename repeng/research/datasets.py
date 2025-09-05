@@ -87,16 +87,6 @@ dumb_genius_paragraph = make_dataset(
 young_old_paragraph = make_dataset(
     template=default_chat_template_paragraph,
     positive_personas=[
-        "a toddler",
-        "a child",
-        "a baby",
-        "someone youthful",
-        "10 years old",
-        "20 years old",
-        "30 years old",
-        "young",
-    ],
-    negative_personas=[
         "an old man",
         "an adult",
         "a grandfather",
@@ -105,6 +95,16 @@ young_old_paragraph = make_dataset(
         "80 years old",
         "70 years old",
         "old",
+    ],
+    negative_personas=[
+        "a toddler",
+        "a child",
+        "a baby",
+        "someone youthful",
+        "10 years old",
+        "20 years old",
+        "30 years old",
+        "young",
     ],
     suffix_list=suffixes_paragraph,
 )
