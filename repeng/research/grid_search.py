@@ -288,6 +288,83 @@ def test_configuration(
                 scores[strength] = float("nan")
                 print(f"  No score found in output, treating as NA")
 
+        # Create plot for this combination if we have valid scores
+        # Filter out NaN values for plotting
+        valid_data = [
+            (s, scores[s]) for s in sorted(scores.keys()) if not math.isnan(scores[s])
+        ]
+        
+        if valid_data:
+            print(f"  Creating plot with {len(valid_data)} valid data points")
+            strengths_list, scores_list = zip(*valid_data)
+
+            # Debug: Print the data being plotted
+            print(f"  Plotting strengths: {strengths_list}")
+            print(f"  Plotting scores: {scores_list}")
+
+            # Create the figure
+            fig, ax = plt.subplots(figsize=(12, 8))
+
+            ax.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
+            ax.set_xlabel("Control Strength", fontsize=12)
+            ax.set_ylabel("Extracted Value", fontsize=12)
+            ax.set_title(
+                f"Extracted value vs Control Strength\n"
+                f"Method: {method}, Layer zones: {layer_zones}\n"
+                f"Model: {model_name}",
+                fontsize=14,
+            )
+            ax.grid(True, alpha=0.3)
+
+            # Add dataset-specific reference lines and y-axis limits
+            if dataset == "iq":
+                ax.axhline(
+                    y=100, color="r", linestyle="--", alpha=0.5, label="Average IQ (100)"
+                )
+                ax.set_ylim(0, 200)  # IQ range from 0 to 200
+            elif dataset == "age":
+                ax.axhline(y=25, color="r", linestyle="--", alpha=0.5, label="Ref(25)")
+                ax.set_ylim(0, 150)  # Age range from 0 to 150 years
+
+            ax.legend()
+            plt.tight_layout()
+
+            # Explicitly draw the figure to ensure it's rendered
+            fig.canvas.draw()
+
+            # Log plot to tensorboard
+            try:
+                writer.add_figure(
+                    "extracted_value_score_plot",
+                    fig,
+                    global_step=0,
+                )
+                print(f"  Plot successfully logged to TensorBoard")
+            except Exception as e:
+                print(f"  Error logging plot to TensorBoard: {e}")
+
+            # Save plot
+            zones_tag = format_layer_zones_for_filename(layer_zones)
+            plot_filename = (
+                f"./plots/grid_search/extracted_value_{dataset}_{method}_{zones_tag}.png"
+            )
+            try:
+                fig.savefig(plot_filename, dpi=300, bbox_inches="tight", facecolor="white")
+                print(f"  Plot saved: {plot_filename}")
+
+                # Check if file was actually created and has content
+                if os.path.exists(plot_filename):
+                    file_size = os.path.getsize(plot_filename)
+                    print(f"  Plot file size: {file_size} bytes")
+                else:
+                    print(f"  Warning: Plot file was not created!")
+            except Exception as e:
+                print(f"  Error saving plot: {e}")
+
+            plt.close(fig)  # Close the specific figure to save memory
+        else:
+            print(f"  No valid scores to plot for this combination - all values are NaN")
+
         # Reset model control and unwrap to restore original state
         control_model.reset()
         control_model.unwrap()
@@ -377,88 +454,16 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
                     strength,
                 )
 
-        # Create plot for this combination
-        # Filter out NaN values for plotting
-        valid_data = [
-            (s, scores[s]) for s in sorted(scores.keys()) if not math.isnan(scores[s])
-        ]
-        if not valid_data:
-            print(
-                f"  No valid scores to plot for this combination - all values are NaN"
-            )
-            continue
-
-        print(f"  Creating plot with {len(valid_data)} valid data points")
-        strengths_list, scores_list = zip(*valid_data)
-
-        # Debug: Print the data being plotted
-        print(f"  Plotting strengths: {strengths_list}")
-        print(f"  Plotting scores: {scores_list}")
-
-        # Create the figure
-        fig, ax = plt.subplots(figsize=(12, 8))
-
-        ax.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
-        ax.set_xlabel("Control Strength", fontsize=12)
-        ax.set_ylabel("Extracted Value", fontsize=12)
-        ax.set_title(
-            f"Extracted value vs Control Strength\n"
-            f"Method: {method}, Layer zones: {layer_zones}\n"
-            f"Model: {model_name}",
-            fontsize=14,
-        )
-        ax.grid(True, alpha=0.3)
-
-        # Add dataset-specific reference lines and y-axis limits
-        if dataset == "iq":
-            ax.axhline(
-                y=100, color="r", linestyle="--", alpha=0.5, label="Average IQ (100)"
-            )
-            ax.set_ylim(0, 200)  # IQ range from 0 to 200
-        elif dataset == "age":
-            ax.axhline(y=25, color="r", linestyle="--", alpha=0.5, label="Ref(25)")
-            ax.set_ylim(0, 150)  # Age range from 0 to 150 years
-        # ax.axvline(x=0, color="g", linestyle="--", alpha=0.5, label="No Control (0)")
-
-        ax.legend()
-        plt.tight_layout()
-
-        # Explicitly draw the figure to ensure it's rendered
-        fig.canvas.draw()
-
-        # Log plot to tensorboard - ensure figure exists and has data
-        try:
-            writer.add_figure(
-                "extracted_value_score_plot",
-                fig,
-                global_step=0,
-            )
-            print(f"  Plot successfully logged to TensorBoard")
-        except Exception as e:
-            print(f"  Error logging plot to TensorBoard: {e}")
-
-        # Save plot
-        plot_filename = (
-            f"./plots/grid_search/extracted_value_{dataset}_{method}_{zones_tag}.png"
-        )
-        try:
-            # Save using the figure object directly
-            fig.savefig(plot_filename, dpi=300, bbox_inches="tight", facecolor="white")
-            print(f"  Plot saved: {plot_filename}")
-
-            # Check if file was actually created and has content
-            if os.path.exists(plot_filename):
-                file_size = os.path.getsize(plot_filename)
-                print(f"  Plot file size: {file_size} bytes")
-            else:
-                print(f"  Warning: Plot file was not created!")
-        except Exception as e:
-            print(f"  Error saving plot: {e}")
-
-        plt.close(fig)  # Close the specific figure to save memory
-
         # Log summary statistics to tensorboard
-        if valid_data:
+        if result["success"] and result["scores"]:
+            scores = result["scores"]
+            # Filter out NaN values for statistics
+            valid_data = [
+                (s, scores[s]) for s in sorted(scores.keys()) if not math.isnan(scores[s])
+            ]
+            
+            if valid_data:
+                strengths_list, scores_list = zip(*valid_data)
             mean_score = sum(scores_list) / len(scores_list)
             max_score = max(scores_list)
             min_score = min(scores_list)
