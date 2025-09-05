@@ -5,7 +5,7 @@ from repeng import ControlVector, ControlModel, DatasetEntry
 from repeng.research import datasets
 
 # load and wrap model
-# model_name = "mistralai/Mistral-7B-Instruct-v0.3"
+model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 # model to use:
 # model_name = "meta-llama/Llama-3.2-1B-Instruct"
 # model_name = "meta-llama/Llama-3.2-3B-Instruct"
@@ -27,7 +27,7 @@ from repeng.research import datasets
 # model_name = "Qwen/Qwen2.5-7B-Instruct"
 
 # model_name = "tiiuae/Falcon3-10B-Instruct-1.58bit"
-model_name = "qwen/qwen3-4b"
+# model_name = "qwen/qwen3-4b"
 
 # If you need quantization
 from transformers import BitsAndBytesConfig
