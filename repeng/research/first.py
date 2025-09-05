@@ -1,3 +1,4 @@
+from pprint import pprint
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -76,14 +77,12 @@ scenario: str = tokenizer.apply_chat_template(
     conversation=[
         {
             "role": "user",
-            "content": "My IQ got tested at precisely ",
+            "content": "My official IQ score is ",
         },
     ],
     continue_final_message=True,
     tokenize=False,
 )
-# Or directly as a str
-# scenario=f"[INST] Give me a one-sentence pitch for a TV show. [/INST]",
 
 # set the control strength and let inference rip!
 strengths = [
@@ -135,7 +134,7 @@ for strength in strengths:
         ).to(model.device),
         do_sample=False,
         # temperature=1.0,  # temperature can only be set if do_sample is True
-        max_new_tokens=256,
+        max_new_tokens=10,
         repetition_penalty=1.1,
     )
     output = tokenizer.decode(out.squeeze()).strip()
@@ -145,3 +144,6 @@ for strength in strengths:
     # print(tokenizer.decode(out.squeeze(), skip_special_tokens=False).strip())
     print("###" * 5)
 
+
+
+pprint(outputs)
