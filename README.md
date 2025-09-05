@@ -1,14 +1,45 @@
 # repeng - Research Fork
 
-**This is an experimental repo where I experiment with [repeng](https://github.com/vgel/repeng).**
+**This is an experimental repo where I experiment with [repeng](https://github.com/vgel/repeng). It was made to organise the questions mentioned [in this issue](https://github.com/vgel/repeng/issues/27), [pr](https://github.com/vgel/repeng/pull/55) and [pr](https://github.com/vgel/repeng/pull/65).**
 
-**It was made to organise the investigation mentioned [in this issue](https://github.com/vgel/repeng/issues/27).**
-
-**NOTE: keep in mind that this is an experimental repo, and a WIP actively maintained. I'm doing this to keep track of what I do. Don't hesitate to reach out for any remarks! But don't expect my code to be always coherent etc**
+# Notes
+- Don't hesitate to reach out!
+- This is an experimental repo, that I occasionaly push to.
+- I'm also doing this to keep track of what I do.
 
 Specifically, things I intend to do are:
 
-- Take one model as a reference
+# Current plan:
+1. Use a single model as a reference
+2. create a calibrating suite:
+    - if you give pairs of "dumb/smart" then ask for the model to estimate its IQ, it's easy to parse the answer to measure which layers to target and by how much etc
+        - same idea with "sad/happy" then ask to estimate its [BDI](https://en.wikipedia.org/wiki/Beck_Depression_Inventory) or [PHQ-9](https://en.wikipedia.org/wiki/PHQ-9) score.
+        - same idea with "young/old" then ask to estimate its age.
+        - and so on
+    - we can then answer:
+        a. Is the "best layer" stable across experiments
+        b. Is the "best layer"'s sensitivity (strength wise) stable across experiments
+        c. Is the "best layer" about the same for different size of distilled models? (gemma models)
+        d. Is the "best layer" about the same for different model families? (mistral vs gemma vs llama)
+        e. What is the impact of the number of samples on the reliability of those effects?
+3. Redo this whole experience but comparing with other method:
+    - [PCA](https://scikit-learn.org/stable/modules/decomposition.html)
+    - pca_diff
+    - pca_center
+    - [kPCA](https://scikit-learn.org/stable/modules/decomposition.html)
+    - [dictionary learning](https://scikit-learn.org/stable/modules/decomposition.html)
+    - [ICA](https://scikit-learn.org/stable/modules/decomposition.html)
+    - [NMF](https://scikit-learn.org/stable/modules/decomposition.html)
+    - [UMAP](https://umap-learn.readthedocs.io/en/latest/)
+    - [UMAP with densmap](https://umap-learn.readthedocs.io/en/latest/densmap_demo.html)
+    - [pacmap](https://github.com/YingfanWang/PaCMAP/)
+
+The idea is to do a grid_search (with taguchi reduction using my other project [TaguchiGridSearchConverted](https://pypi.org/project/taguchigridsearchconverter/) and store all the data into [tensorboard](https://www.tensorflow.org/tensorboard).
+
+
+<details>
+<summary>Click to read older ideas</summary>
+
 - Benchmark the model using langtest to get its reference scores on things like MMLU
 - do the following comparisons also with the instruct vs base versions
 - Run the benchmark again after applying the following vector to measure how badly we crippled the LLM:
@@ -28,6 +59,8 @@ Specifically, things I intend to do are:
     - Create a pair of good and bad intelligence-aligned examples, see if it increases its accuracy on other similar benchmarks
     - Create a pair of good and bad answers to the MMLU, see if it increases its accuracy on other similar benchmarks
 
+</details>
+
 
 
 
@@ -35,21 +68,8 @@ Specifically, things I intend to do are:
 - git clone this repo
 - cd into it
 - `uv venv` then activate the venv
-- Install dependencies from `research/requirements.txt` with `uv pip install -r research/requirements.txt`
 - install my slightly modified repeng into the venv with `uv pip install -e .`
+- Install new dependencies from `research/requirements.txt` with `uv pip install -r research/requirements.txt`
 - Also might be needed:
-    - `uv pip install -U gguf`
     - installing `umap-learn` by following [those instructions](https://pypi.org/project/umap-learn/)
     - installing `pacmap` by following [those instructions](https://pypi.org/project/pacmap/)
-
-
-# Update
-
-- New aim:
-    - I intend to make a clean PR to repeng to improve it
-    - ask the model to estimate it's IQ. As IQ is defined by gaussian statistics, it would be nice to see that value move depending on which layer was repeng'ed on a dump<->smart vector. This would be a way to validate the depth most impacted by a model.
-        - Other idea: on a young<->old vector, we could ask it to estimate its age.
-    - then map out the parameter space of how well the repeng vector works (i.e. visually show how much the vector at depth X moves the IQ/age estimation if we give the vector a strength of 1).
-    - then do so for each other techniques (PCA, UMAP, with or without scaling, etc).
-    - then do so for a few other models for comparison
-
