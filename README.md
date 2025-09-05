@@ -24,7 +24,9 @@ Specifically, things I intend to do are:
         d. Is the "best layer" about the same for different model families? (mistral vs gemma vs llama)
         e. What is the impact of the number of samples on the reliability of those effects?
         f. What is the impact of quantization on this effect?
-3. Redo this whole experience but comparing with other method:
+3. Redo this whole experience but comparing between vector extraction methods:
+    - mean (the mean value of positive samples - mean value of negative samples)
+    - median (the median value of positive samples - median value of negative samples)
     - [PCA](https://scikit-learn.org/stable/modules/decomposition.html)
         - pca_diff
         - pca_center
