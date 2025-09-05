@@ -15,7 +15,8 @@ Specifically, things I intend to do are:
     - if you give pairs of "dumb/smart" then ask for the model to estimate its IQ, it's easy to parse the answer to measure which layers to target and by how much etc
         - same idea with "sad/happy" then ask to estimate its [BDI](https://en.wikipedia.org/wiki/Beck_Depression_Inventory) or [PHQ-9](https://en.wikipedia.org/wiki/PHQ-9) score.
         - same idea with "young/old" then ask to estimate its age.
-            - note: I was hopeful about that one but LLMs are too stuborn and insist that they are born in like 2023 or something.
+            - *Note: I was hopeful about that one but LLMs are too stuborn and insist that they are born in like 2023 or something.*
+                - Actually, By asking the LLM to imagine being a human, and asked the age of that human it works.
         - and so on
     - we can then answer:
         a. Is the "best layer" stable across experiments
