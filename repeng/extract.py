@@ -233,6 +233,57 @@ class ControlVector:
         return self.__mul__(1 / other)
 
 
+def compute_direction(
+    hidden_states: np.ndarray,
+    method: typing.Union[
+        typing.Literal["pca_diff", "pca_center", "umap"],
+        typing.Callable[[np.ndarray], np.ndarray],
+    ],
+) -> np.ndarray:
+    """
+    Compute a direction vector from hidden states using the specified method.
+
+    Args:
+        hidden_states (np.ndarray): Hidden states array of shape (n_samples, hidden_dim).
+            For contrast methods, should have even number of samples where pairs represent
+            [positive, negative, positive, negative, ...] examples.
+        method: The method to use for computing the direction. Can be "pca_diff",
+            "pca_center", "umap", or a callable that takes hidden states and returns
+            a direction vector.
+
+    Returns:
+        np.ndarray: Direction vector of shape (hidden_dim,).
+    """
+    if callable(method):
+        # Custom method: directly compute direction from hidden states
+        return method(hidden_states).astype(np.float32)
+    elif method == "pca_diff":
+        train = hidden_states[::2] - hidden_states[1::2]
+        # shape (1, n_features)
+        pca_model = PCA(n_components=1, whiten=False).fit(train)
+        # shape (n_features,)
+        return pca_model.components_.astype(np.float32).squeeze(axis=0)
+    elif method == "pca_center":
+        center = (hidden_states[::2] + hidden_states[1::2]) / 2
+        train = hidden_states.copy()
+        train[::2] -= center
+        train[1::2] -= center
+        # shape (1, n_features)
+        pca_model = PCA(n_components=1, whiten=False).fit(train)
+        # shape (n_features,)
+        return pca_model.components_.astype(np.float32).squeeze(axis=0)
+    elif method == "umap":
+        train = hidden_states
+        # still experimental so don't want to add this as a real dependency yet
+        import umap  # type: ignore
+
+        umap_model = umap.UMAP(n_components=1)
+        embedding = umap_model.fit_transform(train).astype(np.float32)
+        return np.sum(train * embedding, axis=0) / np.sum(embedding)
+    else:
+        raise ValueError(f"unknown method {method}")
+
+
 def read_representations(
     model: "PreTrainedModel | ControlModel",
     tokenizer: PreTrainedTokenizerBase,
@@ -295,34 +346,7 @@ def read_representations(
         h = layer_hiddens[layer]
         assert h.shape[0] == len(inputs) * 2
 
-        if callable(method):
-            # Custom method: directly compute direction from hidden states
-            directions[layer] = method(h).astype(np.float32)
-        elif method == "pca_diff":
-            train = h[::2] - h[1::2]
-            # shape (1, n_features)
-            pca_model = PCA(n_components=1, whiten=False).fit(train)
-            # shape (n_features,)
-            directions[layer] = pca_model.components_.astype(np.float32).squeeze(axis=0)
-        elif method == "pca_center":
-            center = (h[::2] + h[1::2]) / 2
-            train = h
-            train[::2] -= center
-            train[1::2] -= center
-            # shape (1, n_features)
-            pca_model = PCA(n_components=1, whiten=False).fit(train)
-            # shape (n_features,)
-            directions[layer] = pca_model.components_.astype(np.float32).squeeze(axis=0)
-        elif method == "umap":
-            train = h
-            # still experimental so don't want to add this as a real dependency yet
-            import umap  # type: ignore
-
-            umap_model = umap.UMAP(n_components=1)
-            embedding = umap_model.fit_transform(train).astype(np.float32)
-            directions[layer] = np.sum(train * embedding, axis=0) / np.sum(embedding)
-        else:
-            raise ValueError(f"unknown method {method}")
+        directions[layer] = compute_direction(h, method)
 
         # calculate sign
         projected_hiddens = project_onto_direction(h, directions[layer])
