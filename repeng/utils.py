@@ -134,6 +134,10 @@ def autocorrect_chat_templates(
     input format for the specified model and tokenizer. It handles various input types
     and applies model-specific corrections when necessary.
 
+    It might be necessary anymore but was needed when huggingface hadn't yet
+    implemented proper templates. It is nonetheless used as fallback if
+    model.train crashes because of the template.
+
     Args:
         messages (Union[list[list[dict]], list[dict], list[str], str]): The input messages
             to be corrected. Can be a single message, a list of messages, or a list of chats.

@@ -15,7 +15,7 @@ import tqdm
 
 from .control import ControlModel, model_layer_list
 from .saes import Sae
-from .utils import DatasetEntry, autocorrect_chat_templates, get_model_name
+from .utils import DatasetEntry, get_model_name, autocorrect_chat_templates
 
 __VERSION__ = "0.4.0"
 
@@ -330,11 +330,18 @@ def read_representations(
     hidden_layers = [i if i >= 0 else n_layers + i for i in hidden_layers]
 
     # the order is [positive, negative, positive, negative, ...]
-    train_strs: list[str] = autocorrect_chat_templates(
-        messages=[s for ex in inputs for s in (ex.positive, ex.negative)],
-        tokenizer=tokenizer,
-        model=model,
-    )
+    try:
+        train_strs: list[str] = tokenizer.apply_chat_template(
+            conversation=[s for ex in inputs for s in (ex.positive, ex.negative)],
+            tokenize=False,
+        )
+    except Exception as e:
+        logger.warning(f"Error when applying chat template: '{e}'\nTrying to autocorrect the template anyway.")
+        train_strs: list[str] = autocorrect_chat_templates(
+            messages=[s for ex in inputs for s in (ex.positive, ex.negative)],
+            tokenizer=tokenizer,
+            model=model,
+        )
 
     if cache_path is None:
         # Original behavior - store all activation layers in memory
