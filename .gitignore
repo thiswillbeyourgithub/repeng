@@ -21,3 +21,5 @@ Thumbs.db
 
 .aider*
 **/model_cache
+tensorboard_logs
+plots
