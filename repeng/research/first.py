@@ -73,7 +73,10 @@ trained_vector = ControlVector.train(
 # Now we must give the scenario for the generation we will engineer:
 # By turning chat messages into the format expected by the model [RECOMMENDED]
 scenario: str = tokenizer.apply_chat_template(
-    "My IQ got tested at precisely",
+    conversation={
+        "role": "user",
+        "content": "My IQ got tested at precisely",
+    },
     continue_final_message=True,
     tokenize=False,
 )
