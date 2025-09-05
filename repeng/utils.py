@@ -139,7 +139,7 @@ def autocorrect_chat_templates(
             to be corrected. Can be a single message, a list of messages, or a list of chats.
         tokenizer: The tokenizer associated with the model.
         model: The model for which the chat templates should be corrected.
-        kwargs: Any additional kwargs are passed to the tokenizer.__call__ call
+        kwargs: Any additional kwargs are passed to the tokenizer.apply_chat_template call
 
     Returns:
         Union[list[str], str]: The corrected chat template(s) as a string or list of strings.
