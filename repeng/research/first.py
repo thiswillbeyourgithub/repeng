@@ -68,9 +68,9 @@ tokenizer.pad_token = tokenizer.eos_token
 
 # train the vector—takes less than a minute!
 # method="mean"
-method="median"
+# method="median"
 # method="pca_diff"
-# method="pca_center"
+method="pca_center"
 # method="umap"
 # method="pacmap"
 trained_vector = ControlVector.train(
@@ -195,7 +195,7 @@ plt.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
 plt.xlabel("Control Strength", fontsize=12)
 plt.ylabel("Extracted IQ Score", fontsize=12)
 plt.title(
-    f"IQ Score vs Control Strength\nModel: {model_name}\nDataset: dumb_genius_paragraph",
+    f"IQ Score vs Control Strength\nModel: {model_name}\nDataset: dumb_genius_paragraph\nMethod: {method}",
     fontsize=14,
 )
 plt.grid(True, alpha=0.3)
