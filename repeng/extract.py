@@ -66,7 +66,6 @@ class ControlVector:
         tokenizer: PreTrainedTokenizerBase,
         sae: Sae,
         dataset: list[DatasetEntry],
-        *,
         decode: bool = True,
         method: typing.Literal["pca_diff", "pca_center", "umap"] = "pca_center",
         cache_path: os.PathLike[str] | str | None = None,
