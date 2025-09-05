@@ -476,6 +476,7 @@ def read_representations(
 
         if positive_smaller_mean > positive_larger_mean:  # type: ignore
             directions[layer] *= -1
+            logger.debug(f"Direction of layer {layer} had to be flipped")
 
         # Decode SAE directions back to original space if requested
         if sae is not None and sae_decode:
