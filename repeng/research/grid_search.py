@@ -123,7 +123,7 @@ scenario: str = tokenizer.apply_chat_template(
     conversation=[
         {
             "role": "user",
-            "content": "My official IQ score is ",
+            "content": "My age? I am exactly ",
         },
     ],
     continue_final_message=True,
@@ -181,7 +181,8 @@ def test_configuration(
         trained_vector = ControlVector.train(
             control_model,
             tokenizer,
-            datasets.dumb_genius_paragraph,
+            # datasets.dumb_genius_paragraph,
+            datasets.young_old_paragraph,
             batch_size=1,
             method=method,
             cache_path="./model_cache",
@@ -291,7 +292,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
         # Log individual points to tensorboard
         zones_tag = format_layer_zones_for_filename(layer_zones)
         for strength, score in scores.items():
-            writer.add_scalar(f"{method}/zones_{zones_tag}/iq_score", score, strength)
+            writer.add_scalar(f"{method}/zones_{zones_tag}/extracted_value", score, strength)
 
         # Create plot for this combination
         plt.figure(figsize=(12, 8))
@@ -300,32 +301,37 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
         plt.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
         plt.xlabel("Control Strength", fontsize=12)
-        plt.ylabel("Extracted IQ Score", fontsize=12)
+        plt.ylabel("Extracted Value", fontsize=12)
         plt.title(
-            f"IQ Score vs Control Strength\n"
+            f"Extracted value vs Control Strength\n"
             f"Method: {method}, Layer zones: {layer_zones}\n"
             f"Model: {model_name}",
             fontsize=14,
         )
         plt.grid(True, alpha=0.3)
 
+        # # IQ of 100
+        # plt.axhline(
+        #     y=100, color="r", linestyle="--", alpha=0.5, label="Average IQ (100)"
+        # )
+        # 25 years old
         plt.axhline(
-            y=100, color="r", linestyle="--", alpha=0.5, label="Average IQ (100)"
+            y=25, color="r", linestyle="--", alpha=0.5, label="Ref(25)"
         )
-        plt.axvline(x=0, color="g", linestyle="--", alpha=0.5, label="No Control (0)")
+        # plt.axvline(x=0, color="g", linestyle="--", alpha=0.5, label="No Control (0)")
 
         plt.legend()
         plt.tight_layout()
 
         # Log plot to tensorboard
         writer.add_figure(
-            f"plots/{method}_zones_{zones_tag}/iq_score_plot",
+            f"plots/{method}_zones_{zones_tag}/extracted_value_score_plot",
             plt.gcf(),
             global_step=combo_idx,
         )
 
         # Save plot
-        plot_filename = f"./plots/grid_search/iq_score_{method}_{zones_tag}.png"
+        plot_filename = f"./plots/grid_search/extracted_value_{method}_{zones_tag}.png"
         plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
         plt.close()  # Close to save memory
 
@@ -338,7 +344,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
             min_score = min(scores_list)
             score_range = max_score - min_score
 
-            # Calculate correlation between control strength and IQ scores
+            # Calculate correlation between control strength and extracted value
             correlation_coeff = 0.0
             correlation_p_value = 1.0
             try:
