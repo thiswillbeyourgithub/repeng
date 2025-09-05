@@ -25,6 +25,7 @@ Specifically, things I intend to do are:
         d. Is the "best layer" about the same for different model families? (mistral vs gemma vs llama)
         e. What is the impact of the number of samples on the reliability of those effects?
         f. What is the impact of quantization on this effect?
+        g. What is the impact of longer context on this effect? And of thinking? Does the influence get amplified, fades away or is stable?
 3. Redo this whole experience but comparing between vector extraction methods:
     - mean (the mean value of positive samples - mean value of negative samples)
     - median (the median value of positive samples - median value of negative samples)
