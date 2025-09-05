@@ -271,9 +271,6 @@ old_grid = grid
 total_combinations = len(grid)
 all_results = []
 
-# Create main writer for overall grid search logging
-main_writer = SummaryWriter(f"./tensorboard_logs/grid_search/main")
-
 print(
     f"Starting grid search with {total_combinations} combinations (before taguchi: {len(old_grid)}..."
 )
@@ -292,9 +289,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
         # Log individual points to tensorboard
         zones_tag = format_layer_zones_for_filename(layer_zones)
         for strength, score in scores.items():
-            main_writer.add_scalar(
-                f"{method}/zones_{zones_tag}/iq_score", score, strength
-            )
+            writer.add_scalar(f"{method}/zones_{zones_tag}/iq_score", score, strength)
 
         # Create plot for this combination
         plt.figure(figsize=(12, 8))
@@ -321,10 +316,10 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
         plt.tight_layout()
 
         # Log plot to tensorboard
-        main_writer.add_figure(
+        writer.add_figure(
             f"plots/{method}_zones_{zones_tag}/iq_score_plot",
             plt.gcf(),
-            global_step=i,
+            global_step=combo_idx,
         )
 
         # Save plot
@@ -364,7 +359,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
                     layer_zones
                 ),  # String representation for filtering
                 "num_layer_zones": len(layer_zones),  # Number of zone pairs
-                "combo_idx": i,  # Unique identifier for this combination
+                "combo_idx": combo_idx,  # Unique identifier for this combination
             }
 
             # Add individual zone boundaries as separate hyperparameters for easier filtering
@@ -384,56 +379,53 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
             }
 
             # Log hyperparameters with metrics - this allows filtering in TensorBoard
-            main_writer.add_hparams(hparam_dict, metric_dict)
+            writer.add_hparams(hparam_dict, metric_dict)
 
             # Also log individual parameters as scalars for time-series analysis
-            main_writer.add_scalar("params/combo_idx", i, i)
-            main_writer.add_scalar("params/num_layer_zones", len(layer_zones), i)
+            writer.add_scalar("params/combo_idx", combo_idx, combo_idx)
+            writer.add_scalar("params/num_layer_zones", len(layer_zones), combo_idx)
             for zone_idx, zone in enumerate(layer_zones):
-                main_writer.add_scalar(f"params/zone_{zone_idx}_start", zone[0], i)
-                main_writer.add_scalar(f"params/zone_{zone_idx}_end", zone[1], i)
-                main_writer.add_scalar(
-                    f"params/zone_{zone_idx}_width", zone[1] - zone[0], i
+                writer.add_scalar(f"params/zone_{zone_idx}_start", zone[0], combo_idx)
+                writer.add_scalar(f"params/zone_{zone_idx}_end", zone[1], combo_idx)
+                writer.add_scalar(
+                    f"params/zone_{zone_idx}_width", zone[1] - zone[0], combo_idx
                 )
 
             # Use combination index as the x-axis for summary stats
-            main_writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/mean_score", mean_score, i
+            writer.add_scalar(
+                f"summary/{method}_zones_{zones_tag}/mean_score", mean_score, combo_idx
             )
-            main_writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/max_score", max_score, i
+            writer.add_scalar(
+                f"summary/{method}_zones_{zones_tag}/max_score", max_score, combo_idx
             )
-            main_writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/min_score", min_score, i
+            writer.add_scalar(
+                f"summary/{method}_zones_{zones_tag}/min_score", min_score, combo_idx
             )
-            main_writer.add_scalar(
+            writer.add_scalar(
                 f"summary/{method}_zones_{zones_tag}/score_range",
                 score_range,
-                i,
+                combo_idx,
             )
-            main_writer.add_scalar(
+            writer.add_scalar(
                 f"summary/{method}_zones_{zones_tag}/correlation_coeff",
                 correlation_coeff,
-                i,
+                combo_idx,
             )
-            main_writer.add_scalar(
+            writer.add_scalar(
                 f"summary/{method}_zones_{zones_tag}/correlation_p_value",
                 correlation_p_value,
-                i,
+                combo_idx,
             )
 
             # Also log by method for comparison across layer zones
-            main_writer.add_scalar(f"by_method/{method}/mean_score", mean_score, i)
-            main_writer.add_scalar(f"by_method/{method}/max_score", max_score, i)
-            main_writer.add_scalar(f"by_method/{method}/score_range", score_range, i)
-            main_writer.add_scalar(
-                f"by_method/{method}/correlation_coeff", correlation_coeff, i
+            writer.add_scalar(f"by_method/{method}/mean_score", mean_score, combo_idx)
+            writer.add_scalar(f"by_method/{method}/max_score", max_score, combo_idx)
+            writer.add_scalar(f"by_method/{method}/score_range", score_range, combo_idx)
+            writer.add_scalar(
+                f"by_method/{method}/correlation_coeff", correlation_coeff, combo_idx
             )
 
     print(f"Completed combination {i+1}/{total_combinations}")
-
-# Close main writer
-main_writer.close()
 
 # Log final summary
 successful_runs = [r for r in all_results if r["success"]]
