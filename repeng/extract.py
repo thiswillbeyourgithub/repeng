@@ -678,6 +678,36 @@ def _get_model_args_string(model) -> str:
     if hasattr(config, "intermediate_size"):
         args.append(f"inter_{config.intermediate_size}")
 
+    # Include dtype information - critical for cache correctness
+    if hasattr(model, "dtype") and model.dtype is not None:
+        args.append(f"dtype_{str(model.dtype).replace('torch.', '')}")
+    else:
+        # Fallback: check dtype of first parameter
+        try:
+            first_param = next(iter(model.parameters()))
+            args.append(f"dtype_{str(first_param.dtype).replace('torch.', '')}")
+        except (StopIteration, AttributeError):
+            args.append("dtype_unknown")
+
+    # Include quantization config - different quantization affects hidden states
+    if (
+        hasattr(config, "quantization_config")
+        and config.quantization_config is not None
+    ):
+        quant_config = config.quantization_config
+        if hasattr(quant_config, "load_in_4bit") and quant_config.load_in_4bit:
+            args.append("quant_4bit")
+            if hasattr(quant_config, "bnb_4bit_quant_type"):
+                args.append(f"qtype_{quant_config.bnb_4bit_quant_type}")
+        elif hasattr(quant_config, "load_in_8bit") and quant_config.load_in_8bit:
+            args.append("quant_8bit")
+        elif hasattr(quant_config, "quant_method"):
+            args.append(f"quant_{quant_config.quant_method}")
+        else:
+            args.append("quant_other")
+    else:
+        args.append("quant_none")
+
     return "_".join(args)
 
 
