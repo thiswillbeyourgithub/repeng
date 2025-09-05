@@ -12,6 +12,7 @@ from repeng import ControlVector, ControlModel, DatasetEntry
 from repeng.research import datasets
 
 from sklearnex import patch_sklearn
+from tqdm import tqdm
 
 patch_sklearn()
 
@@ -225,7 +226,7 @@ print(
     f"Starting grid search with {total_combinations} combinations (before taguchi: {len(old_grid)}..."
 )
 
-for i, params in enumerate(grid):
+for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green")):
     method = params["method"]
     layer_zones = params["layer_zones"]
 
