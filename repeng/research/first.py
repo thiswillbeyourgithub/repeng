@@ -67,17 +67,18 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token
 
 # train the vector—takes less than a minute!
+# method="mean"
+method="median"
+# method="pca_diff"
+# method="pca_center"
+# method="umap"
+# method="pacmap"
 trained_vector = ControlVector.train(
     model,
     tokenizer,
     datasets.dumb_genius_paragraph,
     batch_size=1,
-    # method="mean",
-    method="median",
-    # method="pca_diff",
-    # method="pca_center",
-    # method="umap",
-    # method="pacmap",
+    method=method,
     cache_path="./model_cache",
 )
 
@@ -207,7 +208,7 @@ plt.legend()
 plt.tight_layout()
 
 # Save the plot
-plot_filename = f"./plots/first/iq_score_vs_strength_{model_name.replace('/', '_')}.png"
+plot_filename = f"./plots/first/iq_score_vs_strength_{model_name.replace('/', '_')}_{method}.png"
 plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
 print(f"Plot saved to: {plot_filename}")
 
