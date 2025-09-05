@@ -138,7 +138,7 @@ for strength in strengths:
         ).to(model.device),
         do_sample=False,
         # temperature=1.0,  # temperature can only be set if do_sample is True
-        max_new_tokens=20,
+        max_new_tokens=30,
         repetition_penalty=1.1,
     )
     output = tokenizer.decode(out.squeeze()).strip()
