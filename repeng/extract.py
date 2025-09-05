@@ -12,6 +12,7 @@ from sklearn.decomposition import PCA
 import torch
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
 import tqdm
+from loguru import logger
 
 from .control import ControlModel, model_layer_list
 from .saes import Sae
@@ -345,6 +346,7 @@ def read_representations(
 
     if cache_path is None:
         # Original behavior - store all activation layers in memory
+        logger.debug("No cache path provided, computing activations in memory")
         layer_hiddens = batched_get_hiddens(
             model=model,
             tokenizer=tokenizer,
@@ -354,11 +356,13 @@ def read_representations(
         )
 
         if sae is not None:
+            logger.debug("Applying SAE transformation in memory")
             sae_hiddens = {}
             for k, v in tqdm.tqdm(layer_hiddens.items(), desc="sae encoding"):
                 sae_hiddens[k] = sae.layers[k].encode(v)
             layer_hiddens = sae_hiddens
     else:
+        logger.debug(f"Using h5py cache at {cache_path}")
         # Use h5py caching for better memory scaling
         cache_file = batched_get_hiddens_cached(
             model=model,
@@ -390,11 +394,18 @@ def read_representations(
 
             # Apply SAE transformation if cache doesn't exist
             if not sae_cache_exists:
+                logger.debug(
+                    f"SAE cache not found, computing SAE transformations for {sae_group_path}"
+                )
                 apply_sae_transform_cached(
                     cache_file=cache_file,
                     group_path=group_path,
                     sae=sae,
                     hidden_layers=hidden_layers,
+                )
+            else:
+                logger.debug(
+                    f"Found existing SAE cache at {sae_group_path}, skipping SAE computation"
                 )
 
     # get directions for each layer using PCA
@@ -517,10 +528,15 @@ def batched_get_hiddens_cached(
                 and f[group_path]["done"][()]
             ):
                 # Cache exists and is complete, load and return
+                logger.debug(
+                    f"Found existing activation cache at {group_path}, skipping computation"
+                )
                 return cache_file
     except (OSError, KeyError):
         # Cache doesn't exist or is incomplete, proceed with computation
         pass
+
+    logger.debug(f"Activation cache not found, computing activations for {group_path}")
 
     # Compute hidden states and cache them
     # First, we need to get one batch to determine the hidden dimension
