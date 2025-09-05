@@ -43,19 +43,20 @@ tokenizer.pad_token = tokenizer.eos_token
 # Define parameter grid for comprehensive search
 param_grid = {
     # "method": ["mean", "median", "pca_diff", "pca_center", "umap"],
-    "method": ["mean", "median"],
+    # "method": ["mean", "median"],
+    "method": ["median"],
     "layer_zones": [
-        [[0.2, 0.51]],
+        [[0.0, 0.3]],  # early layers
+        [[0.0, 1.0]],  # all layers
+        [[0.1, 0.3], [0.6, 0.8]],
         [[0.1, 0.4]],
+        [[0.1, 0.9]],  # most layers
+        [[0.2, 0.51], [0.7, 0.9]],  # multiple zones
+        [[0.2, 0.51]],
         [[0.3, 0.7]],
         [[0.4, 0.8]],
         [[0.5, 0.9]],
-        [[0.2, 0.51], [0.7, 0.9]],  # multiple zones
-        [[0.1, 0.3], [0.6, 0.8]],
-        [[0.0, 0.3]],  # early layers
         [[0.7, 1.0]],  # late layers
-        [[0.0, 1.0]],  # all layers
-        [[0.1, 0.9]],  # most layers
     ],
 }
 
