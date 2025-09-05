@@ -237,7 +237,7 @@ def test_configuration(
                 scores[strength] = score
                 print(f"  Extracted score: {score}")
             else:
-                scores[strength] = float('nan')
+                scores[strength] = float("nan")
                 print(f"  No score found in output, treating as NA")
 
         # Reset model control and unwrap to restore original state
