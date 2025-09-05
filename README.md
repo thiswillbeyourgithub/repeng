@@ -33,7 +33,7 @@ model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     # quantization_config=bnb_config,
-    # torch_dtype=torch.float16,
+    # dtype=torch.float16,
     )
 )
 
