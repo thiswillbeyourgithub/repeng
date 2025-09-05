@@ -327,7 +327,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
         # Log plot to tensorboard
         writer.add_figure(
-            f"plots/{method}_zones_{zones_tag}/iq_score_plot", plt.gcf(), global_step=i
+            f"plots/{method}_zones_{zones_tag}/iq_score_plot", plt.gcf(), global_step=combo_idx
         )
 
         # Save plot
@@ -360,36 +360,71 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
                 correlation_coeff = 0.0
                 correlation_p_value = 1.0
 
+            # Log hyperparameters and metrics for easy filtering
+            hparam_dict = {
+                "method": method,
+                "layer_zones_str": str(layer_zones),  # String representation for filtering
+                "num_layer_zones": len(layer_zones),  # Number of zone pairs
+                "combo_idx": combo_idx,  # Unique identifier for this combination
+            }
+            
+            # Add individual zone boundaries as separate hyperparameters for easier filtering
+            for zone_idx, zone in enumerate(layer_zones):
+                hparam_dict[f"zone_{zone_idx}_start"] = zone[0]
+                hparam_dict[f"zone_{zone_idx}_end"] = zone[1]
+                hparam_dict[f"zone_{zone_idx}_width"] = zone[1] - zone[0]
+            
+            metric_dict = {
+                "hparam/mean_score": mean_score,
+                "hparam/max_score": max_score,
+                "hparam/min_score": min_score,
+                "hparam/score_range": score_range,
+                "hparam/correlation_coeff": correlation_coeff,
+                "hparam/correlation_p_value": correlation_p_value,
+                "hparam/num_valid_scores": len(scores_list),
+            }
+            
+            # Log hyperparameters with metrics - this allows filtering in TensorBoard
+            writer.add_hparams(hparam_dict, metric_dict)
+            
+            # Also log individual parameters as scalars for time-series analysis
+            writer.add_scalar("params/combo_idx", combo_idx, combo_idx)
+            writer.add_scalar("params/num_layer_zones", len(layer_zones), combo_idx)
+            for zone_idx, zone in enumerate(layer_zones):
+                writer.add_scalar(f"params/zone_{zone_idx}_start", zone[0], combo_idx)
+                writer.add_scalar(f"params/zone_{zone_idx}_end", zone[1], combo_idx)
+                writer.add_scalar(f"params/zone_{zone_idx}_width", zone[1] - zone[0], combo_idx)
+
             # Use combination index as the x-axis for summary stats
             writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/mean_score", mean_score, i
+                f"summary/{method}_zones_{zones_tag}/mean_score", mean_score, combo_idx
             )
             writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/max_score", max_score, i
+                f"summary/{method}_zones_{zones_tag}/max_score", max_score, combo_idx
             )
             writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/min_score", min_score, i
+                f"summary/{method}_zones_{zones_tag}/min_score", min_score, combo_idx
             )
             writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/score_range", score_range, i
+                f"summary/{method}_zones_{zones_tag}/score_range", score_range, combo_idx
             )
             writer.add_scalar(
                 f"summary/{method}_zones_{zones_tag}/correlation_coeff",
                 correlation_coeff,
-                i,
+                combo_idx,
             )
             writer.add_scalar(
                 f"summary/{method}_zones_{zones_tag}/correlation_p_value",
                 correlation_p_value,
-                i,
+                combo_idx,
             )
 
             # Also log by method for comparison across layer zones
-            writer.add_scalar(f"by_method/{method}/mean_score", mean_score, i)
-            writer.add_scalar(f"by_method/{method}/max_score", max_score, i)
-            writer.add_scalar(f"by_method/{method}/score_range", score_range, i)
+            writer.add_scalar(f"by_method/{method}/mean_score", mean_score, combo_idx)
+            writer.add_scalar(f"by_method/{method}/max_score", max_score, combo_idx)
+            writer.add_scalar(f"by_method/{method}/score_range", score_range, combo_idx)
             writer.add_scalar(
-                f"by_method/{method}/correlation_coeff", correlation_coeff, i
+                f"by_method/{method}/correlation_coeff", correlation_coeff, combo_idx
             )
 
     print(f"Completed combination {i+1}/{total_combinations}")
