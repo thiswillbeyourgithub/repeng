@@ -20,6 +20,4 @@ Thumbs.db
 .env.leave
 
 .aider*
-research/assets
-research/*json
-research/*db
+**/model_cache
