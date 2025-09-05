@@ -165,12 +165,16 @@ def test_configuration(
     layer_zones: list,
     combo_idx: int,
     total_combos: int,
-    writer: SummaryWriter,
 ) -> dict:
     """Test a single configuration and return results."""
     print(f"\n=== Combination {combo_idx+1}/{total_combos} ===")
     print(f"Method: {method}")
     print(f"Layer zones: {layer_zones}")
+
+    # Create unique writer for this combination
+    zones_tag = format_layer_zones_for_filename(layer_zones)
+    run_name = f"{method}_zones_{zones_tag}"
+    writer = SummaryWriter(f"./tensorboard_logs/grid_search/{run_name}")
 
     try:
         # Create fresh control model for this configuration
@@ -234,6 +238,9 @@ def test_configuration(
         control_model.reset()
         control_model.unwrap()
 
+        # Close the writer for this combination
+        writer.close()
+
         return {
             "method": method,
             "layer_zones": layer_zones,
@@ -244,6 +251,8 @@ def test_configuration(
 
     except Exception as e:
         print(f"Error in combination {combo_idx+1}: {e}")
+        # Close the writer even on error
+        writer.close()
         return {
             "method": method,
             "layer_zones": layer_zones,
@@ -258,8 +267,7 @@ def test_configuration(
 os.makedirs("./plots/grid_search", exist_ok=True)
 os.makedirs("./tensorboard_logs", exist_ok=True)
 
-# Initialize tensorboard writer
-writer = SummaryWriter("./tensorboard_logs/grid_search")
+# We'll create individual writers for each combination inside test_configuration
 
 # Grid search
 grid = ParameterGrid(param_grid)
@@ -282,7 +290,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
     layer_zones = params["layer_zones"]
 
     # Test this configuration
-    result = test_configuration(method, layer_zones, i, total_combinations, writer)
+    result = test_configuration(method, layer_zones, i, total_combinations)
     all_results.append(result)
 
     if result["success"] and result["scores"]:
@@ -435,6 +443,5 @@ with open(summary_file, "w") as f:
         else:
             f.write(f"  Error: {result.get('error', 'Unknown error')}\n")
 
-writer.close()
 print(f"Summary report saved to: {summary_file}")
 print("Results logged to tensorboard. Run: tensorboard --logdir=./tensorboard_logs")
