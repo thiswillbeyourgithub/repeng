@@ -429,7 +429,11 @@ def read_representations(
 
         directions[layer] = compute_direction(h, method)
 
-        # calculate sign
+        # calculate sign as pca can return a direction vector that points
+        # either way along the principal component. There's no inherent
+        # orientation - PCA just finds the direction of maximum variance,
+        # but it could be pointing towards the positive concept or towards
+        # the negative concept
         projected_hiddens = project_onto_direction(h, directions[layer])
 
         # order is [positive, negative, positive, negative, ...]
