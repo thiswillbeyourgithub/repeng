@@ -11,6 +11,7 @@ Specifically, things I intend to do are:
 
 # Current plan:
 1. Use a single model as a reference
+    - Current best choice is `qwen/qwen3-4b` because it's small and *okay*. And I have terrible hardware. If you're rich and want to send me a GPU I would make great use of it!
 2. create a calibrating suite:
     - if you give pairs of "dumb/smart" then ask for the model to estimate its IQ, it's easy to parse the answer to measure which layers to target and by how much etc
         - same idea with "young/old" then ask to estimate its age.
@@ -26,6 +27,7 @@ Specifically, things I intend to do are:
         e. What is the impact of the number of samples on the reliability of those effects?
         f. What is the impact of quantization on this effect?
         g. What is the impact of longer context on this effect? And of thinking? Does the influence get amplified, fades away or is stable?
+
 3. Redo this whole experience but comparing between vector extraction methods:
     - mean (the mean value of positive samples - mean value of negative samples)
     - median (the median value of positive samples - median value of negative samples)
