@@ -215,10 +215,10 @@ writer = SummaryWriter("./tensorboard_logs/grid_search")
 grid = ParameterGrid(param_grid)
 
 # # Use taguchi arrays to reduce the size of the grid
-converter = TaguchiGridSearchConverter()
 old_grid = grid
-grid = converter.fit_transform(old_grid)
-assert len(grid) <= len(old_grid)
+# converter = TaguchiGridSearchConverter()
+# grid = converter.fit_transform(old_grid)
+# assert len(grid) <= len(old_grid)
 
 total_combinations = len(grid)
 all_results = []
