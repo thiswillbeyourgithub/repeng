@@ -1,9 +1,12 @@
 import dataclasses
+import hashlib
 import os
 import typing
 import warnings
+from datetime import datetime
 
 import gguf
+import h5py
 import numpy as np
 from sklearn.decomposition import PCA
 import torch
@@ -12,7 +15,7 @@ import tqdm
 
 from .control import ControlModel, model_layer_list
 from .saes import Sae
-from .utils import DatasetEntry, autocorrect_chat_templates
+from .utils import DatasetEntry, autocorrect_chat_templates, get_model_name
 
 __VERSION__ = "0.4.0"
 
@@ -28,6 +31,7 @@ class ControlVector:
         model: "PreTrainedModel | ControlModel",
         tokenizer: PreTrainedTokenizerBase,
         dataset: list[DatasetEntry],
+        cache_path: os.PathLike[str] | str | None = None,
         **kwargs,
     ) -> "ControlVector":
         """
@@ -37,6 +41,9 @@ class ControlVector:
             model (PreTrainedModel | ControlModel): The model to train against.
             tokenizer (PreTrainedTokenizerBase): The tokenizer to tokenize the dataset.
             dataset (list[DatasetEntry]): The dataset used for training.
+            cache_path (os.PathLike[str] | str | None, optional): Path to directory for h5py caching.
+                If None, activations are computed and stored in memory. If provided, activations
+                are cached to disk to allow for better memory scaling. Defaults to None.
             **kwargs: Additional keyword arguments. See help(repeng.extract.read_representations) for details.
 
         Returns:
@@ -47,6 +54,7 @@ class ControlVector:
                 model,
                 tokenizer,
                 dataset,
+                cache_path=cache_path,
                 **kwargs,
             )
         return cls(model_type=model.config.model_type, directions=dirs)
@@ -61,6 +69,7 @@ class ControlVector:
         *,
         decode: bool = True,
         method: typing.Literal["pca_diff", "pca_center", "umap"] = "pca_center",
+        cache_path: os.PathLike[str] | str | None = None,
         **kwargs,
     ) -> "ControlVector":
         """
@@ -76,6 +85,9 @@ class ControlVector:
                 decode (bool, optional): Whether to decode the vector to make it immediately usable.
                     If not, keeps it as monosemantic SAE features for introspection, but you will need to decode it manually
                     to use it. Defaults to True.
+                cache_path (os.PathLike[str] | str | None, optional): Path to directory for h5py caching.
+                    If None, activations are computed and stored in memory. If provided, activations
+                    are cached to disk to allow for better memory scaling. Defaults to None.
                 max_batch_size (int, optional): The maximum batch size for training.
                     Defaults to 32. Try reducing this if you're running out of memory.
                 method (str, optional): The training method to use. Can be either
@@ -99,6 +111,7 @@ class ControlVector:
                 dataset,
                 transform_hiddens=transform_hiddens,
                 method=method,
+                cache_path=cache_path,
                 **kwargs,
             )
 
@@ -297,6 +310,7 @@ def read_representations(
     transform_hiddens: (
         typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
     ) = None,
+    cache_path: os.PathLike[str] | str | None = None,
 ) -> dict[int, np.ndarray]:
     """
     Extract the representations based on the contrast dataset.
@@ -318,6 +332,9 @@ def read_representations(
             directions. Takes a dict mapping layer indices to hidden state arrays and
             returns a transformed dict with the same structure. Used for SAE encoding.
             Defaults to None.
+        cache_path (os.PathLike[str] | str | None, optional): Path to directory for h5py caching.
+            If None, activations are computed and stored in memory. If provided, activations
+            are cached to disk to allow for better memory scaling. Defaults to None.
     """
     if not hidden_layers:
         hidden_layers = range(-1, -model.config.num_hidden_layers, -1)
@@ -333,17 +350,45 @@ def read_representations(
         model=model,
     )
 
-    layer_hiddens = batched_get_hiddens(
-        model, tokenizer, train_strs, hidden_layers, batch_size
-    )
+    if cache_path is None:
+        # Original behavior - store all activation layers in memory
+        layer_hiddens = batched_get_hiddens(
+            model=model,
+            tokenizer=tokenizer,
+            inputs=train_strs,
+            hidden_layers=hidden_layers,
+            batch_size=batch_size,
+        )
 
-    if transform_hiddens is not None:
-        layer_hiddens = transform_hiddens(layer_hiddens)
+        if transform_hiddens is not None:
+            layer_hiddens = transform_hiddens(layer_hiddens)
+    else:
+        # Use h5py caching for better memory scaling
+        cache_file = batched_get_hiddens_cached(
+            model=model,
+            tokenizer=tokenizer,
+            inputs=train_strs,
+            hidden_layers=hidden_layers,
+            batch_size=batch_size,
+            cache_path=cache_path,
+        )
+        model_args = _get_model_args_string(model)
+        train_strs_hash = _hash_train_strs(train_strs)
+        group_path = f"{model_args}/{train_strs_hash}"
 
     # get directions for each layer using PCA
     directions: dict[int, np.ndarray] = {}
     for layer in tqdm.tqdm(hidden_layers, desc="Altering directions"):
-        h = layer_hiddens[layer]
+        # Load hidden states either from memory dict or h5py cache
+        if cache_path is None:
+            # Load from memory
+            h = layer_hiddens[layer]
+        else:
+            # Load from h5py cache only a single layer's activations
+            with h5py.File(cache_file, "r") as f:
+                h = f[group_path][f"layer_{layer}"][:]
+            assert not np.all(h == 0)  # failed to get populated
+
         assert h.shape[0] == len(inputs) * 2
 
         directions[layer] = compute_direction(h, method)
@@ -414,8 +459,158 @@ def batched_get_hiddens(
     return {k: np.vstack(v) for k, v in hidden_states.items()}
 
 
+def batched_get_hiddens_cached(
+    model,
+    tokenizer,
+    inputs: list[str],
+    hidden_layers: list[int],
+    batch_size: int,
+    cache_path: os.PathLike[str] | str,
+) -> str:
+    """
+    Cached version of batched_get_hiddens using h5py for disk storage.
+    The memory requirements should be approximately the same as the batch
+    itself as we don't have to hold all passed activations.
+
+    It does not return the dict of activations but the path to the h5 cache.
+    """
+    os.makedirs(cache_path, exist_ok=True)
+
+    model_name = get_model_name(model)
+    cache_file = os.path.join(cache_path, f"{model_name}.h5")
+    model_args = _get_model_args_string(model)
+    train_strs_hash = _hash_train_strs(inputs)
+
+    # Check if cache exists and is complete
+    group_path = f"{model_args}/{train_strs_hash}"
+    try:
+        with h5py.File(cache_file, "r") as f:
+            if (
+                group_path in f
+                and "done" in f[group_path]
+                and f[group_path]["done"][()]
+            ):
+                # Cache exists and is complete, load and return
+                return cache_file
+    except (OSError, KeyError):
+        # Cache doesn't exist or is incomplete, proceed with computation
+        pass
+
+    # Compute hidden states and cache them
+    # First, we need to get one batch to determine the hidden dimension
+    with torch.no_grad():
+        sample_batch = inputs[: min(batch_size, len(inputs))]
+        encoded_sample = tokenizer(sample_batch, padding=True, return_tensors="pt").to(
+            model.device
+        )
+        sample_out = model(**encoded_sample, output_hidden_states=True)
+        hidden_dim = sample_out.hidden_states[0].shape[-1]
+        del sample_out
+
+    # Initialize h5py datasets
+    with h5py.File(cache_file, "a") as f:
+        # Create group hierarchy if it doesn't exist
+        if group_path not in f:
+            group = f.create_group(group_path)
+            # Add metadata
+            group.attrs["creation_date"] = datetime.now().isoformat()
+            group.attrs["repeng_version"] = __VERSION__
+            group.attrs["model_name"] = model_name
+            group.attrs["num_inputs"] = len(inputs)
+
+            # Initialize datasets for each layer with zeros
+            for layer in hidden_layers:
+                f.create_dataset(
+                    f"{group_path}/layer_{layer}",
+                    shape=(len(inputs), hidden_dim),
+                    dtype=np.float32,
+                    compression="lzf",
+                    shuffle=True,
+                    chunks=True,
+                    fillvalue=0.0,
+                )
+
+            # Initialize done flag as False
+            f.create_dataset(f"{group_path}/done", data=False)
+
+    # Process batches and store results
+    batched_inputs = [
+        inputs[p : p + batch_size] for p in range(0, len(inputs), batch_size)
+    ]
+
+    batch_start_idx = 0
+    with torch.no_grad():
+        for batch in tqdm.tqdm(batched_inputs, desc="Computing and caching hiddens"):
+            batch_size_actual = len(batch)
+
+            # get the last token, handling right padding if present
+            encoded_batch = tokenizer(batch, padding=True, return_tensors="pt").to(
+                model.device
+            )
+            out = model(**encoded_batch, output_hidden_states=True)
+            attention_mask = encoded_batch["attention_mask"]
+
+            # Collect batch results by layer
+            batch_hiddens = {layer: [] for layer in hidden_layers}
+
+            for i in range(batch_size_actual):
+                last_non_padding_index = (
+                    attention_mask[i].nonzero(as_tuple=True)[0][-1].item()
+                )
+                for layer in hidden_layers:
+                    hidden_idx = layer + 1 if layer >= 0 else layer
+                    hidden_state = (
+                        out.hidden_states[hidden_idx][i][last_non_padding_index]
+                        .cpu()
+                        .float()
+                        .numpy()
+                    )
+                    batch_hiddens[layer].append(hidden_state)
+            del out
+
+            # Write batch results to h5py
+            with h5py.File(cache_file, "a") as f:
+                for layer in hidden_layers:
+                    layer_data = np.vstack(batch_hiddens[layer])
+                    f[f"{group_path}/layer_{layer}"][
+                        batch_start_idx : batch_start_idx + batch_size_actual
+                    ] = layer_data
+
+            batch_start_idx += batch_size_actual
+
+    # Mark as complete
+    with h5py.File(cache_file, "a") as f:
+        f[f"{group_path}/done"][()] = True
+
+    return cache_file
+
+
 def project_onto_direction(H, direction):
     """Project matrix H (n, d_1) onto direction vector (d_2,)"""
     mag = np.linalg.norm(direction)
     assert not np.isinf(mag)
     return (H @ direction) / mag
+
+
+def _get_model_args_string(model) -> str:
+    """Generate a human-readable string for model arguments used in cache hierarchy."""
+    config = model.config
+    # Include key model parameters that would affect hidden states
+    args = [
+        f"layers_{config.num_hidden_layers}",
+        f"hidden_{config.hidden_size}",
+        f"type_{config.model_type}",
+    ]
+    if hasattr(config, "num_attention_heads"):
+        args.append(f"heads_{config.num_attention_heads}")
+    if hasattr(config, "intermediate_size"):
+        args.append(f"inter_{config.intermediate_size}")
+
+    return "_".join(args)
+
+
+def _hash_train_strs(train_strs: list[str]) -> str:
+    """Generate a hash of the training strings for cache key."""
+    # Create a deterministic hash of all training strings
+    hash_sum = sum(hash(elem) for elem in train_strs)
+    return str(abs(hash_sum))

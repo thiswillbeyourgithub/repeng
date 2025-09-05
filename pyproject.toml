@@ -13,6 +13,7 @@ dependencies = [
     "tqdm>=4.66.1",
     "gguf>=0.13.0",
     "loguru>=^0.7.3",
+    "h5py>=3.14.0",
 
 ]
 
