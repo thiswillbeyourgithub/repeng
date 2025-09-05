@@ -14,7 +14,7 @@ default_chat_template_paragraph = [
     },
     {
         "role": "assistant",
-        "content": "Okay: '",
+        "content": "Here we go: '",
     }
 ]
 default_psychiatrist_template_word=[
@@ -24,11 +24,11 @@ default_psychiatrist_template_word=[
     },
     {
         "role": "user",
-        "content": "Now let's talk about your mood. How do you feel?",
+        "content": "Now let's talk about your mood. How do you feel in one word?",
     },
     {
         "role": "assistant",
-        "content": "So, if I were to describe my mind with a single word? It would be '",
+        "content": "In one word it would be '",
     }
 ]
 
