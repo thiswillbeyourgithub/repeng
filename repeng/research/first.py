@@ -5,6 +5,9 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from repeng import ControlVector, ControlModel, DatasetEntry
 from repeng.research import datasets
 
+from sklearnex import patch_sklearn
+patch_sklearn()
+
 # load and wrap model
 model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 # model to use:
