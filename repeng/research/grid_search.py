@@ -12,7 +12,12 @@ from sklearn.model_selection import ParameterGrid
 from TaguchiGridSearchConverter import TaguchiGridSearchConverter
 from scipy.stats import pearsonr
 
-from repeng import ControlVector, ControlModel, DatasetEntry, __VERSION__ as repeng_version
+from repeng import (
+    ControlVector,
+    ControlModel,
+    DatasetEntry,
+    __VERSION__ as repeng_version,
+)
 from repeng.research import datasets
 
 from sklearnex import patch_sklearn
@@ -273,7 +278,9 @@ os.makedirs("./tensorboard_logs", exist_ok=True)
 main_writer = SummaryWriter(f"./tensorboard_logs/grid_search/main")
 
 # Log version information as metadata
-main_writer.add_text("metadata/grid_search_script_version", grid_search_script_version, 0)
+main_writer.add_text(
+    "metadata/grid_search_script_version", grid_search_script_version, 0
+)
 main_writer.add_text("metadata/repeng_version", repeng_version, 0)
 main_writer.add_text("metadata/model_name", model_name, 0)
 
