@@ -165,6 +165,7 @@ class ControlModule(torch.nn.Module):
         super().__init__()
         self.block: torch.nn.Module = block
         self.params: BlockControlParams = BlockControlParams.default()
+        self.attention_type = self.block.attention_type
 
     def set_control(self, params: BlockControlParams) -> None:
         self.params = params
@@ -222,14 +223,26 @@ class ControlModule(torch.nn.Module):
 
         return output
 
+    def __getattr__(self, name: str):
+        """
+        Delegate missing attributes to the wrapped block.
+        This allows ControlModule to act as a transparent proxy for its wrapped block.
+        """
+        return getattr(self.block, name)
+
 
 def model_layer_list(model: ControlModel | PreTrainedModel) -> torch.nn.ModuleList:
     if isinstance(model, ControlModel):
         model = model.model
 
     if hasattr(model, "model"):  # mistral-like
-        return model.model.layers
+        layers = model.model.layers
+    elif hasattr(model, "layers"):  # qwen3-like
+        layers = model.layers
+        layers = [l for l in orig_layers if hasattr(l, "attention_type")]
     elif hasattr(model, "transformer"):  # gpt-2-like
-        return model.transformer.h
+        layers = model.transformer.h
     else:
         raise ValueError(f"don't know how to get layer list for {type(model)}")
+
+    return layers
