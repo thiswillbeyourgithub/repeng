@@ -370,16 +370,18 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
         # Create plot for this combination
         plt.figure(figsize=(12, 8))
-        
+
         # Filter out NaN values for plotting
-        valid_data = [(s, scores[s]) for s in sorted(scores.keys()) if not math.isnan(scores[s])]
+        valid_data = [
+            (s, scores[s]) for s in sorted(scores.keys()) if not math.isnan(scores[s])
+        ]
         if not valid_data:
             print(f"  No valid scores to plot for this combination")
             plt.close()
             continue
-            
+
         strengths_list, scores_list = zip(*valid_data)
-        
+
         plt.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
         plt.xlabel("Control Strength", fontsize=12)
         plt.ylabel("Extracted Value", fontsize=12)
