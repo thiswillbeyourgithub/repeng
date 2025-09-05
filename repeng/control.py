@@ -19,8 +19,8 @@ class ControlModel(torch.nn.Module):
     def __init__(
         self,
         model: PreTrainedModel,
-        layer_ids: typing.Optional[typing.Iterable[int]]=None,
-        layer_zones: typing.Optional[typing.Iterable[float]]=None,
+        layer_ids: typing.Optional[typing.Iterable[int]] = None,
+        layer_zones: typing.Optional[typing.Iterable[float]] = None,
     ):
         """
         **This mutates the wrapped `model`! Be careful using `model` after passing it to this class.**
@@ -34,7 +34,9 @@ class ControlModel(torch.nn.Module):
             can specify multiple zones but no overlapping nor empty zones are allowed.
         """
 
-        assert (layer_ids or layer_zones) and not (layer_ids and layer_zones), "Must supply either layer_ids or layer_zones argument"
+        assert (layer_ids or layer_zones) and not (
+            layer_ids and layer_zones
+        ), "Must supply either layer_ids or layer_zones argument"
 
         super().__init__()
         self.model = model
@@ -45,10 +47,22 @@ class ControlModel(torch.nn.Module):
             self.layer_ids = []
             nlayers = len(layers)
             for start_zone, end_zone in layer_zones:
-                assert start_zone < end_zone and start_zone >= 0 and start_zone <= 1 and end_zone >= 0 and end_zone <= 1, "wrong layer_zones format"
-                new_layers = [ilayer for ilayer in range(len(layers)) if start_zone <= (ilayer/nlayers) < end_zone]
+                assert (
+                    start_zone < end_zone
+                    and start_zone >= 0
+                    and start_zone <= 1
+                    and end_zone >= 0
+                    and end_zone <= 1
+                ), "wrong layer_zones format"
+                new_layers = [
+                    ilayer
+                    for ilayer in range(len(layers))
+                    if start_zone <= (ilayer / nlayers) < end_zone
+                ]
                 assert new_layers, f"No layers found in zone {start_zone} to {end_zone}"
-                assert not any(nl in self.layer_ids for nl in new_layers), "Overlapping zones found"
+                assert not any(
+                    nl in self.layer_ids for nl in new_layers
+                ), "Overlapping zones found"
                 self.layer_ids.extend(new_layers)
         else:
             # remap to make sure they are not negative
