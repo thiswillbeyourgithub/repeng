@@ -55,7 +55,6 @@ param_grid = {
         [[0.7, 0.8]],
         [[0.8, 0.9]],
         [[0.9, 1.0]],
-
         # by increments of 0.2
         [[0.1, 0.3]],
         [[0.2, 0.4]],
@@ -64,7 +63,6 @@ param_grid = {
         [[0.6, 0.8]],
         [[0.7, 0.9]],
         [[0.8, 0.10]],
-
         # by increments of 0.3
         [[0.0, 0.3]],
         [[0.1, 0.4]],
@@ -74,7 +72,6 @@ param_grid = {
         [[0.5, 0.8]],
         [[0.6, 0.9]],
         [[0.7, 1.0]],
-
         # by increments of 0.4
         [[0.0, 0.4]],
         [[0.1, 0.5]],
@@ -83,14 +80,11 @@ param_grid = {
         [[0.4, 0.8]],
         [[0.5, 0.9]],
         [[0.6, 0.10]],
-
         [[0.2, 0.8]],  # most layers
         [[0.1, 0.9]],  # most layers
         [[0.0, 1.0]],  # all layers
-
         [[0.1, 0.3], [0.6, 0.8]],
         [[0.2, 0.51], [0.7, 0.9]],  # multiple zones
-
     ],
 }
 
@@ -231,7 +225,9 @@ def test_configuration(
                 scores[strength] = score
                 print(f"  Extracted score: {score}")
             else:
-                print(f"  No score found in output")
+                # Treat unparseable answers as 0
+                scores[strength] = 0
+                print(f"  No score found in output, treating as 0")
 
         # Reset model control and unwrap to restore original state
         control_model.reset()
