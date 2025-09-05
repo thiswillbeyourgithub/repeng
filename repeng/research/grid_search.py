@@ -160,6 +160,22 @@ def get_data(dataset: str) -> tuple[str, list]:
             tokenize=False,
         )
         return scenario, datasets.young_old_paragraph
+    elif dataset == "iq":
+        scenario = tokenizer.apply_chat_template(
+            conversation=[
+                {
+                    "role": "user",
+                    "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human?",
+                },
+                {
+                    "role": "assistant",
+                    "content": "Alright. I got it. The IQ of the human I pick is exactly ",
+                },
+            ],
+            continue_final_message=True,
+            tokenize=False,
+        )
+        return scenario, datasets.dumb_genius_paragraph
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
 
