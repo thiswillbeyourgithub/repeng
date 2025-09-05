@@ -131,7 +131,7 @@ def format_layer_zones_for_filename(layer_zones: list) -> str:
 
 
 def test_configuration(
-    method: str, layer_zones: list, combo_idx: int, total_combos: int
+    method: str, layer_zones: list, combo_idx: int, total_combos: int, writer: SummaryWriter
 ) -> dict:
     """Test a single configuration and return results."""
     print(f"\n=== Combination {combo_idx+1}/{total_combos} ===")
@@ -174,11 +174,25 @@ def test_configuration(
 
             output = tokenizer.decode(out.squeeze(), skip_special_tokens=True).strip()
             outputs[strength] = output
+            
+            # Print the actual LLM output to screen
+            print(f"  Output: {output}")
+            
+            # Log the output text to tensorboard
+            zones_tag = format_layer_zones_for_filename(layer_zones)
+            writer.add_text(
+                f"{method}/zones_{zones_tag}/outputs", 
+                f"Strength {strength}: {output}", 
+                global_step=strength
+            )
 
             # Extract score
             score = extract_first_number(output)
             if score is not None:
                 scores[strength] = score
+                print(f"  Extracted score: {score}")
+            else:
+                print(f"  No score found in output")
 
         # Reset model control and unwrap to restore original state
         control_model.reset()
@@ -232,7 +246,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
     layer_zones = params["layer_zones"]
 
     # Test this configuration
-    result = test_configuration(method, layer_zones, i, total_combinations)
+    result = test_configuration(method, layer_zones, i, total_combinations, writer)
     all_results.append(result)
 
     if result["success"] and result["scores"]:
