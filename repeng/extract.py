@@ -453,32 +453,34 @@ def read_representations(
 
         directions[layer] = compute_direction(h, method)
 
-        # calculate sign as pca can return a direction vector that points
-        # either way along the principal component. There's no inherent
-        # orientation - PCA just finds the direction of maximum variance,
-        # but it could be pointing towards the positive concept or towards
-        # the negative concept
-        projected_hiddens = project_onto_direction(h, directions[layer])
+        if method not in ["mean", "median"]:
+            # calculate sign as pca can return a direction vector that points
+            # either way along the principal component. There's no inherent
+            # orientation - PCA just finds the direction of maximum variance,
+            # but it could be pointing towards the positive concept or towards
+            # the negative concept
+            projected_hiddens = project_onto_direction(h, directions[layer])
 
-        # order is [positive, negative, positive, negative, ...]
-        positive_smaller_mean = np.mean(
-            [
-                projected_hiddens[i] < projected_hiddens[i + 1]
-                for i in range(0, len(inputs) * 2, 2)
-            ]
-        )
-        positive_larger_mean = np.mean(
-            [
-                projected_hiddens[i] > projected_hiddens[i + 1]
-                for i in range(0, len(inputs) * 2, 2)
-            ]
-        )
+            # order is [positive, negative, positive, negative, ...]
+            positive_smaller_mean = np.mean(
+                [
+                    projected_hiddens[i] < projected_hiddens[i + 1]
+                    for i in range(0, len(inputs) * 2, 2)
+                ]
+            )
+            positive_larger_mean = np.mean(
+                [
+                    projected_hiddens[i] > projected_hiddens[i + 1]
+                    for i in range(0, len(inputs) * 2, 2)
+                ]
+            )
 
-        if positive_smaller_mean > positive_larger_mean:  # type: ignore
-            directions[layer] *= -1
-            logger.debug(f"Direction of layer {layer} had to be flipped")
+            if positive_smaller_mean > positive_larger_mean:  # type: ignore
+                directions[layer] *= -1
+                logger.debug(f"Direction of layer {layer} had to be flipped")
 
         # Decode SAE directions back to original space if requested
+        # TODO: should the decoding take place after the flip or before? Does it even matter?
         if sae is not None and sae_decode:
             directions[layer] = sae.layers[layer].decode(directions[layer])
 
