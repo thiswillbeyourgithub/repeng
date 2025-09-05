@@ -237,9 +237,7 @@ def test_configuration(
                 scores[strength] = score
                 print(f"  Extracted score: {score}")
             else:
-                # Treat unparseable answers as 0
-                scores[strength] = 0
-                print(f"  No score found in output, treating as 0")
+                print(f"  No score found in output, skipping this data point")
 
         # Reset model control and unwrap to restore original state
         control_model.reset()
