@@ -335,6 +335,7 @@ def read_representations(
         train_strs: list[str] = tokenizer.apply_chat_template(
             conversation=[s for ex in inputs for s in (ex.positive, ex.negative)],
             tokenize=False,
+            enable_thinking=False,
         )
     except Exception as e:
         logger.warning(
