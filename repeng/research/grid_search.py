@@ -7,6 +7,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch.utils.tensorboard import SummaryWriter
 from sklearn.model_selection import ParameterGrid
 from TaguchiGridSearchConverter import TaguchiGridSearchConverter
+from scipy.stats import pearsonr
 
 from repeng import ControlVector, ControlModel, DatasetEntry
 from repeng.research import datasets
@@ -335,6 +336,22 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
             min_score = min(scores_list)
             score_range = max_score - min_score
 
+            # Calculate correlation between control strength and IQ scores
+            correlation_coeff = 0.0
+            correlation_p_value = 1.0
+            try:
+                if len(strengths_list) > 1 and len(scores_list) > 1:
+                    correlation_coeff, correlation_p_value = pearsonr(
+                        strengths_list, scores_list
+                    )
+                    print(
+                        f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})"
+                    )
+            except Exception as e:
+                print(f"  Error calculating correlation: {e}")
+                correlation_coeff = 0.0
+                correlation_p_value = 1.0
+
             # Use combination index as the x-axis for summary stats
             writer.add_scalar(
                 f"summary/{method}_zones_{zones_tag}/mean_score", mean_score, i
@@ -348,11 +365,24 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
             writer.add_scalar(
                 f"summary/{method}_zones_{zones_tag}/score_range", score_range, i
             )
+            writer.add_scalar(
+                f"summary/{method}_zones_{zones_tag}/correlation_coeff",
+                correlation_coeff,
+                i,
+            )
+            writer.add_scalar(
+                f"summary/{method}_zones_{zones_tag}/correlation_p_value",
+                correlation_p_value,
+                i,
+            )
 
             # Also log by method for comparison across layer zones
             writer.add_scalar(f"by_method/{method}/mean_score", mean_score, i)
             writer.add_scalar(f"by_method/{method}/max_score", max_score, i)
             writer.add_scalar(f"by_method/{method}/score_range", score_range, i)
+            writer.add_scalar(
+                f"by_method/{method}/correlation_coeff", correlation_coeff, i
+            )
 
     print(f"Completed combination {i+1}/{total_combinations}")
 
@@ -380,11 +410,26 @@ with open(summary_file, "w") as f:
             scores = result["scores"]
             if scores:
                 scores_list = list(scores.values())
+                strengths_list = list(scores.keys())
                 f.write(f"  Scores found: {len(scores)}/{len(strengths)}\n")
                 f.write(f"  Mean score: {sum(scores_list)/len(scores_list):.2f}\n")
                 f.write(
                     f"  Score range: {min(scores_list):.2f} - {max(scores_list):.2f}\n"
                 )
+
+                # Calculate and report correlation
+                try:
+                    if len(strengths_list) > 1 and len(scores_list) > 1:
+                        correlation_coeff, correlation_p_value = pearsonr(
+                            strengths_list, scores_list
+                        )
+                        f.write(
+                            f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})\n"
+                        )
+                    else:
+                        f.write(f"  Correlation coefficient: N/A (insufficient data)\n")
+                except Exception as e:
+                    f.write(f"  Correlation coefficient: Error - {e}\n")
             else:
                 f.write(f"  No valid scores extracted\n")
         else:
