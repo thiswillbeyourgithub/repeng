@@ -709,5 +709,6 @@ def apply_sae_transform_cached(
 def _hash_train_strs(train_strs: list[str]) -> str:
     """Generate a hash of the training strings for cache key."""
     # Create a deterministic hash of all training strings
-    hash_sum = sum(hash(elem) for elem in train_strs)
-    return str(abs(hash_sum))
+    content = "\n".join(train_strs).encode("utf-8")
+    hash_hex = hashlib.sha256(content).hexdigest()
+    return hash_hex[:12]  # Use first 12 characters for readability
