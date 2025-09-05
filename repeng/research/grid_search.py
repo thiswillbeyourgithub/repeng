@@ -290,7 +290,9 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
         # Log individual points to tensorboard
         zones_tag = format_layer_zones_for_filename(layer_zones)
         for strength, score in scores.items():
-            main_writer.add_scalar(f"{method}/zones_{zones_tag}/iq_score", score, strength)
+            main_writer.add_scalar(
+                f"{method}/zones_{zones_tag}/iq_score", score, strength
+            )
 
         # Create plot for this combination
         plt.figure(figsize=(12, 8))
