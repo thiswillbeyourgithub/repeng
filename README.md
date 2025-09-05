@@ -21,13 +21,13 @@ Specifically, things I intend to do are:
         - same idea with "sad/happy" then ask to estimate its [BDI](https://en.wikipedia.org/wiki/Beck_Depression_Inventory) or [PHQ-9](https://en.wikipedia.org/wiki/PHQ-9) score.
         - and so on
     - we can then answer:
-        a. Is the "best layer" stable across experiments
-        b. Is the "best layer"'s sensitivity (strength wise) stable across experiments
-        c. Is the "best layer" about the same for different size of distilled models? (gemma models)
-        d. Is the "best layer" about the same for different model families? (mistral vs gemma vs llama)
-        e. What is the impact of the number of samples on the reliability of those effects?
-        f. What is the impact of quantization on this effect?
-        g. What is the impact of longer context on this effect? And of thinking? Does the influence get amplified, fades away or is stable?
+        1. Is the "best layer" stable across experiments
+        2. Is the "best layer"'s sensitivity (strength wise) stable across experiments
+        3. Is the "best layer" about the same for different size of distilled models? (gemma models)
+        3. Is the "best layer" about the same for different model families? (mistral vs gemma vs llama)
+        4. What is the impact of the number of samples on the reliability of those effects?
+        5. What is the impact of quantization on this effect?
+        6. What is the impact of longer context on this effect? And of thinking? Does the influence get amplified, fades away or is stable?
 
 2. **Redo this whole experience but comparing between vector extraction methods:**
     - mean (the mean value of positive samples - mean value of negative samples)
