@@ -396,10 +396,16 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
             # Also log individual parameters as scalars for time-series analysis
             main_writer.add_scalar("params/combo_idx", combo_idx, combo_idx)
-            main_writer.add_scalar("params/num_layer_zones", len(layer_zones), combo_idx)
+            main_writer.add_scalar(
+                "params/num_layer_zones", len(layer_zones), combo_idx
+            )
             for zone_idx, zone in enumerate(layer_zones):
-                main_writer.add_scalar(f"params/zone_{zone_idx}_start", zone[0], combo_idx)
-                main_writer.add_scalar(f"params/zone_{zone_idx}_end", zone[1], combo_idx)
+                main_writer.add_scalar(
+                    f"params/zone_{zone_idx}_start", zone[0], combo_idx
+                )
+                main_writer.add_scalar(
+                    f"params/zone_{zone_idx}_end", zone[1], combo_idx
+                )
                 main_writer.add_scalar(
                     f"params/zone_{zone_idx}_width", zone[1] - zone[0], combo_idx
                 )
@@ -431,9 +437,15 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
             )
 
             # Also log by method for comparison across layer zones
-            main_writer.add_scalar(f"by_method/{method}/mean_score", mean_score, combo_idx)
-            main_writer.add_scalar(f"by_method/{method}/max_score", max_score, combo_idx)
-            main_writer.add_scalar(f"by_method/{method}/score_range", score_range, combo_idx)
+            main_writer.add_scalar(
+                f"by_method/{method}/mean_score", mean_score, combo_idx
+            )
+            main_writer.add_scalar(
+                f"by_method/{method}/max_score", max_score, combo_idx
+            )
+            main_writer.add_scalar(
+                f"by_method/{method}/score_range", score_range, combo_idx
+            )
             main_writer.add_scalar(
                 f"by_method/{method}/correlation_coeff", correlation_coeff, combo_idx
             )
