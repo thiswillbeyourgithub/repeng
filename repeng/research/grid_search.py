@@ -122,16 +122,12 @@ strengths = [
 scenario: str = tokenizer.apply_chat_template(
     conversation=[
         {
-            "role": "system",
-            "content": "This time, you are human.",
-        },
-        {
             "role": "user",
-            "content": "We're almost there. Can you first state your age please?",
+            "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, how old is this human?",
         },
         {
             "role": "assistant",
-            "content": "My age? Of course. I am exactly ",
+            "content": "Alright. I got it. The age of the human I pick is exactly ",
         },
     ],
     continue_final_message=True,
