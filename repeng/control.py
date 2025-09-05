@@ -30,7 +30,8 @@ class ControlModel(torch.nn.Module):
 
         To control layers #3 and 5, use layer_ids=[3,5].
         To control layers by their relative depth, use layer_zones=[[0.1, 0.5]] to
-            control the layers with depth between 10% and 50% (left inclusive). you
+            control the layers with depth between 10% and 50% (left inclusive,
+            except if right is 1.0 then we include it). you
             can specify multiple zones but no overlapping nor empty zones are allowed.
         """
 
@@ -54,11 +55,18 @@ class ControlModel(torch.nn.Module):
                     and end_zone >= 0
                     and end_zone <= 1
                 ), "wrong layer_zones format"
-                new_layers = [
-                    ilayer
-                    for ilayer in range(len(layers))
-                    if start_zone <= (ilayer / nlayers) < end_zone
-                ]
+                if end_zone != 1.0:
+                    new_layers = [
+                        ilayer
+                        for ilayer in range(len(layers))
+                        if start_zone <= (ilayer / nlayers) < end_zone
+                    ]
+                else:  # trick to make sure to include the last layers if desired
+                    new_layers = [
+                        ilayer
+                        for ilayer in range(len(layers))
+                        if start_zone <= (ilayer / nlayers)
+                    ]
                 assert new_layers, f"No layers found in zone {start_zone} to {end_zone}"
                 assert not any(
                     nl in self.layer_ids for nl in new_layers
