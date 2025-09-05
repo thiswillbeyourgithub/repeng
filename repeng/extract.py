@@ -239,7 +239,10 @@ def read_representations(
     inputs: list[DatasetEntry],
     hidden_layers: typing.Iterable[int] | None = None,
     batch_size: int = 32,
-    method: typing.Literal["pca_diff", "pca_center", "umap"] = "pca_diff",
+    method: typing.Union[
+        typing.Literal["pca_diff", "pca_center", "umap"],
+        typing.Callable[[np.ndarray], np.ndarray],
+    ] = "pca_diff",
     transform_hiddens: (
         typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
     ) = None,
@@ -255,8 +258,10 @@ def read_representations(
             Defaults to None.
         batch_size (int, optional): The maximum batch size for training.
             Defaults to 32. Try reducing this if you're running out of memory.
-        method (str, optional): The training method to use. Can be either
-            "pca_diff" or "pca_center". Defaults to "pca_diff".
+        method (str | Callable, optional): The training method to use. Can be either
+            "pca_diff", "pca_center", "umap", or a callable that takes hidden states
+            array of shape (n_samples, hidden_dim) and returns a direction vector
+            of shape (hidden_dim,). Defaults to "pca_diff".
         transform_hiddens (Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None, optional):
             Optional function to transform the extracted hidden states before computing
             directions. Takes a dict mapping layer indices to hidden state arrays and
@@ -290,30 +295,34 @@ def read_representations(
         h = layer_hiddens[layer]
         assert h.shape[0] == len(inputs) * 2
 
-        if method == "pca_diff":
+        if callable(method):
+            # Custom method: directly compute direction from hidden states
+            directions[layer] = method(h).astype(np.float32)
+        elif method == "pca_diff":
             train = h[::2] - h[1::2]
+            # shape (1, n_features)
+            pca_model = PCA(n_components=1, whiten=False).fit(train)
+            # shape (n_features,)
+            directions[layer] = pca_model.components_.astype(np.float32).squeeze(axis=0)
         elif method == "pca_center":
             center = (h[::2] + h[1::2]) / 2
             train = h
             train[::2] -= center
             train[1::2] -= center
-        elif method == "umap":
-            train = h
-        else:
-            raise ValueError("unknown method " + method)
-
-        if method != "umap":
             # shape (1, n_features)
             pca_model = PCA(n_components=1, whiten=False).fit(train)
             # shape (n_features,)
             directions[layer] = pca_model.components_.astype(np.float32).squeeze(axis=0)
-        else:
+        elif method == "umap":
+            train = h
             # still experimental so don't want to add this as a real dependency yet
             import umap  # type: ignore
 
             umap_model = umap.UMAP(n_components=1)
             embedding = umap_model.fit_transform(train).astype(np.float32)
             directions[layer] = np.sum(train * embedding, axis=0) / np.sum(embedding)
+        else:
+            raise ValueError(f"unknown method {method}")
 
         # calculate sign
         projected_hiddens = project_onto_direction(h, directions[layer])
