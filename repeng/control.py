@@ -253,7 +253,6 @@ def model_layer_list(model: ControlModel | PreTrainedModel) -> torch.nn.ModuleLi
         layers = model.model.layers
     elif hasattr(model, "layers"):  # qwen3-like
         layers = model.layers
-        layers = [l for l in orig_layers if hasattr(l, "attention_type")]
     elif hasattr(model, "transformer"):  # gpt-2-like
         layers = model.transformer.h
     else:
