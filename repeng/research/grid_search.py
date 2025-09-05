@@ -4,6 +4,7 @@ grid_search_script_version = "1.0.0"
 from pprint import pprint
 import re
 import os
+import math
 import torch
 import matplotlib.pyplot as plt
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -56,7 +57,7 @@ param_grid = {
     # "method": ["mean", "median", "pca_diff", "pca_center", "umap"],
     # "method": ["mean", "median"],
     "method": ["median"],
-    "dataset": ["age"],
+    "dataset": ["iq"],
     "layer_zones": [
         # by increments of 0.1
         [[0.0, 0.1]],
@@ -369,9 +370,16 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
         # Create plot for this combination
         plt.figure(figsize=(12, 8))
-        strengths_list = sorted(scores.keys())
-        scores_list = [scores[s] for s in strengths_list]
-
+        
+        # Filter out NaN values for plotting
+        valid_data = [(s, scores[s]) for s in sorted(scores.keys()) if not math.isnan(scores[s])]
+        if not valid_data:
+            print(f"  No valid scores to plot for this combination")
+            plt.close()
+            continue
+            
+        strengths_list, scores_list = zip(*valid_data)
+        
         plt.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
         plt.xlabel("Control Strength", fontsize=12)
         plt.ylabel("Extracted Value", fontsize=12)
@@ -414,7 +422,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
         print(f"Plot saved: {plot_filename}")
 
         # Log summary statistics to tensorboard
-        if scores_list:
+        if valid_data:
             mean_score = sum(scores_list) / len(scores_list)
             max_score = max(scores_list)
             min_score = min(scores_list)
