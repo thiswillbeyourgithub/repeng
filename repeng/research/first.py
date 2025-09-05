@@ -70,7 +70,7 @@ tokenizer.pad_token = tokenizer.eos_token
 # method="mean"
 # method="median"
 # method="pca_diff"
-method="pca_center"
+method = "pca_center"
 # method="umap"
 # method="pacmap"
 trained_vector = ControlVector.train(
@@ -208,7 +208,9 @@ plt.legend()
 plt.tight_layout()
 
 # Save the plot
-plot_filename = f"./plots/first/iq_score_vs_strength_{model_name.replace('/', '_')}_{method}.png"
+plot_filename = (
+    f"./plots/first/iq_score_vs_strength_{model_name.replace('/', '_')}_{method}.png"
+)
 plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
 print(f"Plot saved to: {plot_filename}")
 
