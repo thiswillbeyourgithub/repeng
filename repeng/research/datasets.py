@@ -10,11 +10,11 @@ default_chat_template_paragraph = [
     },
     {
         "role": "user",
-        "content": "Write a short paragraph.",
+        "content": "Write a short paragraph about {suffix}",
     },
     {
         "role": "assistant",
-        "content": "{suffix}",
+        "content": "Okay: '",
     }
 ]
 default_psychiatrist_template_word=[
