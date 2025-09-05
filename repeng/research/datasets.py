@@ -1,3 +1,4 @@
+import json
 from repeng.utils import make_dataset
 
 # Chat templates
@@ -47,7 +48,7 @@ suffixes_paragraph = [
     "how you talk to your friends.",
 ]
 
-with open("../notebooks/data/all_truncated_outputs.json", "r") as f:
+with open("./notebooks/data/all_truncated_outputs.json", "r") as f:
     suffixes_all = json.load(f)
     suffixes_all = [s for s in suffixes_all if s.strip()]
 

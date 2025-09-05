@@ -69,7 +69,7 @@ The idea is to do a grid_search (with taguchi reduction using my other project [
 - cd into it
 - `uv venv` then activate the venv
 - install my slightly modified repeng into the venv with `uv pip install -e .`
-- Install new dependencies from `research/requirements.txt` with `uv pip install -r research/requirements.txt`
+- Install new dependencies from `./repeng/research/requirements.txt` with `uv pip install -r ./repeng/research/requirements.txt`
 - Also might be needed:
     - installing `umap-learn` by following [those instructions](https://pypi.org/project/umap-learn/)
     - installing `pacmap` by following [those instructions](https://pypi.org/project/pacmap/)

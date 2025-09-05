@@ -1,4 +1,3 @@
-import json
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
