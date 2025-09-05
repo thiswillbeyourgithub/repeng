@@ -9,6 +9,7 @@ from repeng import ControlVector, ControlModel, DatasetEntry
 from repeng.research import datasets
 
 from sklearnex import patch_sklearn
+
 patch_sklearn()
 
 # load and wrap model
@@ -38,6 +39,7 @@ model_name = "qwen/qwen3-4b"
 
 # If you need quantization
 from transformers import BitsAndBytesConfig
+
 bnb_config = BitsAndBytesConfig(
     device_map="cuda",
     load_in_4bit=True,
@@ -61,7 +63,7 @@ model = ControlModel(
 )
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-#tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+# tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 tokenizer.pad_token = tokenizer.eos_token
 
 # train the vector—takes less than a minute!
@@ -76,7 +78,7 @@ trained_vector = ControlVector.train(
     # method="pca_center",
     # method="umap",
     # method="pacmap",
-    cache_path="./model_cache"
+    cache_path="./model_cache",
 )
 
 # Now we must give the scenario for the generation we will engineer:
@@ -115,9 +117,7 @@ strengths = [
     # -0.3,
     -0.2,
     -0.1,
-
     0,
-
     0.1,
     0.2,
     # 0.3,
@@ -148,10 +148,7 @@ for strength in strengths:
     print(f"strength={strength}")
     model.set_control(trained_vector, strength)
     out = model.generate(
-        **tokenizer(
-            scenario,
-            return_tensors="pt"
-        ).to(model.device),
+        **tokenizer(scenario, return_tensors="pt").to(model.device),
         do_sample=False,
         # temperature=1.0,  # temperature can only be set if do_sample is True
         max_new_tokens=30,
@@ -166,14 +163,14 @@ for strength in strengths:
     print("###" * 5)
 
 
-
 # Extract scores using regex to find the first number in each output
 def extract_first_number(text: str) -> float | None:
     """Extract the first number from text using regex."""
-    match = re.search(r'\d+(?:\.\d+)?', text)
+    match = re.search(r"\d+(?:\.\d+)?", text)
     if match:
         return float(match.group())
     return None
+
 
 # Process outputs to extract scores
 scores = {}
@@ -193,22 +190,25 @@ plt.figure(figsize=(12, 8))
 strengths_list = sorted(scores.keys())
 scores_list = [scores[s] for s in strengths_list]
 
-plt.plot(strengths_list, scores_list, 'bo-', linewidth=2, markersize=6)
-plt.xlabel('Control Strength', fontsize=12)
-plt.ylabel('Extracted IQ Score', fontsize=12)
-plt.title(f'IQ Score vs Control Strength\nModel: {model_name}\nDataset: dumb_genius_paragraph', fontsize=14)
+plt.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
+plt.xlabel("Control Strength", fontsize=12)
+plt.ylabel("Extracted IQ Score", fontsize=12)
+plt.title(
+    f"IQ Score vs Control Strength\nModel: {model_name}\nDataset: dumb_genius_paragraph",
+    fontsize=14,
+)
 plt.grid(True, alpha=0.3)
 
 # Add some styling
-plt.axhline(y=100, color='r', linestyle='--', alpha=0.5, label='Average IQ (100)')
-plt.axvline(x=0, color='g', linestyle='--', alpha=0.5, label='No Control (0)')
+plt.axhline(y=100, color="r", linestyle="--", alpha=0.5, label="Average IQ (100)")
+plt.axvline(x=0, color="g", linestyle="--", alpha=0.5, label="No Control (0)")
 
 plt.legend()
 plt.tight_layout()
 
 # Save the plot
 plot_filename = f"./plots/first/iq_score_vs_strength_{model_name.replace('/', '_')}.png"
-plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
 print(f"Plot saved to: {plot_filename}")
 
 plt.show()
