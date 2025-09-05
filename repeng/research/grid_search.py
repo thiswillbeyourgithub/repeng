@@ -372,59 +372,67 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
                 )
 
         # Create plot for this combination
-        plt.figure(figsize=(12, 8))
-
         # Filter out NaN values for plotting
         valid_data = [
             (s, scores[s]) for s in sorted(scores.keys()) if not math.isnan(scores[s])
         ]
         if not valid_data:
-            print(f"  No valid scores to plot for this combination")
-            plt.close()
+            print(f"  No valid scores to plot for this combination - all values are NaN")
             continue
 
+        print(f"  Creating plot with {len(valid_data)} valid data points")
         strengths_list, scores_list = zip(*valid_data)
 
-        plt.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
-        plt.xlabel("Control Strength", fontsize=12)
-        plt.ylabel("Extracted Value", fontsize=12)
-        plt.title(
+        # Create the figure
+        fig, ax = plt.subplots(figsize=(12, 8))
+        
+        ax.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
+        ax.set_xlabel("Control Strength", fontsize=12)
+        ax.set_ylabel("Extracted Value", fontsize=12)
+        ax.set_title(
             f"Extracted value vs Control Strength\n"
             f"Method: {method}, Layer zones: {layer_zones}\n"
             f"Model: {model_name}",
             fontsize=14,
         )
-        plt.grid(True, alpha=0.3)
+        ax.grid(True, alpha=0.3)
 
         # Add dataset-specific reference lines and y-axis limits
         if dataset == "iq":
-            plt.axhline(
+            ax.axhline(
                 y=100, color="r", linestyle="--", alpha=0.5, label="Average IQ (100)"
             )
-            plt.ylim(0, 200)  # IQ range from 0 to 200
+            ax.set_ylim(0, 200)  # IQ range from 0 to 200
         elif dataset == "age":
-            plt.axhline(y=25, color="r", linestyle="--", alpha=0.5, label="Ref(25)")
-            plt.ylim(0, 150)  # Age range from 0 to 150 years
-        # plt.axvline(x=0, color="g", linestyle="--", alpha=0.5, label="No Control (0)")
+            ax.axhline(y=25, color="r", linestyle="--", alpha=0.5, label="Ref(25)")
+            ax.set_ylim(0, 150)  # Age range from 0 to 150 years
+        # ax.axvline(x=0, color="g", linestyle="--", alpha=0.5, label="No Control (0)")
 
-        plt.legend()
+        ax.legend()
         plt.tight_layout()
 
-        # Log plot to tensorboard
-        main_writer.add_figure(
-            f"plots/{dataset}_{method}_zones_{zones_tag}/extracted_value_score_plot",
-            plt.gcf(),
-            global_step=i,
-        )
+        # Log plot to tensorboard - ensure figure exists and has data
+        try:
+            main_writer.add_figure(
+                f"plots/{dataset}_{method}_zones_{zones_tag}/extracted_value_score_plot",
+                fig,
+                global_step=i,
+            )
+            print(f"  Plot successfully logged to TensorBoard")
+        except Exception as e:
+            print(f"  Error logging plot to TensorBoard: {e}")
 
         # Save plot
         plot_filename = (
             f"./plots/grid_search/extracted_value_{dataset}_{method}_{zones_tag}.png"
         )
-        plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
-        plt.close()  # Close to save memory
-
-        print(f"Plot saved: {plot_filename}")
+        try:
+            plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
+            print(f"  Plot saved: {plot_filename}")
+        except Exception as e:
+            print(f"  Error saving plot: {e}")
+        
+        plt.close(fig)  # Close the specific figure to save memory
 
         # Log summary statistics to tensorboard
         if valid_data:
