@@ -221,7 +221,7 @@ def test_configuration(
 
     # Create unique writer for this combination
     zones_tag = format_layer_zones_for_filename(layer_zones)
-    run_name = f"{method}_zones_{zones_tag}"
+    run_name = f"{dataset}_{method}_zones_{zones_tag}"
     writer = SummaryWriter(f"./tensorboard_logs/grid_search/{run_name}")
 
     try:
@@ -267,7 +267,7 @@ def test_configuration(
             # Log the output text to tensorboard
             zones_tag = format_layer_zones_for_filename(layer_zones)
             writer.add_text(
-                f"{method}/zones_{zones_tag}/outputs",
+                f"{dataset}_{method}/zones_{zones_tag}/outputs",
                 f"Strength {strength}: {output}",
                 global_step=strength,
             )
@@ -364,7 +364,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
         zones_tag = format_layer_zones_for_filename(layer_zones)
         for strength, score in scores.items():
             main_writer.add_scalar(
-                f"{method}/zones_{zones_tag}/extracted_value", score, strength
+                f"{dataset}_{method}/zones_{zones_tag}/extracted_value", score, strength
             )
 
         # Create plot for this combination
@@ -399,13 +399,13 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
         # Log plot to tensorboard
         main_writer.add_figure(
-            f"plots/{method}_zones_{zones_tag}/extracted_value_score_plot",
+            f"plots/{dataset}_{method}_zones_{zones_tag}/extracted_value_score_plot",
             plt.gcf(),
             global_step=i,
         )
 
         # Save plot
-        plot_filename = f"./plots/grid_search/extracted_value_{method}_{zones_tag}.png"
+        plot_filename = f"./plots/grid_search/extracted_value_{dataset}_{method}_{zones_tag}.png"
         plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
         plt.close()  # Close to save memory
 
@@ -478,36 +478,36 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
             # Use combination index as the x-axis for summary stats
             main_writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/mean_score", mean_score, i
+                f"summary/{dataset}_{method}_zones_{zones_tag}/mean_score", mean_score, i
             )
             main_writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/max_score", max_score, i
+                f"summary/{dataset}_{method}_zones_{zones_tag}/max_score", max_score, i
             )
             main_writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/min_score", min_score, i
+                f"summary/{dataset}_{method}_zones_{zones_tag}/min_score", min_score, i
             )
             main_writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/score_range",
+                f"summary/{dataset}_{method}_zones_{zones_tag}/score_range",
                 score_range,
                 i,
             )
             main_writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/correlation_coeff",
+                f"summary/{dataset}_{method}_zones_{zones_tag}/correlation_coeff",
                 correlation_coeff,
                 i,
             )
             main_writer.add_scalar(
-                f"summary/{method}_zones_{zones_tag}/correlation_p_value",
+                f"summary/{dataset}_{method}_zones_{zones_tag}/correlation_p_value",
                 correlation_p_value,
                 i,
             )
 
             # Also log by method for comparison across layer zones
-            main_writer.add_scalar(f"by_method/{method}/mean_score", mean_score, i)
-            main_writer.add_scalar(f"by_method/{method}/max_score", max_score, i)
-            main_writer.add_scalar(f"by_method/{method}/score_range", score_range, i)
+            main_writer.add_scalar(f"by_method/{dataset}_{method}/mean_score", mean_score, i)
+            main_writer.add_scalar(f"by_method/{dataset}_{method}/max_score", max_score, i)
+            main_writer.add_scalar(f"by_method/{dataset}_{method}/score_range", score_range, i)
             main_writer.add_scalar(
-                f"by_method/{method}/correlation_coeff", correlation_coeff, i
+                f"by_method/{dataset}_{method}/correlation_coeff", correlation_coeff, i
             )
 
     print(f"Completed combination {i+1}/{total_combinations}")
