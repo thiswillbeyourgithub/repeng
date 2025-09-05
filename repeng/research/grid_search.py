@@ -123,7 +123,11 @@ scenario: str = tokenizer.apply_chat_template(
     conversation=[
         {
             "role": "user",
-            "content": "My age? I am exactly ",
+            "content": "Can you give me your age?",
+        },
+        {
+            "role": "assistant",
+            "content": "My age? Sure. I am ",
         },
     ],
     continue_final_message=True,
