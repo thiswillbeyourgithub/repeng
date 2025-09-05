@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch.utils.tensorboard import SummaryWriter
 from sklearn.model_selection import ParameterGrid
+from TaguchiGridSearchConverter import TaguchiGridSearchConverter
 
 from repeng import ControlVector, ControlModel, DatasetEntry
 from repeng.research import datasets
@@ -209,10 +210,18 @@ writer = SummaryWriter("./tensorboard_logs/grid_search")
 
 # Grid search
 grid = ParameterGrid(param_grid)
+
+# Use taguchi arrays to reduce the size of the grid
+converter = TaguchiGridSearchConverter()
+old_grid = grid
+grid = converter.fit_transform(old_grid)
+assert len(grid) <= len(old_grid)
+assert all(rg in grid for rg in old_grid)
+
 total_combinations = len(grid)
 all_results = []
 
-print(f"Starting grid search with {total_combinations} combinations...")
+print(f"Starting grid search with {total_combinations} combinations (before taguchi: {len(old_grid)}...")
 
 for i, params in enumerate(grid):
     method = params["method"]
