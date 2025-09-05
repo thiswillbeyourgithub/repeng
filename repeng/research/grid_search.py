@@ -54,6 +54,7 @@ param_grid = {
     # "method": ["mean", "median", "pca_diff", "pca_center", "umap"],
     # "method": ["mean", "median"],
     "method": ["median"],
+    "dataset": ["age"],
     "layer_zones": [
         # by increments of 0.1
         [[0.0, 0.1]],
@@ -128,21 +129,38 @@ strengths = [
     5,
 ]
 
-# Scenario for generation
-scenario: str = tokenizer.apply_chat_template(
-    conversation=[
-        {
-            "role": "user",
-            "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, how old is this human?",
-        },
-        {
-            "role": "assistant",
-            "content": "Alright. I got it. The age of the human I pick is exactly ",
-        },
-    ],
-    continue_final_message=True,
-    tokenize=False,
-)
+def get_data(dataset: str) -> tuple[str, list]:
+    """
+    Get scenario and dataset based on dataset name.
+    
+    Parameters
+    ----------
+    dataset : str
+        Dataset name ("age", etc.)
+        
+    Returns
+    -------
+    tuple[str, list]
+        Tuple containing (scenario, dataset_entries)
+    """
+    if dataset == "age":
+        scenario = tokenizer.apply_chat_template(
+            conversation=[
+                {
+                    "role": "user",
+                    "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, how old is this human?",
+                },
+                {
+                    "role": "assistant",
+                    "content": "Alright. I got it. The age of the human I pick is exactly ",
+                },
+            ],
+            continue_final_message=True,
+            tokenize=False,
+        )
+        return scenario, datasets.young_old_paragraph
+    else:
+        raise ValueError(f"Unknown dataset: {dataset}")
 
 
 def extract_first_number(text: str) -> float | None:
@@ -169,13 +187,18 @@ def format_layer_zones_for_filename(layer_zones: list) -> str:
 def test_configuration(
     method: str,
     layer_zones: list,
+    dataset: str,
     combo_idx: int,
     total_combos: int,
 ) -> dict:
     """Test a single configuration and return results."""
     print(f"\n=== Combination {combo_idx+1}/{total_combos} ===")
     print(f"Method: {method}")
+    print(f"Dataset: {dataset}")
     print(f"Layer zones: {layer_zones}")
+    
+    # Get scenario and dataset for this configuration
+    scenario, train_dataset = get_data(dataset)
 
     # Create unique writer for this combination
     zones_tag = format_layer_zones_for_filename(layer_zones)
@@ -195,8 +218,7 @@ def test_configuration(
         trained_vector = ControlVector.train(
             control_model,
             tokenizer,
-            # datasets.dumb_genius_paragraph,
-            datasets.young_old_paragraph,
+            train_dataset,
             batch_size=1,
             method=method,
             cache_path="./model_cache",
@@ -249,6 +271,7 @@ def test_configuration(
 
         return {
             "method": method,
+            "dataset": dataset,
             "layer_zones": layer_zones,
             "scores": scores,
             "outputs": outputs,
@@ -261,6 +284,7 @@ def test_configuration(
         writer.close()
         return {
             "method": method,
+            "dataset": dataset,
             "layer_zones": layer_zones,
             "scores": {},
             "outputs": {},
@@ -301,10 +325,11 @@ print(
 
 for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green")):
     method = params["method"]
+    dataset = params["dataset"]
     layer_zones = params["layer_zones"]
 
     # Test this configuration
-    result = test_configuration(method, layer_zones, i, total_combinations)
+    result = test_configuration(method, layer_zones, dataset, i, total_combinations)
     all_results.append(result)
 
     if result["success"] and result["scores"]:
@@ -384,6 +409,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
             # Log hyperparameters and metrics for easy filtering
             hparam_dict = {
                 "method": method,
+                "dataset": dataset,
                 "layer_zones_str": str(
                     layer_zones
                 ),  # String representation for filtering
@@ -476,6 +502,7 @@ with open(summary_file, "w") as f:
     for i, result in enumerate(all_results):
         f.write(f"\nCombination {i+1}:\n")
         f.write(f"  Method: {result['method']}\n")
+        f.write(f"  Dataset: {result['dataset']}\n")
         f.write(f"  Layer zones: {result['layer_zones']}\n")
         f.write(f"  Success: {result['success']}\n")
         if result["success"]:
