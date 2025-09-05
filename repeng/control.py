@@ -179,7 +179,8 @@ class ControlModule(torch.nn.Module):
         super().__init__()
         self.block: torch.nn.Module = block
         self.params: BlockControlParams = BlockControlParams.default()
-        self.attention_type = self.block.attention_type
+        if hasattr(block, 'attention_type'):
+            self.attention_type = block.attention_type
 
     def set_control(self, params: BlockControlParams) -> None:
         self.params = params
@@ -236,13 +237,6 @@ class ControlModule(torch.nn.Module):
             output = modified
 
         return output
-
-    def __getattr__(self, name: str):
-        """
-        Delegate missing attributes to the wrapped block.
-        This allows ControlModule to act as a transparent proxy for its wrapped block.
-        """
-        return getattr(self.block, name)
 
 
 def model_layer_list(model: ControlModel | PreTrainedModel) -> torch.nn.ModuleList:
