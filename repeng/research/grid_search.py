@@ -222,7 +222,9 @@ assert all(rg in grid for rg in old_grid)
 total_combinations = len(grid)
 all_results = []
 
-print(f"Starting grid search with {total_combinations} combinations (before taguchi: {len(old_grid)}...")
+print(
+    f"Starting grid search with {total_combinations} combinations (before taguchi: {len(old_grid)}..."
+)
 
 for i, params in enumerate(grid):
     method = params["method"]
