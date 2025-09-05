@@ -337,7 +337,9 @@ def read_representations(
             tokenize=False,
         )
     except Exception as e:
-        logger.warning(f"Error when applying chat template: '{e}'\nTrying to autocorrect the template anyway.")
+        logger.warning(
+            f"Error when applying chat template: '{e}'\nTrying to autocorrect the template anyway."
+        )
         train_strs: list[str] = autocorrect_chat_templates(
             messages=[s for ex in inputs for s in (ex.positive, ex.negative)],
             tokenizer=tokenizer,
@@ -511,10 +513,9 @@ def batched_get_hiddens_cached(
 
     It does not return the dict of activations but the path to the h5 cache.
     """
-    os.makedirs(cache_path, exist_ok=True)
-
     model_name = get_model_name(model)
     cache_file = os.path.join(cache_path, f"{model_name}.h5")
+    os.makedirs(os.path.dirname(cache_file), exist_ok=True)
     model_args = _get_model_args_string(model)
     train_strs_hash = _hash_train_strs(inputs)
 
