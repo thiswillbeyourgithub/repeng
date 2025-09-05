@@ -67,6 +67,7 @@ trained_vector = ControlVector.train(
     # method="pca_center",
     # method="umap",
     # method="pacmap",
+    cache_path="./model_cache"
 )
 
 # Now we must give the scenario for the generation we will engineer:
