@@ -20,7 +20,7 @@ class ControlModel(torch.nn.Module):
         self,
         model: PreTrainedModel,
         layer_ids: typing.Optional[typing.Iterable[int]] = None,
-        layer_zones: typing.Optional[typing.Iterable[float]] = None,
+        layer_zones: typing.Optional[typing.Iterable[typing.Iterable[float]]] = None,
     ):
         """
         **This mutates the wrapped `model`! Be careful using `model` after passing it to this class.**
