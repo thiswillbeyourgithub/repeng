@@ -293,7 +293,7 @@ def test_configuration(
         valid_data = [
             (s, scores[s]) for s in sorted(scores.keys()) if not math.isnan(scores[s])
         ]
-        
+
         if valid_data:
             print(f"  Creating plot with {len(valid_data)} valid data points")
             strengths_list, scores_list = zip(*valid_data)
@@ -319,7 +319,11 @@ def test_configuration(
             # Add dataset-specific reference lines and y-axis limits
             if dataset == "iq":
                 ax.axhline(
-                    y=100, color="r", linestyle="--", alpha=0.5, label="Average IQ (100)"
+                    y=100,
+                    color="r",
+                    linestyle="--",
+                    alpha=0.5,
+                    label="Average IQ (100)",
                 )
                 ax.set_ylim(0, 200)  # IQ range from 0 to 200
             elif dataset == "age":
@@ -345,11 +349,11 @@ def test_configuration(
 
             # Save plot
             zones_tag = format_layer_zones_for_filename(layer_zones)
-            plot_filename = (
-                f"./plots/grid_search/extracted_value_{dataset}_{method}_{zones_tag}.png"
-            )
+            plot_filename = f"./plots/grid_search/extracted_value_{dataset}_{method}_{zones_tag}.png"
             try:
-                fig.savefig(plot_filename, dpi=300, bbox_inches="tight", facecolor="white")
+                fig.savefig(
+                    plot_filename, dpi=300, bbox_inches="tight", facecolor="white"
+                )
                 print(f"  Plot saved: {plot_filename}")
 
                 # Check if file was actually created and has content
@@ -363,7 +367,9 @@ def test_configuration(
 
             plt.close(fig)  # Close the specific figure to save memory
         else:
-            print(f"  No valid scores to plot for this combination - all values are NaN")
+            print(
+                f"  No valid scores to plot for this combination - all values are NaN"
+            )
 
         # Reset model control and unwrap to restore original state
         control_model.reset()
@@ -459,9 +465,11 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
             scores = result["scores"]
             # Filter out NaN values for statistics
             valid_data = [
-                (s, scores[s]) for s in sorted(scores.keys()) if not math.isnan(scores[s])
+                (s, scores[s])
+                for s in sorted(scores.keys())
+                if not math.isnan(scores[s])
             ]
-            
+
             if valid_data:
                 strengths_list, scores_list = zip(*valid_data)
             mean_score = sum(scores_list) / len(scores_list)
