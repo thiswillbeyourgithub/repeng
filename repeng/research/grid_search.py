@@ -405,7 +405,9 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
         )
 
         # Save plot
-        plot_filename = f"./plots/grid_search/extracted_value_{dataset}_{method}_{zones_tag}.png"
+        plot_filename = (
+            f"./plots/grid_search/extracted_value_{dataset}_{method}_{zones_tag}.png"
+        )
         plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
         plt.close()  # Close to save memory
 
@@ -478,7 +480,9 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
             # Use combination index as the x-axis for summary stats
             main_writer.add_scalar(
-                f"summary/{dataset}_{method}_zones_{zones_tag}/mean_score", mean_score, i
+                f"summary/{dataset}_{method}_zones_{zones_tag}/mean_score",
+                mean_score,
+                i,
             )
             main_writer.add_scalar(
                 f"summary/{dataset}_{method}_zones_{zones_tag}/max_score", max_score, i
@@ -503,9 +507,15 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
             )
 
             # Also log by method for comparison across layer zones
-            main_writer.add_scalar(f"by_method/{dataset}_{method}/mean_score", mean_score, i)
-            main_writer.add_scalar(f"by_method/{dataset}_{method}/max_score", max_score, i)
-            main_writer.add_scalar(f"by_method/{dataset}_{method}/score_range", score_range, i)
+            main_writer.add_scalar(
+                f"by_method/{dataset}_{method}/mean_score", mean_score, i
+            )
+            main_writer.add_scalar(
+                f"by_method/{dataset}_{method}/max_score", max_score, i
+            )
+            main_writer.add_scalar(
+                f"by_method/{dataset}_{method}/score_range", score_range, i
+            )
             main_writer.add_scalar(
                 f"by_method/{dataset}_{method}/correlation_coeff", correlation_coeff, i
             )
