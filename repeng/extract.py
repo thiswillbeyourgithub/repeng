@@ -14,6 +14,8 @@ from .control import ControlModel, model_layer_list
 from .saes import Sae
 from .utils import DatasetEntry, autocorrect_chat_templates
 
+__VERSION__ = "0.4.0"
+
 
 
 @dataclasses.dataclass
