@@ -1,3 +1,6 @@
+# Grid search script version for tracking experiments
+grid_search_script_version = "1.0.0"
+
 from pprint import pprint
 import re
 import os
@@ -9,7 +12,7 @@ from sklearn.model_selection import ParameterGrid
 from TaguchiGridSearchConverter import TaguchiGridSearchConverter
 from scipy.stats import pearsonr
 
-from repeng import ControlVector, ControlModel, DatasetEntry
+from repeng import ControlVector, ControlModel, DatasetEntry, __VERSION__ as repeng_version
 from repeng.research import datasets
 
 from sklearnex import patch_sklearn
@@ -269,6 +272,11 @@ os.makedirs("./tensorboard_logs", exist_ok=True)
 # Create main writer for overall grid search logging
 main_writer = SummaryWriter(f"./tensorboard_logs/grid_search/main")
 
+# Log version information as metadata
+main_writer.add_text("metadata/grid_search_script_version", grid_search_script_version, 0)
+main_writer.add_text("metadata/repeng_version", repeng_version, 0)
+main_writer.add_text("metadata/model_name", model_name, 0)
+
 # Grid search
 grid = ParameterGrid(param_grid)
 
@@ -375,6 +383,8 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
                 ),  # String representation for filtering
                 "num_layer_zones": len(layer_zones),  # Number of zone pairs
                 "combo_idx": i,  # Unique identifier for this combination
+                "grid_search_script_version": grid_search_script_version,
+                "repeng_version": repeng_version,
             }
 
             # Add individual zone boundaries as separate hyperparameters for easier filtering
