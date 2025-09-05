@@ -11,7 +11,7 @@ Specifically, things I intend to do are:
 
 # Current plan:
 
-## 1. create a calibrating suite:
+1. create a calibrating suite:
     - For a specific model initially
         - Current best choice is `qwen/qwen3-4b` because it's small and *okay*. And I have terrible hardware. If you're rich and want to send me a GPU I would make great use of it!
     - if you give pairs of "dumb/smart" then ask for the model to estimate its IQ, it's easy to parse the answer to measure which layers to target and by how much etc
@@ -29,7 +29,7 @@ Specifically, things I intend to do are:
         f. What is the impact of quantization on this effect?
         g. What is the impact of longer context on this effect? And of thinking? Does the influence get amplified, fades away or is stable?
 
-## 2. Redo this whole experience but comparing between vector extraction methods:
+2. Redo this whole experience but comparing between vector extraction methods:
     - mean (the mean value of positive samples - mean value of negative samples)
     - median (the median value of positive samples - median value of negative samples)
     - [PCA](https://scikit-learn.org/stable/modules/decomposition.html)
