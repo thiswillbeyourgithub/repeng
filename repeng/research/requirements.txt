@@ -13,7 +13,7 @@ huggingface_hub>=0.0.0
 scikit-learn-intelex>=0.0.0
 daal4py>=0.0.0
 bitsandbytes>=0.47.0
-beartype>=0.21.0
+# beartype>=0.21.0
 
 sentencepiece
 protobuf
