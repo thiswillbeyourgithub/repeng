@@ -25,6 +25,8 @@ from tqdm import tqdm
 
 patch_sklearn()
 
+USE_TAGUCHI_REDUCTION = True
+
 # Model configuration
 model_name = "qwen/qwen3-4b"
 
@@ -327,18 +329,24 @@ main_writer.add_text("metadata/model_name", model_name, 0)
 # Grid search
 grid = ParameterGrid(param_grid)
 
-# # Use taguchi arrays to reduce the size of the grid
-old_grid = grid
-# converter = TaguchiGridSearchConverter()
-# grid = converter.fit_transform(old_grid)
-# assert len(grid) <= len(old_grid)
+if USE_TAGUCHI_REDUCTION:
+    # Use taguchi arrays to reduce the size of the grid
+    converter = TaguchiGridSearchConverter()
+    old_grid = grid
+    grid = converter.fit_transform(old_grid)
+    assert len(grid) <= len(old_grid)
+    total_combinations = len(grid)
 
-total_combinations = len(grid)
+    print(
+        f"Starting grid search with {total_combinations} combinations (before taguchi: {len(old_grid)}..."
+    )
+else:
+    total_combinations = len(grid)
+    print(
+        f"Starting grid search with {total_combinations} combinations (no taguchi reduction)"
+    )
+
 all_results = []
-
-print(
-    f"Starting grid search with {total_combinations} combinations (before taguchi: {len(old_grid)}..."
-)
 
 for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green")):
     method = params["method"]
