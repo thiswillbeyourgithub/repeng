@@ -61,7 +61,6 @@ param_grid = {
 
 # Strengths to test (same as first.py)
 strengths = [
-    -20,
     -15,
     -10,
     -9,
@@ -95,7 +94,6 @@ strengths = [
     9,
     10,
     15,
-    20,
 ]
 
 # Scenario for generation
