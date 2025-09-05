@@ -131,7 +131,11 @@ def format_layer_zones_for_filename(layer_zones: list) -> str:
 
 
 def test_configuration(
-    method: str, layer_zones: list, combo_idx: int, total_combos: int, writer: SummaryWriter
+    method: str,
+    layer_zones: list,
+    combo_idx: int,
+    total_combos: int,
+    writer: SummaryWriter,
 ) -> dict:
     """Test a single configuration and return results."""
     print(f"\n=== Combination {combo_idx+1}/{total_combos} ===")
@@ -174,16 +178,16 @@ def test_configuration(
 
             output = tokenizer.decode(out.squeeze(), skip_special_tokens=True).strip()
             outputs[strength] = output
-            
+
             # Print the actual LLM output to screen
             print(f"  Output: {output}")
-            
+
             # Log the output text to tensorboard
             zones_tag = format_layer_zones_for_filename(layer_zones)
             writer.add_text(
-                f"{method}/zones_{zones_tag}/outputs", 
-                f"Strength {strength}: {output}", 
-                global_step=strength
+                f"{method}/zones_{zones_tag}/outputs",
+                f"Strength {strength}: {output}",
+                global_step=strength,
             )
 
             # Extract score
