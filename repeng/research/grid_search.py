@@ -361,12 +361,13 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
     if result["success"] and result["scores"]:
         scores = result["scores"]
 
-        # Log individual points to tensorboard
+        # Log individual points to tensorboard (only valid scores, no NaN values)
         zones_tag = format_layer_zones_for_filename(layer_zones)
         for strength, score in scores.items():
-            main_writer.add_scalar(
-                f"{dataset}_{method}/zones_{zones_tag}/extracted_value", score, strength
-            )
+            if not math.isnan(score):
+                main_writer.add_scalar(
+                    f"{dataset}_{method}/zones_{zones_tag}/extracted_value", score, strength
+                )
 
         # Create plot for this combination
         plt.figure(figsize=(12, 8))
