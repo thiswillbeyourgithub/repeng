@@ -178,8 +178,9 @@ def test_configuration(
             if score is not None:
                 scores[strength] = score
 
-        # Reset model control after testing
+        # Reset model control and unwrap to restore original state
         control_model.reset()
+        control_model.unwrap()
 
         return {
             "method": method,
