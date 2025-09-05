@@ -68,7 +68,7 @@ class ControlVector:
         sae: Sae,
         dataset: list[DatasetEntry],
         decode: bool = True,
-        method: typing.Literal["pca_diff", "pca_center", "umap"] = "pca_center",
+        method: typing.Literal["pca_diff", "pca_center", "mean", "umap"] = "pca_center",
         cache_path: os.PathLike[str] | str | None = None,
         **kwargs,
     ) -> "ControlVector":
@@ -91,7 +91,7 @@ class ControlVector:
                 max_batch_size (int, optional): The maximum batch size for training.
                     Defaults to 32. Try reducing this if you're running out of memory.
                 method (str, optional): The training method to use. Can be either
-                    "pca_diff" or "pca_center". Defaults to "pca_center"! This is different
+                    "pca_diff", "pca_center", "mean", or "umap". Defaults to "pca_center"! This is different
                     than ControlVector.train, which defaults to "pca_diff".
 
         Returns:
@@ -236,7 +236,7 @@ class ControlVector:
 def compute_direction(
     hidden_states: np.ndarray,
     method: typing.Union[
-        typing.Literal["pca_diff", "pca_center", "umap"],
+        typing.Literal["pca_diff", "pca_center", "mean", "umap"],
         typing.Callable[[np.ndarray], np.ndarray],
     ],
 ) -> np.ndarray:
@@ -248,7 +248,7 @@ def compute_direction(
             For contrast methods, should have even number of samples where pairs represent
             [positive, negative, positive, negative, ...] examples.
         method: The method to use for computing the direction. Can be "pca_diff",
-            "pca_center", "umap", or a callable that takes hidden states and returns
+            "pca_center", "mean", "umap", or a callable that takes hidden states and returns
             a direction vector.
 
     Returns:
@@ -272,6 +272,17 @@ def compute_direction(
         pca_model = PCA(n_components=1, whiten=False).fit(train)
         # shape (n_features,)
         return pca_model.components_.astype(np.float32).squeeze(axis=0)
+    elif method == "mean":
+        # Compute direction as difference between mean of positive and negative samples
+        # Order is [positive, negative, positive, negative, ...]
+        positive_states = hidden_states[::2]  # Every even index
+        negative_states = hidden_states[1::2]  # Every odd index
+
+        mean_positive = np.mean(positive_states, axis=0)
+        mean_negative = np.mean(negative_states, axis=0)
+
+        # Direction points from negative to positive
+        return (mean_positive - mean_negative).astype(np.float32)
     elif method == "umap":
         train = hidden_states
         # still experimental so don't want to add this as a real dependency yet
@@ -291,7 +302,7 @@ def read_representations(
     hidden_layers: typing.Iterable[int] | None = None,
     batch_size: int = 32,
     method: typing.Union[
-        typing.Literal["pca_diff", "pca_center", "umap"],
+        typing.Literal["pca_diff", "pca_center", "mean", "umap"],
         typing.Callable[[np.ndarray], np.ndarray],
     ] = "pca_diff",
     sae: Sae | None = None,
@@ -310,7 +321,7 @@ def read_representations(
         batch_size (int, optional): The maximum batch size for training.
             Defaults to 32. Try reducing this if you're running out of memory.
         method (str | Callable, optional): The training method to use. Can be either
-            "pca_diff", "pca_center", "umap", or a callable that takes hidden states
+            "pca_diff", "pca_center", "mean", "umap", or a callable that takes hidden states
             array of shape (n_samples, hidden_dim) and returns a direction vector
             of shape (hidden_dim,). Defaults to "pca_diff".
         sae (Sae | None, optional): Optional SAE to use for transforming hidden states
