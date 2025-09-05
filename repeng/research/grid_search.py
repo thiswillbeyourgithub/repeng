@@ -366,7 +366,9 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
         for strength, score in scores.items():
             if not math.isnan(score):
                 main_writer.add_scalar(
-                    f"{dataset}_{method}/zones_{zones_tag}/extracted_value", score, strength
+                    f"{dataset}_{method}/zones_{zones_tag}/extracted_value",
+                    score,
+                    strength,
                 )
 
         # Create plot for this combination
