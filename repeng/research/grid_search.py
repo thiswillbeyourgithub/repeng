@@ -375,12 +375,15 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
         )
         plt.grid(True, alpha=0.3)
 
-        # # IQ of 100
-        # plt.axhline(
-        #     y=100, color="r", linestyle="--", alpha=0.5, label="Average IQ (100)"
-        # )
-        # 25 years old
-        plt.axhline(y=25, color="r", linestyle="--", alpha=0.5, label="Ref(25)")
+        # Add dataset-specific reference lines and y-axis limits
+        if dataset == "iq":
+            plt.axhline(
+                y=100, color="r", linestyle="--", alpha=0.5, label="Average IQ (100)"
+            )
+            plt.ylim(0, 200)  # IQ range from 0 to 200
+        elif dataset == "age":
+            plt.axhline(y=25, color="r", linestyle="--", alpha=0.5, label="Ref(25)")
+            plt.ylim(0, 150)  # Age range from 0 to 150 years
         # plt.axvline(x=0, color="g", linestyle="--", alpha=0.5, label="No Control (0)")
 
         plt.legend()
