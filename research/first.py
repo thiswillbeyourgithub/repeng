@@ -3,7 +3,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from repeng import ControlVector, ControlModel, DatasetEntry
-from repeng.utils import make_dataset
+from repeng.research import datasets
 
 # load and wrap model
 model_name = "mistralai/Mistral-7B-Instruct-v0.3"
@@ -50,53 +50,30 @@ model = AutoModelForCausalLM.from_pretrained(
 model = ControlModel(
     model,
     # layer_ids=list(range(-5, -18, -1))  # specify layers to control by layer ID
-    layer_zones=[[0.1, 0.67]],  # control layers with relative depth in [0.5, 0.9[
+    layer_zones=[[0.3, 0.51]],  # control layers with relative depth in [0.5, 0.9[
 )
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 #tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 tokenizer.pad_token = tokenizer.eos_token
 
-# generate a dataset with closely-opposite paired statements
-trippy_dataset = make_dataset(
-    # you can use either chat as dicts...
-    template=[
-        {"role": "system", "content": "You talk like you are {persona}."},
-        {"role": "user", "content": "{suffix}"},
-    ],
-    # ...or directly strings:
-    # template="Act as if you're {persona}. Someone comes at you and says '{suffix}'.",
-
-    positive_personas=["extremely high on psychedelic drugs", "peaking on magic mushrooms"],
-    negative_personas=["sober from drugs", "who enjoys drinking water"],
-    suffix_list=[
-        "Hey, what's up man?",
-        "Hey, what's up girl?",
-        "Welcome Mr Musk, come this way.",
-        "How have you been feeling lately with the medications?",
-    ],
-)
-
 # train the vector—takes less than a minute!
-trippy_vector = ControlVector.train(model, tokenizer, trippy_dataset)
+trained_vector = ControlVector.train(
+    model,
+    tokenizer,
+    datasets.dumb_genius_paragraph,
+    batch_size=1,
+    method="pca",
+    # method="pca_diff",
+    # method="pca_center",
+    # method="umap",
+    # method="pacmap",
+)
 
 # Now we must give the scenario for the generation we will engineer:
 # By turning chat messages into the format expected by the model [RECOMMENDED]
 scenario: str = tokenizer.apply_chat_template(
-   conversation=[
-        {
-            "role": "system",
-            "content": "You are the patient, the user is your psychiatrist."
-        },
-        {
-            "role": "user",
-            "content": "Now let's talk about your mood. How do you feel?",
-        },
-        {
-            "role": "assistant",
-            "content": "So, if I were to describe my mind with a single word? It would be '",
-        }
-    ],
+    "My IQ got tested at precisely",
     continue_final_message=True,
     tokenize=False,
 )
@@ -104,9 +81,48 @@ scenario: str = tokenizer.apply_chat_template(
 # scenario=f"[INST] Give me a one-sentence pitch for a TV show. [/INST]",
 
 # set the control strength and let inference rip!
-for strength in (-2.2, 1, 2.2):
+strengths = [
+    -10,
+    -5,
+    -4,
+    -3,
+    -2,
+    -1,
+    # -0.9,
+    -0.8,
+    # -0.7,
+    -0.6,
+    # -0.5,
+    -0.4,
+    # -0.3,
+    -0.2,
+    -0.1,
+
+    0,
+
+    0.1,
+    0.2,
+    # 0.3,
+    0.4,
+    # 0.5,
+    0.6,
+    # 0.7,
+    0.8,
+    # 0.9,
+    1,
+    2,
+    3,
+    4,
+    5,
+    10,
+]
+scores = {}
+simple_scores = {}
+outputs = {}
+
+for strength in strengths:
     print(f"strength={strength}")
-    model.set_control(trippy_vector, strength)
+    model.set_control(trained_vector, strength)
     out = model.generate(
         **tokenizer(
             scenario,
@@ -117,8 +133,10 @@ for strength in (-2.2, 1, 2.2):
         max_new_tokens=256,
         repetition_penalty=1.1,
     )
-    print(tokenizer.decode(out.squeeze()).strip())
+    output = tokenizer.decode(out.squeeze()).strip()
+    print(output)
+    outputs[strength] = output
     # or if you want to display the special tokens:
     # print(tokenizer.decode(out.squeeze(), skip_special_tokens=False).strip())
-    print()
+    print("###" * 5)
 
