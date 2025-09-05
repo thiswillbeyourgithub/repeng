@@ -27,7 +27,7 @@ model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 # model_name = "Qwen/Qwen2.5-7B-Instruct"
 
 # model_name = "tiiuae/Falcon3-10B-Instruct-1.58bit"
-# model_name = "qwen/qwen3-4b"
+model_name = "qwen/qwen3-4b"
 
 # If you need quantization
 from transformers import BitsAndBytesConfig
