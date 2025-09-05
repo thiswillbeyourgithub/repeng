@@ -96,32 +96,19 @@ class ControlVector:
         Returns:
             ControlVector: The trained vector.
         """
-
-        def transform_hiddens(hiddens: dict[int, np.ndarray]) -> dict[int, np.ndarray]:
-            sae_hiddens = {}
-            for k, v in tqdm.tqdm(hiddens.items(), desc="sae encoding"):
-                sae_hiddens[k] = sae.layers[k].encode(v)
-            return sae_hiddens
-
         with torch.inference_mode():
             dirs = read_representations(
                 model,
                 tokenizer,
                 dataset,
-                transform_hiddens=transform_hiddens,
+                sae=sae,
+                sae_decode=decode,
                 method=method,
                 cache_path=cache_path,
                 **kwargs,
             )
 
-            final_dirs = {}
-            if decode:
-                for k, v in tqdm.tqdm(dirs.items(), desc="sae decoding"):
-                    final_dirs[k] = sae.layers[k].decode(v)
-            else:
-                final_dirs = dirs
-
-        return cls(model_type=model.config.model_type, directions=final_dirs)
+        return cls(model_type=model.config.model_type, directions=dirs)
 
     def export_gguf(self, path: os.PathLike[str] | str):
         """
@@ -306,9 +293,8 @@ def read_representations(
         typing.Literal["pca_diff", "pca_center", "umap"],
         typing.Callable[[np.ndarray], np.ndarray],
     ] = "pca_diff",
-    transform_hiddens: (
-        typing.Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None
-    ) = None,
+    sae: Sae | None = None,
+    sae_decode: bool = True,
     cache_path: os.PathLike[str] | str | None = None,
 ) -> dict[int, np.ndarray]:
     """
@@ -326,11 +312,12 @@ def read_representations(
             "pca_diff", "pca_center", "umap", or a callable that takes hidden states
             array of shape (n_samples, hidden_dim) and returns a direction vector
             of shape (hidden_dim,). Defaults to "pca_diff".
-        transform_hiddens (Callable[[dict[int, np.ndarray]], dict[int, np.ndarray]] | None, optional):
-            Optional function to transform the extracted hidden states before computing
-            directions. Takes a dict mapping layer indices to hidden state arrays and
-            returns a transformed dict with the same structure. Used for SAE encoding.
-            Defaults to None.
+        sae (Sae | None, optional): Optional SAE to use for transforming hidden states
+            before computing directions. If provided, hidden states will be encoded
+            through the SAE. Defaults to None.
+        sae_decode (bool, optional): If using SAE, whether to decode the direction vectors
+            back to the original space. If False, returns directions in SAE feature space.
+            Defaults to True.
         cache_path (os.PathLike[str] | str | None, optional): Path to directory for h5py caching.
             If None, activations are computed and stored in memory. If provided, activations
             are cached to disk to allow for better memory scaling. Defaults to None.
@@ -359,8 +346,11 @@ def read_representations(
             batch_size=batch_size,
         )
 
-        if transform_hiddens is not None:
-            layer_hiddens = transform_hiddens(layer_hiddens)
+        if sae is not None:
+            sae_hiddens = {}
+            for k, v in tqdm.tqdm(layer_hiddens.items(), desc="sae encoding"):
+                sae_hiddens[k] = sae.layers[k].encode(v)
+            layer_hiddens = sae_hiddens
     else:
         # Use h5py caching for better memory scaling
         cache_file = batched_get_hiddens_cached(
@@ -375,6 +365,31 @@ def read_representations(
         train_strs_hash = _hash_train_strs(train_strs)
         group_path = f"{model_args}/{train_strs_hash}"
 
+        # SAE transformation with caching
+        if sae is not None:
+            sae_group_path = f"{group_path}_sae"
+            # Check if SAE cache exists and is complete
+            sae_cache_exists = False
+            try:
+                with h5py.File(cache_file, "r") as f:
+                    if (
+                        sae_group_path in f
+                        and "done_sae" in f[sae_group_path]
+                        and f[sae_group_path]["done_sae"][()]
+                    ):
+                        sae_cache_exists = True
+            except (OSError, KeyError):
+                pass
+
+            # Apply SAE transformation if cache doesn't exist
+            if not sae_cache_exists:
+                apply_sae_transform_cached(
+                    cache_file=cache_file,
+                    group_path=group_path,
+                    sae=sae,
+                    hidden_layers=hidden_layers,
+                )
+
     # get directions for each layer using PCA
     directions: dict[int, np.ndarray] = {}
     for layer in tqdm.tqdm(hidden_layers, desc="Altering directions"):
@@ -384,8 +399,9 @@ def read_representations(
             h = layer_hiddens[layer]
         else:
             # Load from h5py cache only a single layer's activations
+            source_group = f"{group_path}_sae" if sae is not None else group_path
             with h5py.File(cache_file, "r") as f:
-                h = f[group_path][f"layer_{layer}"][:]
+                h = f[source_group][f"layer_{layer}"][:]
             assert not np.all(h == 0)  # failed to get populated
 
         assert h.shape[0] == len(inputs) * 2
@@ -411,6 +427,10 @@ def read_representations(
 
         if positive_smaller_mean > positive_larger_mean:  # type: ignore
             directions[layer] *= -1
+
+        # Decode SAE directions back to original space if requested
+        if sae is not None and sae_decode:
+            directions[layer] = sae.layers[layer].decode(directions[layer])
 
     return directions
 
@@ -606,6 +626,59 @@ def _get_model_args_string(model) -> str:
         args.append(f"inter_{config.intermediate_size}")
 
     return "_".join(args)
+
+
+def apply_sae_transform_cached(
+    cache_file: str,
+    group_path: str,
+    sae: Sae,
+    hidden_layers: list[int],
+) -> None:
+    """
+    Apply SAE transformation to cached hidden states with caching of transformed values.
+    This function stores the transformed layers to the cache.
+
+    Args:
+        cache_file (str): Path to the h5py cache file.
+        group_path (str): Base group path in the cache file.
+        sae (Sae): SAE model to apply transformation.
+        hidden_layers (list[int]): List of layer indices to transform.
+    """
+
+    sae_group_path = f"{group_path}_sae"
+
+    with h5py.File(cache_file, "a") as f:
+        # Create SAE group if it doesn't exist
+        if sae_group_path not in f:
+            sae_group = f.create_group(sae_group_path)
+            sae_group.attrs["creation_date"] = datetime.now().isoformat()
+            sae_group.attrs["repeng_version"] = __VERSION__
+            sae_group.attrs["sae_applied"] = True
+
+        for layer in tqdm.tqdm(hidden_layers, desc="SAE encoding and caching"):
+            # Load original hidden states
+            original_hiddens = f[group_path][f"layer_{layer}"][:]
+
+            # Apply SAE encoding
+            transformed_hiddens = sae.layers[layer].encode(original_hiddens)
+
+            # Cache the transformed hiddens
+            if f"layer_{layer}" not in f[sae_group_path]:
+                f.create_dataset(
+                    f"{sae_group_path}/layer_{layer}",
+                    data=transformed_hiddens,
+                    compression="lzf",
+                    shuffle=True,
+                    chunks=True,
+                )
+            else:
+                f[f"{sae_group_path}/layer_{layer}"][:] = transformed_hiddens
+
+        # Mark SAE transformation as complete
+        if "done_sae" not in f[sae_group_path]:
+            f.create_dataset(f"{sae_group_path}/done_sae", data=True)
+        else:
+            f[f"{sae_group_path}/done_sae"][()] = True
 
 
 def _hash_train_strs(train_strs: list[str]) -> str:
