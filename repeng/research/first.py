@@ -5,7 +5,7 @@ from repeng import ControlVector, ControlModel, DatasetEntry
 from repeng.research import datasets
 
 # load and wrap model
-model_name = "mistralai/Mistral-7B-Instruct-v0.3"
+# model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 # model to use:
 # model_name = "meta-llama/Llama-3.2-1B-Instruct"
 # model_name = "meta-llama/Llama-3.2-3B-Instruct"
@@ -14,7 +14,7 @@ model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 # model_name = "mistralai/Mistral-Nemo-Instruct-2407"
 
 # # GGUF don't always work because there is a dequantization step. See here: https://github.com/huggingface/transformers/issues/34417
-fname = None
+# fname = None
 # model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
 # fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
 # fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
@@ -27,7 +27,7 @@ fname = None
 # model_name = "Qwen/Qwen2.5-7B-Instruct"
 
 # model_name = "tiiuae/Falcon3-10B-Instruct-1.58bit"
-# model_name = "qwen/qwen3-4b"
+model_name = "qwen/qwen3-4b"
 
 # If you need quantization
 from transformers import BitsAndBytesConfig
