@@ -129,15 +129,16 @@ strengths = [
     5,
 ]
 
+
 def get_data(dataset: str) -> tuple[str, list]:
     """
     Get scenario and dataset based on dataset name.
-    
+
     Parameters
     ----------
     dataset : str
         Dataset name ("age", etc.)
-        
+
     Returns
     -------
     tuple[str, list]
@@ -196,7 +197,7 @@ def test_configuration(
     print(f"Method: {method}")
     print(f"Dataset: {dataset}")
     print(f"Layer zones: {layer_zones}")
-    
+
     # Get scenario and dataset for this configuration
     scenario, train_dataset = get_data(dataset)
 
