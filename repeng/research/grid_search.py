@@ -62,8 +62,8 @@ tokenizer.pad_token = tokenizer.eos_token
 param_grid = {
     # "method": ["mean", "median", "pca_diff", "pca_center", "umap"],
     # "method": ["mean", "median"],
-    "method": ["median"],
-    "dataset": ["iq"],
+    "method": ["median", "pca_diff", "pca_center"],
+    "dataset": ["age", "iq"],
     "layer_zones": [
         # by increments of 0.1
         [[0.0, 0.1]],
