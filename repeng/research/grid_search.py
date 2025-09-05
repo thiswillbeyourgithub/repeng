@@ -377,7 +377,9 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
             (s, scores[s]) for s in sorted(scores.keys()) if not math.isnan(scores[s])
         ]
         if not valid_data:
-            print(f"  No valid scores to plot for this combination - all values are NaN")
+            print(
+                f"  No valid scores to plot for this combination - all values are NaN"
+            )
             continue
 
         print(f"  Creating plot with {len(valid_data)} valid data points")
@@ -385,7 +387,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
         # Create the figure
         fig, ax = plt.subplots(figsize=(12, 8))
-        
+
         ax.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
         ax.set_xlabel("Control Strength", fontsize=12)
         ax.set_ylabel("Extracted Value", fontsize=12)
@@ -431,7 +433,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
             print(f"  Plot saved: {plot_filename}")
         except Exception as e:
             print(f"  Error saving plot: {e}")
-        
+
         plt.close(fig)  # Close the specific figure to save memory
 
         # Log summary statistics to tensorboard
