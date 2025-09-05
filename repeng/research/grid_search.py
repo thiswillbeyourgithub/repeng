@@ -32,7 +32,7 @@ from tqdm import tqdm
 
 patch_sklearn()
 
-USE_TAGUCHI_REDUCTION = True
+USE_TAGUCHI_REDUCTION = False
 
 # Model configuration
 model_name = "qwen/qwen3-4b"
