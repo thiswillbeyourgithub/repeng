@@ -1,152 +1,55 @@
-# repeng
+# repeng - Research Fork
 
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/vgel/repeng/ci.yml?label=ci)](https://github.com/vgel/repeng/actions)
-[![PyPI - Version](https://img.shields.io/pypi/v/repeng)](https://pypi.org/project/repeng/)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/repeng)](https://pypi.org/project/repeng/)
-[![GitHub License](https://img.shields.io/github/license/vgel/repeng)](https://github.com/vgel/repeng/blob/main/LICENSE)
+**This is an experimental repo where I experiment with [repeng](https://github.com/vgel/repeng).**
 
-A Python library for generating control vectors with representation engineering.
-Train a vector in less than sixty seconds!
+**It was made to organise the investigation mentioned [in this issue](https://github.com/vgel/repeng/issues/27).**
 
-_For a full example, see the notebooks folder or [the blog post](https://vgel.me/posts/representation-engineering)._
+**NOTE: keep in mind that this is an experimental repo, and a WIP actively maintained. I'm doing this to keep track of what I do. Don't hesitate to reach out for any remarks! But don't expect my code to be always coherent etc**
 
-```python
-import json
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+Specifically, things I intend to do are:
 
-from repeng import ControlVector, ControlModel, DatasetEntry
-from repeng.utils import make_dataset
+- Take one model as a reference
+- Benchmark the model using langtest to get its reference scores on things like MMLU
+- do the following comparisons also with the instruct vs base versions
+- Run the benchmark again after applying the following vector to measure how badly we crippled the LLM:
+    - Apply only to some layers and see how much it impacts the benchmarks
+    - with 100 samples:
+        - PCA
+        - pacmap
+        - UMAP
+        - UMAP with densmap
+        - PCA + 0.3 * pacmap
+        - PCA + 0.3 * UMAP
+        - PCA + 0.3 * UMAP with densmap
+    - Again with 1000 samples
+    - Again with normalization of each directions (=rescaling to have max size of 1, or applying L1, or L2)
+    - Again with all layers, only the middle half layers, only the last half
+    - Keep 10 UMAP dimensions, do a kmeans with k=5, apply the repeng using as vector the 1D pca of only the points in the first cluster, do that for each clusters and see if they all have a strong effect of not
+    - Create a pair of good and bad intelligence-aligned examples, see if it increases its accuracy on other similar benchmarks
+    - Create a pair of good and bad answers to the MMLU, see if it increases its accuracy on other similar benchmarks
 
-# load and wrap model
-model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 
-# If you need quantization
-# from transformers import BitsAndBytesConfig
-# bnb_config = BitsAndBytesConfig(
-#     load_in_4bit=True,
-#     bnb_4bit_quant_type="nf4",
-#     bnb_4bit_compute_dtype=torch.bfloat16,
-#     bnb_4bit_use_double_quant=True,
-# )
 
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    # quantization_config=bnb_config,
-    # dtype=torch.float16,
-    )
-)
 
-# wrap the model to give us control
-model = ControlModel(
-    model,
-    # layer_ids=list(range(-5, -18, -1))  # specify layers to control by layer ID
-    layer_zones=[[0.5, 0.9]],  # control layers with relative depth in [0.5, 0.9[
-)
+# How to replicate my setup
+- git clone this repo
+- cd into it
+- `uv venv` then activate the venv
+- Install dependencies from `research/requirements.txt` with `uv pip install -r research/requirements.txt`
+- install my slightly modified repeng into the venv with `uv pip install -e .`
+- Also might be needed:
+    - `uv pip install -U gguf`
+    - installing `umap-learn` by following [those instructions](https://pypi.org/project/umap-learn/)
+    - installing `pacmap` by following [those instructions](https://pypi.org/project/pacmap/)
 
-tokenizer = AutoTokenizer.from_pretrained(
-    model_name,
-    # quantization_config=bnb_config,
-)
 
-# generate a dataset with closely-opposite paired statements
-trippy_dataset = make_dataset(
-    # you can use either chat as dicts...
-    template=[
-        {"role": "system", "content": "You talk like you are {persona}."},
-        {"role": "user", "content": "{suffix}"},
-    ],
-    # ...or directly strings:
-    # template="Act as if you're {persona}. Someone comes at you and says '{suffix}'.",
+# Update
 
-    positive_personas=["extremely high on psychedelic drugs", "peaking on magic mushrooms"],
-    negative_personas=["sober from drugs", "who enjoys drinking water"],
-    suffix_list=[
-        "Hey, what's up man?",
-        "Hey, what's up girl?",
-        "Welcome Mr Musk, come this way.",
-        "How have you been feeling lately with the medications?",
-    ],
-)
+- New aim:
+    - I intend to make a clean PR to repeng to improve it
+    - ask the model to estimate it's IQ. As IQ is defined by gaussian statistics, it would be nice to see that value move depending on which layer was repeng'ed on a dump<->smart vector. This would be a way to validate the depth most impacted by a model.
+        - Other idea: on a young<->old vector, we could ask it to estimate its age.
+    - then map out the parameter space of how well the repeng vector works (i.e. visually show how much the vector at depth X moves the IQ/age estimation if we give the vector a strength of 1).
+    - then do so for each other techniques (PCA, UMAP, with or without scaling, etc).
+    - then do so for a few other models for comparison
 
-# train the vector—takes less than a minute!
-trippy_vector = ControlVector.train(model, tokenizer, trippy_dataset)
-
-# Now we must give the scenario for the generation we will engineer:
-# By turning chat messages into the format expected by the model [RECOMMENDED]
-scenario: str = tokenizer.apply_chat_template(
-    messages=[
-        {
-            "role": "system",
-            "content": "You are the patient, the user is your psychiatrist."
-        },
-        {
-            "role": "user",
-            "content": "Now let's talk about your mood. How do you feel?",
-        },
-        {
-            "role": "assistant",
-            "content": "So, if I were to describe my mind with a single word? It would be '",
-        }
-    ],
-    continue_final_message=True,
-    tokenize=False,
-)
-# Or directly as a str
-# scenario=f"[INST] Give me a one-sentence pitch for a TV show. [/INST]",
-
-# set the control strength and let inference rip!
-for strength in (-2.2, 1, 2.2):
-    print(f"strength={strength}")
-    model.set_control(trippy_vector, strength)
-    out = model.generate(
-        **tokenizer(
-            scenario,
-            return_tensors="pt"
-        ).to(model.device),
-        do_sample=False,
-        # temperature=1.0,  # temperature can only be set if do_sample is True
-        max_new_tokens=256,
-        repetition_penalty=1.1,
-    )
-    print(tokenizer.decode(out.squeeze()).strip())
-    # or if you want to display the special tokens:
-    # print(tokenizer.decode(out.squeeze(), skip_special_tokens=False).strip())
-    print()
-```
-
-> strength=-2.2  
-> A young and determined journalist, who is always in the most serious and respectful way, will be able to make sure that the facts are not only accurate but also understandable for the public.
->
-> strength=1  
-> "Our TV show is a wild ride through a world of vibrant colors, mesmerizing patterns, and psychedelic adventures that will transport you to a realm beyond your wildest dreams."
->
-> strength=2.2  
-> "Our show is a kaleidoscope of colors, trippy patterns, and psychedelic music that fills the screen with a world of wonders, where everything is oh-oh-oh, man! ��psy����������oodle����psy��oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
-
-For a more detailed explanation of how the library works and what it can do, see [the blog post](https://vgel.me/posts/representation-engineering).
-
-## Notes
-
-* For a list of changes by version, see the [CHANGELOG](https://github.com/vgel/repeng/blob/main/CHANGELOG).
-* For quantized use, you may be interested in [llama.cpp#5970](https://github.com/ggerganov/llama.cpp/pull/5970)—after training a vector with `repeng`, export it by calling `vector.export_gguf(filename)` and then use it in `llama.cpp` with any quant!
-* To load gguf files directly, you can run into OOM errors, see [this github issue for more](See here: https://github.com/huggingface/transformers/issues/34417).
-* Vector training *currently does not work* with MoE models (such as Mixtral). (This is theoretically fixable with some work, let me know if you're interested.)
-* Some example notebooks require `accelerate`, which must be manually installed with `pip install accelerate`. (This can also be done in the notebook with the IPython magic `%pip install accelerate`.)
-
-## Notice
-
-Some of the code in this repository derives from [andyzoujm/representation-engineering](https://github.com/andyzoujm/representation-engineering) (MIT license).
-
-## Citation
-
-If this repository is useful for academic work, please remember to cite [the representation-engineering paper](https://github.com/andyzoujm/representation-engineering?tab=readme-ov-file#citation) that it's based on, along with this repository:
-
-```
-@misc{vogel2024repeng,
-  title = {repeng},
-  author = {Theia Vogel},
-  year = {2024},
-  url = {https://github.com/vgel/repeng/}
-}
-```
