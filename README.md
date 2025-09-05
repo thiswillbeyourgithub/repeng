@@ -24,8 +24,8 @@ Specifically, things I intend to do are:
         e. What is the impact of the number of samples on the reliability of those effects?
 3. Redo this whole experience but comparing with other method:
     - [PCA](https://scikit-learn.org/stable/modules/decomposition.html)
-    - pca_diff
-    - pca_center
+        - pca_diff
+        - pca_center
     - [kPCA](https://scikit-learn.org/stable/modules/decomposition.html)
     - [dictionary learning](https://scikit-learn.org/stable/modules/decomposition.html)
     - [ICA](https://scikit-learn.org/stable/modules/decomposition.html)
