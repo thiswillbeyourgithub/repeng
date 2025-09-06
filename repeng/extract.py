@@ -319,7 +319,7 @@ def compute_direction(
         # Use difference between positive and negative examples for ICA
         train = hidden_states[::2] - hidden_states[1::2]
         # Fit ICA with 1 component to extract the most independent direction
-        ica_model = FastICA(n_components=1, whiten='unit-variance', random_state=42)
+        ica_model = FastICA(n_components=1, whiten="unit-variance", random_state=42)
         ica_model.fit(train)
         # Return the first (and only) component, shape (n_features,)
         return ica_model.components_.astype(np.float32).squeeze(axis=0)
@@ -330,7 +330,7 @@ def compute_direction(
         train[::2] -= center
         train[1::2] -= center
         # Fit ICA with 1 component to extract the most independent direction
-        ica_model = FastICA(n_components=1, whiten='unit-variance', random_state=42)
+        ica_model = FastICA(n_components=1, whiten="unit-variance", random_state=42)
         ica_model.fit(train)
         # Return the first (and only) component, shape (n_features,)
         return ica_model.components_.astype(np.float32).squeeze(axis=0)
