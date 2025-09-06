@@ -6,8 +6,28 @@
 - Don't hesitate to reach out!
 - This is an experimental repo, that I occasionaly push to.
 - I'm also doing this to keep track of what I do.
+- All new features of this fork I intend to send upstream.
 
-Specifically, things I intend to do are:
+# Fork Features
+
+For this project I had to make substantial modifications to repeng:
+- Currently waiting for upstream approval:
+    - [PR 66](https://github.com/vgel/repeng/pull/66):
+        - Make repeng compatible with qwen3 models ([link](https://github.com/vgel/repeng/pull/66))
+    - [PR 65](https://github.com/vgel/repeng/pull/65):
+        - support for input in the "chat" format instead of strings.
+        - layers zones (make it easier to specify the layers to control)
+        - autocorrecting templates of models
+- I have terrible old hardware so the memory requirements were an issue for me. So I implemented with [h5py](https://pypi.org/project/h5py/) a caching of the hidden layers activations to avoid recomputing them each time. Also, there is now no need to hold all the activations in memory at the same time, we only hold one layer at a time.
+    - Also modified the `transform_hidden` function so that we don't have to hold all the layers in memory at the same time, just one at a time.
+- Implemented new `methods` to get the directions of the vector:
+    - `mean`: simply do `np.mean` on the positive samples, then on the negative, and substract the two.
+    - `median`: same as `np.mean` but with `np.median`.
+    - `custom`: accepts any function to transform the hidden layers.
+- Added optional [beartype](https://beartype.readthedocs.io/) runtime type checking.
+- Wrote `./repeng/research/datasets.py` to organize example datasets for repeng.
+- Added some [loguru](https://pypi.org/project/loguru/) logging.
+
 
 # Current plan:
 
