@@ -120,7 +120,7 @@ Here is a global view of the results of the `age` experiment, using `median` met
 - If we have a line, a steep slope means the chosen layers are particularly sensitive to our vector. Which is not necessarily a bad thing but I chose the range of `strengths` values after estimating the dose-response curve and not randomly.
 - A flat line usually means that the model barely (if at all) responded to the vector. Indeed, without any vector, the IQ answered by the LLM is around 125, and the age is 25.
 
-# Which method and layer to use?
+### Which method and layer to use?
 
 - From my testing, so far `median` and `mean` are the best methods. And `median` seems in theory more robust than `mean`. Both behave similarly. They tend to do nothing at shallow and the deepest layers and tended to output gibberish at layers between `05` and `09`. `03_05` is clearly usable:
 
@@ -129,7 +129,7 @@ Here is a global view of the results of the `age` experiment, using `median` met
 - `pca_center` seems to work *okay-ish* but is less strong than the above. It seems that giving it more layers (and an even number on each end) works better than for other methods. In particular `01_09`, `02_08`, `03_07`, `04_06` all seem usable.
 - `pca_diff` barely has an impact. Maybe it's just a matter of increasing the strength? Also the case for the `iq` dataset.
 
-# What about the IQ dataset?
+### What about the IQ dataset?
 
 The conclusions from the `age` dataset seem to, roughly, still hold true for the `iq` dataset, with a huge caveat. Models with the "smart+++" vector estimate lower IQ than a models with a "smart+" vector. This is interesting because the vector *did appear to* work: I could see the LLM change `I have an IQ of 135 and am doing a bachelor's degree in` into `I have an IQ of 125 and am doing a master's degree in` (notice the higher degree with a lower IQ). My theory is that I reproduced the [Dunning Kruger effect](https://en.wikipedia.org/wiki/Dunning%E2%80%93Kruger_effect).
 
