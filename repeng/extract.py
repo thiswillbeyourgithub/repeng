@@ -8,7 +8,7 @@ from datetime import datetime
 import gguf
 import h5py
 import numpy as np
-from sklearn.decomposition import PCA, FastICA
+from sklearn.decomposition import PCA, FastICA, DictionaryLearning
 import torch
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
 import tqdm
@@ -239,7 +239,7 @@ def compute_direction(
     hidden_states: np.ndarray,
     method: typing.Union[
         typing.Literal[
-            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center"
+            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", "dict_diff", "dict_center"
         ],
         typing.Callable[[np.ndarray], np.ndarray],
     ],
@@ -252,7 +252,7 @@ def compute_direction(
             For contrast methods, should have even number of samples where pairs represent
             [positive, negative, positive, negative, ...] examples.
         method: The method to use for computing the direction. Can be "pca_diff",
-            "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", or a callable that takes hidden states and returns
+            "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", "dict_diff", "dict_center", or a callable that takes hidden states and returns
             a direction vector.
 
     Returns:
@@ -325,6 +325,25 @@ def compute_direction(
         ica_model.fit(train)
         # Return the first (and only) component, shape (n_features,)
         return ica_model.components_.astype(np.float32).squeeze(axis=0)
+    elif method == "dict_diff":
+        # Use difference between positive and negative examples for Dictionary Learning
+        train = hidden_states[::2] - hidden_states[1::2]
+        # Fit Dictionary Learning with 1 component to extract the most representative atom
+        dict_model = DictionaryLearning(n_components=1, random_state=42, max_iter=100)
+        dict_model.fit(train)
+        # Return the first (and only) dictionary atom, shape (n_features,)
+        return dict_model.components_.astype(np.float32).squeeze(axis=0)
+    elif method == "dict_center":
+        # Use centered data for Dictionary Learning (like pca_center)
+        center = (hidden_states[::2] + hidden_states[1::2]) / 2
+        train = hidden_states.copy()
+        train[::2] -= center
+        train[1::2] -= center
+        # Fit Dictionary Learning with 1 component to extract the most representative atom
+        dict_model = DictionaryLearning(n_components=1, random_state=42, max_iter=100)
+        dict_model.fit(train)
+        # Return the first (and only) dictionary atom, shape (n_features,)
+        return dict_model.components_.astype(np.float32).squeeze(axis=0)
     else:
         raise ValueError(f"unknown method {method}")
 
@@ -337,7 +356,7 @@ def read_representations(
     batch_size: int = 32,
     method: typing.Union[
         typing.Literal[
-            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center"
+            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", "dict_diff", "dict_center"
         ],
         typing.Callable[[np.ndarray], np.ndarray],
     ] = "pca_diff",
@@ -357,7 +376,7 @@ def read_representations(
         batch_size (int, optional): The maximum batch size for training.
             Defaults to 32. Try reducing this if you're running out of memory.
         method (str | Callable, optional): The training method to use. Can be either
-            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", or a callable that takes hidden states
+            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", "dict_diff", "dict_center", or a callable that takes hidden states
             array of shape (n_samples, hidden_dim) and returns a direction vector
             of shape (hidden_dim,). Defaults to "pca_diff".
         sae (Sae | None, optional): Optional SAE to use for transforming hidden states
