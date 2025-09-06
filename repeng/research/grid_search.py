@@ -53,9 +53,8 @@ param_grid = {
         # "microsoft/DialoGPT-medium",
         # Add more models here as needed
     ],
-    # "method": ["mean", "median", "pca_diff", "pca_center", "umap"],
     # "method": ["mean", "median"],
-    "method": ["median", "pca_diff", "pca_center"],
+    "method": ["median", "mean", "pca_diff", "pca_center", "ica_diff", "ica_center", "umap", "umap_densmap"],
     "dataset": ["age", "iq"],
     "layer_zones": [
         # by increments of 0.1
