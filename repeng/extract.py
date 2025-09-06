@@ -65,9 +65,9 @@ class ControlVector:
         cls,
         model: "PreTrainedModel | ControlModel",
         tokenizer: PreTrainedTokenizerBase,
+        dataset: typing.List[DatasetEntry],
         sae: Sae,
         decode: bool = True,
-        dataset: list[DatasetEntry],
         cache_path: os.PathLike[str] | str | None = None,
         **kwargs,
     ) -> "ControlVector":
@@ -78,11 +78,11 @@ class ControlVector:
         Args:
             model (PreTrainedModel | ControlModel): The model to train against.
             tokenizer (PreTrainedTokenizerBase): The tokenizer to tokenize the dataset.
+            dataset (list[DatasetEntry]): The dataset used for training.
             sae (saes.Sae): See the `saes` module for how to load this.
             decode (bool, optional): Whether to decode the vector to make it immediately usable.
                 If not, keeps it as monosemantic SAE features for introspection, but you will need to decode it manually
                 to use it. Defaults to True.
-            dataset (list[DatasetEntry]): The dataset used for training.
             cache_path (os.PathLike[str] | str | None, optional): Path to directory for h5py caching.
                 If None, activations are computed and stored in memory. If provided, activations
                 are cached to disk to allow for better memory scaling. Defaults to None.
