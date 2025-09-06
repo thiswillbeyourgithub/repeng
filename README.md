@@ -127,9 +127,13 @@ Here is a global view of the results of the `age` experiment, using `median` met
 ![](./images/age_median_zones_03_05.png)
 
 - `pca_center` seems to work *okay-ish* but is less strong than the above. It seems that giving it more layers (and an even number on each end) works better than for other methods. In particular `01_09`, `02_08`, `03_07`, `04_06` all seem usable.
-- `pca_diff` barely has an impact. Maybe it's just a matter of increasing the strength?
+- `pca_diff` barely has an impact. Maybe it's just a matter of increasing the strength? Also the case for the `iq` dataset.
 
+# What about the IQ dataset?
 
+The conclusions from the `age` dataset seem to, roughly, still hold true for the `iq` dataset, with a huge caveat. Models with the "smart+++" vector estimate lower IQ than a models with a "smart+" vector. This is interesting because the vector *did appear to* work: I could see the LLM change `I have an IQ of 135 and am doing a bachelor's degree in` into `I have an IQ of 125 and am doing a master's degree in` (notice the higher degree with a lower IQ). My theory is that I reproduced the [Dunning Kruger effect](https://en.wikipedia.org/wiki/Dunning%E2%80%93Kruger_effect).
+
+Also, in retrospect I don't think it was that good of an idea: IQ has a gaussian distribution meaning that the spread of values is not idea for our task. Also, people writing their IQ tend to report an above average IQ (nobody writes online about their IQ of 75), all the more restricting the range of what the LLM could read in its training set.
 
 
 
