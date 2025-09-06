@@ -66,19 +66,8 @@ class ControlVector:
         model: "PreTrainedModel | ControlModel",
         tokenizer: PreTrainedTokenizerBase,
         sae: Sae,
-        dataset: list[DatasetEntry],
         decode: bool = True,
-        method: typing.Literal[
-            "pca_diff",
-            "pca_center",
-            "mean",
-            "median",
-            "umap",
-            "ica_diff",
-            "ica_center",
-            "dict_diff",
-            "dict_center",
-        ] = "pca_center",
+        dataset: list[DatasetEntry],
         cache_path: os.PathLike[str] | str | None = None,
         **kwargs,
     ) -> "ControlVector":
@@ -90,19 +79,14 @@ class ControlVector:
             model (PreTrainedModel | ControlModel): The model to train against.
             tokenizer (PreTrainedTokenizerBase): The tokenizer to tokenize the dataset.
             sae (saes.Sae): See the `saes` module for how to load this.
+            decode (bool, optional): Whether to decode the vector to make it immediately usable.
+                If not, keeps it as monosemantic SAE features for introspection, but you will need to decode it manually
+                to use it. Defaults to True.
             dataset (list[DatasetEntry]): The dataset used for training.
-            **kwargs: Additional keyword arguments.
-                decode (bool, optional): Whether to decode the vector to make it immediately usable.
-                    If not, keeps it as monosemantic SAE features for introspection, but you will need to decode it manually
-                    to use it. Defaults to True.
-                cache_path (os.PathLike[str] | str | None, optional): Path to directory for h5py caching.
-                    If None, activations are computed and stored in memory. If provided, activations
-                    are cached to disk to allow for better memory scaling. Defaults to None.
-                max_batch_size (int, optional): The maximum batch size for training.
-                    Defaults to 32. Try reducing this if you're running out of memory.
-                method (str, optional): The training method to use. Can be either
-                    "pca_diff", "pca_center", "mean", "median", or "umap". Defaults to "pca_center"! This is different
-                    than ControlVector.train, which defaults to "pca_diff".
+            cache_path (os.PathLike[str] | str | None, optional): Path to directory for h5py caching.
+                If None, activations are computed and stored in memory. If provided, activations
+                are cached to disk to allow for better memory scaling. Defaults to None.
+            **kwargs: Additional keyword arguments. See help(repeng.extract.read_representations) for details.
 
         Returns:
             ControlVector: The trained vector.
