@@ -69,7 +69,7 @@ class ControlVector:
         dataset: list[DatasetEntry],
         decode: bool = True,
         method: typing.Literal[
-            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center"
+            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", "dict_diff", "dict_center"
         ] = "pca_center",
         cache_path: os.PathLike[str] | str | None = None,
         **kwargs,
