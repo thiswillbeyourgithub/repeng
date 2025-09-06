@@ -71,6 +71,9 @@ The idea is to do a grid_search (with taguchi reduction using my other project [
 </details>
 
 
+# Results
+
+To browse the results, go to the [./results](./results) folder.
 
 
 # How to replicate my setup
