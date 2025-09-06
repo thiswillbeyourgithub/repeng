@@ -69,7 +69,7 @@ class ControlVector:
         dataset: list[DatasetEntry],
         decode: bool = True,
         method: typing.Literal[
-            "pca_diff", "pca_center", "mean", "median", "umap", "ica"
+            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center"
         ] = "pca_center",
         cache_path: os.PathLike[str] | str | None = None,
         **kwargs,
@@ -238,7 +238,9 @@ class ControlVector:
 def compute_direction(
     hidden_states: np.ndarray,
     method: typing.Union[
-        typing.Literal["pca_diff", "pca_center", "mean", "median", "umap", "ica"],
+        typing.Literal[
+            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center"
+        ],
         typing.Callable[[np.ndarray], np.ndarray],
     ],
 ) -> np.ndarray:
@@ -250,7 +252,7 @@ def compute_direction(
             For contrast methods, should have even number of samples where pairs represent
             [positive, negative, positive, negative, ...] examples.
         method: The method to use for computing the direction. Can be "pca_diff",
-            "pca_center", "mean", "median", "umap", "ica", or a callable that takes hidden states and returns
+            "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", or a callable that takes hidden states and returns
             a direction vector.
 
     Returns:
@@ -304,9 +306,20 @@ def compute_direction(
         umap_model = umap.UMAP(n_components=1)
         embedding = umap_model.fit_transform(train).astype(np.float32)
         return np.sum(train * embedding, axis=0) / np.sum(embedding)
-    elif method == "ica":
+    elif method == "ica_diff":
         # Use difference between positive and negative examples for ICA
         train = hidden_states[::2] - hidden_states[1::2]
+        # Fit ICA with 1 component to extract the most independent direction
+        ica_model = FastICA(n_components=1, whiten=True, random_state=42)
+        ica_model.fit(train)
+        # Return the first (and only) component, shape (n_features,)
+        return ica_model.components_.astype(np.float32).squeeze(axis=0)
+    elif method == "ica_center":
+        # Use centered data for ICA (like pca_center)
+        center = (hidden_states[::2] + hidden_states[1::2]) / 2
+        train = hidden_states.copy()
+        train[::2] -= center
+        train[1::2] -= center
         # Fit ICA with 1 component to extract the most independent direction
         ica_model = FastICA(n_components=1, whiten=True, random_state=42)
         ica_model.fit(train)
@@ -323,7 +336,9 @@ def read_representations(
     hidden_layers: typing.Iterable[int] | None = None,
     batch_size: int = 32,
     method: typing.Union[
-        typing.Literal["pca_diff", "pca_center", "mean", "median", "umap", "ica"],
+        typing.Literal[
+            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center"
+        ],
         typing.Callable[[np.ndarray], np.ndarray],
     ] = "pca_diff",
     sae: Sae | None = None,
@@ -342,7 +357,7 @@ def read_representations(
         batch_size (int, optional): The maximum batch size for training.
             Defaults to 32. Try reducing this if you're running out of memory.
         method (str | Callable, optional): The training method to use. Can be either
-            "pca_diff", "pca_center", "mean", "median", "umap", "ica", or a callable that takes hidden states
+            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", or a callable that takes hidden states
             array of shape (n_samples, hidden_dim) and returns a direction vector
             of shape (hidden_dim,). Defaults to "pca_diff".
         sae (Sae | None, optional): Optional SAE to use for transforming hidden states
