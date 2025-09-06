@@ -309,7 +309,7 @@ def test_configuration(
             ax.set_xlabel("Control Strength", fontsize=12)
             ax.set_ylabel("Extracted Value", fontsize=12)
             ax.set_title(
-                f"Extracted value vs Control Strength\n"
+                f"Extracted value vs Control Strength ({dataset} dataset)\n"
                 f"Method: {method}, Layer zones: {layer_zones}\n"
                 f"Model: {model_name}",
                 fontsize=14,
