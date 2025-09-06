@@ -236,6 +236,7 @@ def compute_direction(
             "mean",
             "median",
             "umap",
+            "umap_densmap",
             "ica_diff",
             "ica_center",
             "dict_diff",
@@ -252,7 +253,7 @@ def compute_direction(
             For contrast methods, should have even number of samples where pairs represent
             [positive, negative, positive, negative, ...] examples.
         method: The method to use for computing the direction. Can be "pca_diff",
-            "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", "dict_diff", "dict_center", or a callable that takes hidden states and returns
+            "pca_center", "mean", "median", "umap", "umap_densmap", "ica_diff", "ica_center", "dict_diff", "dict_center", or a callable that takes hidden states and returns
             a direction vector.
 
     Returns:
@@ -304,6 +305,14 @@ def compute_direction(
         import umap  # type: ignore
 
         umap_model = umap.UMAP(n_components=1)
+        embedding = umap_model.fit_transform(train).astype(np.float32)
+        return np.sum(train * embedding, axis=0) / np.sum(embedding)
+    elif method == "umap_densmap":
+        train = hidden_states
+        # still experimental so don't want to add this as a real dependency yet
+        import umap  # type: ignore
+
+        umap_model = umap.UMAP(n_components=1, densmap=True)
         embedding = umap_model.fit_transform(train).astype(np.float32)
         return np.sum(train * embedding, axis=0) / np.sum(embedding)
     elif method == "ica_diff":
@@ -361,6 +370,7 @@ def read_representations(
             "mean",
             "median",
             "umap",
+            "umap_densmap",
             "ica_diff",
             "ica_center",
             "dict_diff",
@@ -384,7 +394,7 @@ def read_representations(
         batch_size (int, optional): The maximum batch size for training.
             Defaults to 32. Try reducing this if you're running out of memory.
         method (str | Callable, optional): The training method to use. Can be either
-            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", "dict_diff", "dict_center", or a callable that takes hidden states
+            "pca_diff", "pca_center", "mean", "median", "umap", "umap_densmap", "ica_diff", "ica_center", "dict_diff", "dict_center", or a callable that takes hidden states
             array of shape (n_samples, hidden_dim) and returns a direction vector
             of shape (hidden_dim,). Defaults to "pca_diff".
         sae (Sae | None, optional): Optional SAE to use for transforming hidden states
