@@ -26,7 +26,6 @@ from repeng import (
     __VERSION__ as repeng_version,
 )
 from repeng.research import datasets
-import repeng.saes
 
 from sklearnex import patch_sklearn
 from tqdm import tqdm
@@ -37,10 +36,6 @@ USE_TAGUCHI_REDUCTION = False
 
 # Model configuration
 model_name = "qwen/qwen3-4b"
-
-# SAE configuration (only used when use_sae=True)
-sae_model_name = "EleutherAI/sae-llama-3-8b-32x"
-sae_model_revision = "32926540825db694b6228df703f4528df4793d67"
 
 # Quantization config
 from transformers import BitsAndBytesConfig
@@ -69,7 +64,6 @@ param_grid = {
     # "method": ["mean", "median"],
     "method": ["median", "pca_diff", "pca_center"],
     "dataset": ["age", "iq"],
-    "use_sae": [False],  # Set to [True] or [False, True] to enable SAE training
     "layer_zones": [
         # by increments of 0.1
         [[0.0, 0.1]],
@@ -220,7 +214,6 @@ def test_configuration(
     method: str,
     layer_zones: list,
     dataset: str,
-    use_sae: bool,
     combo_idx: int,
     total_combos: int,
 ) -> dict:
@@ -229,15 +222,13 @@ def test_configuration(
     print(f"Method: {method}")
     print(f"Dataset: {dataset}")
     print(f"Layer zones: {layer_zones}")
-    print(f"Use SAE: {use_sae}")
 
     # Get scenario and dataset for this configuration
     scenario, train_dataset = get_data(dataset)
 
     # Create unique writer for this combination
     zones_tag = format_layer_zones_for_filename(layer_zones)
-    sae_suffix = "_sae" if use_sae else ""
-    run_name = f"{dataset}_{method}_zones_{zones_tag}{sae_suffix}"
+    run_name = f"{dataset}_{method}_zones_{zones_tag}"
     writer = SummaryWriter(f"./tensorboard_logs/grid_search/{run_name}")
 
     try:
@@ -248,47 +239,16 @@ def test_configuration(
             layer_zones=layer_zones,
         )
 
-        # Load SAE if needed
-        sae = None
-        if use_sae:
-            print("Loading SAE model...")
-            # Extract layer numbers from layer_zones for SAE
-            sae_layers = []
-            for zone in layer_zones:
-                start_layer = int(zone[0] * base_model.config.num_hidden_layers)
-                end_layer = int(zone[1] * base_model.config.num_hidden_layers)
-                sae_layers.extend(range(start_layer, end_layer))
-            # Remove duplicates and sort
-            sae_layers = sorted(list(set(sae_layers)))
-
-            sae = repeng.saes.from_eleuther(
-                sae_model_name,
-                revision=sae_model_revision,
-                device="cuda",
-                layers=sae_layers,
-            )
-
         # Train control vector
         print("Training control vector...")
-        if use_sae and sae is not None:
-            trained_vector = ControlVector.train_with_sae(
-                control_model,
-                tokenizer,
-                sae,
-                train_dataset,
-                batch_size=1,
-                method=method,
-                cache_path="./model_cache",
-            )
-        else:
-            trained_vector = ControlVector.train(
-                control_model,
-                tokenizer,
-                train_dataset,
-                batch_size=1,
-                method=method,
-                cache_path="./model_cache",
-            )
+        trained_vector = ControlVector.train(
+            control_model,
+            tokenizer,
+            train_dataset,
+            batch_size=1,
+            method=method,
+            cache_path="./model_cache",
+        )
 
         # Test all strengths
         scores = {}
@@ -313,9 +273,8 @@ def test_configuration(
 
             # Log the output text to tensorboard
             zones_tag = format_layer_zones_for_filename(layer_zones)
-            sae_suffix = "_sae" if use_sae else ""
             writer.add_text(
-                f"{dataset}_{method}/zones_{zones_tag}{sae_suffix}/outputs",
+                f"{dataset}_{method}/zones_{zones_tag}/outputs",
                 f"Strength {strength}: {output}",
                 global_step=strength,
             )
@@ -352,7 +311,7 @@ def test_configuration(
             ax.set_title(
                 f"Extracted value vs Control Strength\n"
                 f"Method: {method}, Layer zones: {layer_zones}\n"
-                f"Model: {model_name}, SAE: {use_sae}",
+                f"Model: {model_name}",
                 fontsize=14,
             )
             ax.grid(True, alpha=0.3)
@@ -390,8 +349,7 @@ def test_configuration(
 
             # Save plot
             zones_tag = format_layer_zones_for_filename(layer_zones)
-            sae_suffix = "_sae" if use_sae else ""
-            plot_filename = f"./plots/grid_search/extracted_value_{dataset}_{method}_{zones_tag}{sae_suffix}.png"
+            plot_filename = f"./plots/grid_search/extracted_value_{dataset}_{method}_{zones_tag}.png"
             try:
                 fig.savefig(
                     plot_filename, dpi=300, bbox_inches="tight", facecolor="white"
@@ -424,7 +382,6 @@ def test_configuration(
             "method": method,
             "dataset": dataset,
             "layer_zones": layer_zones,
-            "use_sae": use_sae,
             "scores": scores,
             "outputs": outputs,
             "success": True,
@@ -438,7 +395,6 @@ def test_configuration(
             "method": method,
             "dataset": dataset,
             "layer_zones": layer_zones,
-            "use_sae": use_sae,
             "scores": {},
             "outputs": {},
             "success": False,
@@ -486,12 +442,9 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
     method = params["method"]
     dataset = params["dataset"]
     layer_zones = params["layer_zones"]
-    use_sae = params["use_sae"]
 
     # Test this configuration
-    result = test_configuration(
-        method, layer_zones, dataset, use_sae, i, total_combinations
-    )
+    result = test_configuration(method, layer_zones, dataset, i, total_combinations)
     all_results.append(result)
 
     if result["success"] and result["scores"]:
@@ -499,11 +452,10 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
         # Log individual points to tensorboard (only valid scores, no NaN values)
         zones_tag = format_layer_zones_for_filename(layer_zones)
-        sae_suffix = "_sae" if result["use_sae"] else ""
         for strength, score in scores.items():
             if not math.isnan(score):
                 main_writer.add_scalar(
-                    f"{dataset}_{method}/zones_{zones_tag}{sae_suffix}/extracted_value",
+                    f"{dataset}_{method}/zones_{zones_tag}/extracted_value",
                     score,
                     strength,
                 )
@@ -545,7 +497,6 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
             hparam_dict = {
                 "method": method,
                 "dataset": dataset,
-                "use_sae": result["use_sae"],
                 "layer_zones_str": str(
                     layer_zones
                 ),  # String representation for filtering
@@ -585,53 +536,45 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
                 )
 
             # Use combination index as the x-axis for summary stats
-            sae_suffix = "_sae" if result["use_sae"] else ""
             main_writer.add_scalar(
-                f"summary/{dataset}_{method}_zones_{zones_tag}{sae_suffix}/mean_score",
+                f"summary/{dataset}_{method}_zones_{zones_tag}/mean_score",
                 mean_score,
                 i,
             )
             main_writer.add_scalar(
-                f"summary/{dataset}_{method}_zones_{zones_tag}{sae_suffix}/max_score",
-                max_score,
-                i,
+                f"summary/{dataset}_{method}_zones_{zones_tag}/max_score", max_score, i
             )
             main_writer.add_scalar(
-                f"summary/{dataset}_{method}_zones_{zones_tag}{sae_suffix}/min_score",
-                min_score,
-                i,
+                f"summary/{dataset}_{method}_zones_{zones_tag}/min_score", min_score, i
             )
             main_writer.add_scalar(
-                f"summary/{dataset}_{method}_zones_{zones_tag}{sae_suffix}/score_range",
+                f"summary/{dataset}_{method}_zones_{zones_tag}/score_range",
                 score_range,
                 i,
             )
             main_writer.add_scalar(
-                f"summary/{dataset}_{method}_zones_{zones_tag}{sae_suffix}/correlation_coeff",
+                f"summary/{dataset}_{method}_zones_{zones_tag}/correlation_coeff",
                 correlation_coeff,
                 i,
             )
             main_writer.add_scalar(
-                f"summary/{dataset}_{method}_zones_{zones_tag}{sae_suffix}/correlation_p_value",
+                f"summary/{dataset}_{method}_zones_{zones_tag}/correlation_p_value",
                 correlation_p_value,
                 i,
             )
 
             # Also log by method for comparison across layer zones
-            sae_suffix = "_sae" if result["use_sae"] else ""
             main_writer.add_scalar(
-                f"by_method/{dataset}_{method}{sae_suffix}/mean_score", mean_score, i
+                f"by_method/{dataset}_{method}/mean_score", mean_score, i
             )
             main_writer.add_scalar(
-                f"by_method/{dataset}_{method}{sae_suffix}/max_score", max_score, i
+                f"by_method/{dataset}_{method}/max_score", max_score, i
             )
             main_writer.add_scalar(
-                f"by_method/{dataset}_{method}{sae_suffix}/score_range", score_range, i
+                f"by_method/{dataset}_{method}/score_range", score_range, i
             )
             main_writer.add_scalar(
-                f"by_method/{dataset}_{method}{sae_suffix}/correlation_coeff",
-                correlation_coeff,
-                i,
+                f"by_method/{dataset}_{method}/correlation_coeff", correlation_coeff, i
             )
 
     print(f"Completed combination {i+1}/{total_combinations}")
@@ -656,7 +599,6 @@ with open(summary_file, "w") as f:
         f.write(f"  Method: {result['method']}\n")
         f.write(f"  Dataset: {result['dataset']}\n")
         f.write(f"  Layer zones: {result['layer_zones']}\n")
-        f.write(f"  Use SAE: {result['use_sae']}\n")
         f.write(f"  Success: {result['success']}\n")
         if result["success"]:
             scores = result["scores"]
