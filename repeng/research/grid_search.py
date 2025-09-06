@@ -32,7 +32,7 @@ from tqdm import tqdm
 
 patch_sklearn()
 
-USE_TAGUCHI_REDUCTION = False
+USE_TAGUCHI_REDUCTION = True
 
 # Quantization config
 from transformers import BitsAndBytesConfig
