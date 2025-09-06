@@ -28,6 +28,7 @@ Specifically, things I intend to do are:
         4. What is the impact of the number of samples on the reliability of those effects?
         5. What is the impact of quantization on this effect?
         6. What is the impact of longer context on this effect? And of thinking? Does the influence get amplified, fades away or is stable?
+        7. Do MoE models behave differently?
 
 2. **Redo this whole experience but comparing between vector extraction methods:**
     - mean (the mean value of positive samples - mean value of negative samples)
