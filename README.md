@@ -127,7 +127,7 @@ Here is a global view of the results of the `age` experiment, using `median` met
 ![](./images/age_median_zones_03_05.png)
 
 - `pca_center` seems to work *okay-ish* but is less strong than the above. It seems that giving it more layers (and an even number on each end) works better than for other methods. In particular `01_09`, `02_08`, `03_07`, `04_06` all seem usable.
-`pca_diff` barely has an impact. Maybe it's just a matter of increasing the strength?
+- `pca_diff` barely has an impact. Maybe it's just a matter of increasing the strength?
 
 
 
