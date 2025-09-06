@@ -5,6 +5,7 @@ You are in the `./results` folder, where the results of research are stored.
 ## Result Folder Organization
 
 In `./results` are two folders: `reproductible_scripts/` and `tensorboard_logs/`. The scripts are appended with a commit hash (e.g. `grid_search_8f8a13d0bd468afbf6ea10e33005ec62c05e7e20.py`), this hash corresponds to a commit in the `research_setup` branch.
+Unless stated otherwise, the model used is `qwen/qwen3-4b`, with quantization.
 - To reproduce the result:
     - create a new git branch, reset to that commit, then run via `python ./repeng/research/grid_search.py`.
         - Or to avoid dealing with branches, just move the script to `./repeng/research/grid_search.py`, execute it with `python ./repeng/research/grid_search.py`
@@ -30,11 +31,24 @@ In the top right corner of the image, you can see in blue the name of that image
 - `_zones_` means that we used the `layer_zones` argument instead of `layer_ids`.
 - `_03_05` means that the `layer_zones` argument was `layer_zones=[[0.3, 0.5]]`. Meaning that the layers controlled are with a depth between 30% (inclusive) and 50% (not included). `_03_05_07_08` would have meant that two zones were controlled: `[0.3, 0.5]` and `[0.7, 0.8]`.
 
+- For plotting reasons, note that when the model completely breaks down (answers gibberish), we treat it as if it answered `0`. This is because tensorboard and matplotlib are not handling well `np.nan` type numbers.
+
 So, let's take a global look to all `age_median_` (using the filter on the left) and start doing interpretations.
+
+# Interpretations and conclusion
 
 ![](./images/plot_all_1.png)
 ![](./images/plot_all_2.png)
 ![](./images/plot_all_3.png)
 ![](./images/plot_all_4.png)
 ![](./images/plot_all_5.png)
+
+- The ideal figure would basically be a straight `y=x` line, as it would mean that we can *reliably* control the vector, and by how much. The *straightness* is important as it indicates a linear effect relationship, which is essential for controlling carefully the model.
+- When instead of a line, we have a sort of *mountain*, that means that the LLM broke down (answer is parsed as 0) at extreme values of strength. The narrower the mountain, the less strength abilities we have.
+- If we have a line, a steep slope means the chosen layers are particularly sensitive to our vector. Which is not necessarily a bad thing but I chose the range of `strengths` values after estimating the dose-response curve and not randomly.
+- A flat line usually means that the model barely (if at all) responded to the vector. Indeed, without any vector, the IQ answered by the LLM is around 125, and the age is 25.
+
+
+## Conclusions
+
 
