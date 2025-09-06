@@ -67,6 +67,11 @@ For this project I had to make substantial modifications to repeng:
 The idea is to do a grid_search (with taguchi reduction using my other project [TaguchiGridSearchConverted](https://pypi.org/project/taguchigridsearchconverter/) and store all the data into [tensorboard](https://www.tensorflow.org/tensorboard).
 
 
+## Results
+
+To browse the results, go to the [./results](./results) folder.
+
+
 <details>
 <summary>Click to read older ideas</summary>
 
@@ -90,11 +95,6 @@ The idea is to do a grid_search (with taguchi reduction using my other project [
     - Create a pair of good and bad answers to the MMLU, see if it increases its accuracy on other similar benchmarks
 
 </details>
-
-
-# Results
-
-To browse the results, go to the [./results](./results) folder.
 
 
 # How to replicate my setup
