@@ -69,7 +69,15 @@ class ControlVector:
         dataset: list[DatasetEntry],
         decode: bool = True,
         method: typing.Literal[
-            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", "dict_diff", "dict_center"
+            "pca_diff",
+            "pca_center",
+            "mean",
+            "median",
+            "umap",
+            "ica_diff",
+            "ica_center",
+            "dict_diff",
+            "dict_center",
         ] = "pca_center",
         cache_path: os.PathLike[str] | str | None = None,
         **kwargs,
@@ -239,7 +247,15 @@ def compute_direction(
     hidden_states: np.ndarray,
     method: typing.Union[
         typing.Literal[
-            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", "dict_diff", "dict_center"
+            "pca_diff",
+            "pca_center",
+            "mean",
+            "median",
+            "umap",
+            "ica_diff",
+            "ica_center",
+            "dict_diff",
+            "dict_center",
         ],
         typing.Callable[[np.ndarray], np.ndarray],
     ],
@@ -356,7 +372,15 @@ def read_representations(
     batch_size: int = 32,
     method: typing.Union[
         typing.Literal[
-            "pca_diff", "pca_center", "mean", "median", "umap", "ica_diff", "ica_center", "dict_diff", "dict_center"
+            "pca_diff",
+            "pca_center",
+            "mean",
+            "median",
+            "umap",
+            "ica_diff",
+            "ica_center",
+            "dict_diff",
+            "dict_center",
         ],
         typing.Callable[[np.ndarray], np.ndarray],
     ] = "pca_diff",
