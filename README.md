@@ -70,7 +70,7 @@ The idea is to do a grid_search (with taguchi reduction using my other project [
 
 # Results
 
-You are in the `./results` folder, where the results of research are stored.
+The results are stored in the `./results` folder.
 
 ## Result Folder Organization
 
@@ -107,6 +107,8 @@ So, let's take a global look to all `age_median_` (using the filter on the left)
 
 ## Interpretations and conclusion
 
+Here is a global view of the results of the `age` experiment, using `median` method, on the model `qwen3-4b` at various strengths.
+
 ![](./images/plot_all_1.png)
 ![](./images/plot_all_2.png)
 ![](./images/plot_all_3.png)
@@ -118,19 +120,22 @@ So, let's take a global look to all `age_median_` (using the filter on the left)
 - If we have a line, a steep slope means the chosen layers are particularly sensitive to our vector. Which is not necessarily a bad thing but I chose the range of `strengths` values after estimating the dose-response curve and not randomly.
 - A flat line usually means that the model barely (if at all) responded to the vector. Indeed, without any vector, the IQ answered by the LLM is around 125, and the age is 25.
 
-Let's first look at plots that affect the extremes.
-- controlling layers `_09_10` (the very deepest) seems to barely affect the model.
+# Which method and layer to use?
 
-If you look at those who control until `_08`, vs until `_07`, `_06` etc until `_0.5`. It seems that the deeper we control, the more brittle the model is. Put another way: controlling deeper layers makes the model break down at lower strengths.
+- From my testing, so far `median` and `mean` are the best methods. And `median` seems in theory more robust than `mean`. Both behave similarly. They tend to do nothing at shallow and the deepest layers and tended to output gibberish at layers between `05` and `09`. `03_05` is clearly usable:
 
-If you look at those who control starting from `_01`, vs at `_02`, `_03` etc until `_0.5`. It seems that the first we layers are about as responsive as the deepest (i.e. not very responsive).
+![](./images/age_median_zones_03_05.png)
+
+- `pca_center` seems to work *okay-ish* but is less strong than the above. It seems that giving it more layers (and an even number on each end) works better than for other methods. In particular `01_09`, `02_08`, `03_07`, `04_06` all seem usable.
+`pca_diff` barely has an impact. Maybe it's just a matter of increasing the strength?
+
 
 
 
 
 
 <details>
-<summary>Click to read older ideas</summary>
+<summary>Click to read older plan ideas</summary>
 
 - Benchmark the model using langtest to get its reference scores on things like MMLU
 - do the following comparisons also with the instruct vs base versions
