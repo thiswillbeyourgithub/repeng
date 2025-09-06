@@ -48,7 +48,12 @@ So, let's take a global look to all `age_median_` (using the filter on the left)
 - If we have a line, a steep slope means the chosen layers are particularly sensitive to our vector. Which is not necessarily a bad thing but I chose the range of `strengths` values after estimating the dose-response curve and not randomly.
 - A flat line usually means that the model barely (if at all) responded to the vector. Indeed, without any vector, the IQ answered by the LLM is around 125, and the age is 25.
 
+Let's first look at plots that affect the extremes.
+- controlling layers `_09_10` (the very deepest) seems to barely affect the model.
 
-## Conclusions
+If you look at those who control until `_08`, vs until `_07`, `_06` etc until `_0.5`. It seems that the deeper we control, the more brittle the model is. Put another way: controlling deeper layers makes the model break down at lower strengths.
+
+If you look at those who control starting from `_01`, vs at `_02`, `_03` etc until `_0.5`. It seems that the first we layers are about as responsive as the deepest (i.e. not very responsive).
+
 
 
