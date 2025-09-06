@@ -48,7 +48,7 @@ bnb_config = BitsAndBytesConfig(
 # Define parameter grid for comprehensive search
 param_grid = {
     "model_name": [
-        "qwen/qwen3-4b", 
+        "qwen/qwen3-4b",
         # "mistralai/Mistral-7B-Instruct-v0.3",
         # "microsoft/DialoGPT-medium",
         # Add more models here as needed
@@ -225,7 +225,7 @@ def test_configuration(
         quantization_config=bnb_config,
         dtype=torch.float16,
     )
-    
+
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token
 
@@ -456,7 +456,9 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
     layer_zones = params["layer_zones"]
 
     # Test this configuration
-    result = test_configuration(model_name, method, layer_zones, dataset, i, total_combinations)
+    result = test_configuration(
+        model_name, method, layer_zones, dataset, i, total_combinations
+    )
     all_results.append(result)
 
     if result["success"] and result["scores"]:
@@ -557,10 +559,14 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
                 i,
             )
             main_writer.add_scalar(
-                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/max_score", max_score, i
+                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/max_score",
+                max_score,
+                i,
             )
             main_writer.add_scalar(
-                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/min_score", min_score, i
+                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/min_score",
+                min_score,
+                i,
             )
             main_writer.add_scalar(
                 f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/score_range",
@@ -589,7 +595,9 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
                 f"by_method/{model_tag}_{dataset}_{method}/score_range", score_range, i
             )
             main_writer.add_scalar(
-                f"by_method/{model_tag}_{dataset}_{method}/correlation_coeff", correlation_coeff, i
+                f"by_method/{model_tag}_{dataset}_{method}/correlation_coeff",
+                correlation_coeff,
+                i,
             )
 
     print(f"Completed combination {i+1}/{total_combinations}")
@@ -608,7 +616,7 @@ with open(summary_file, "w") as f:
     f.write(f"Successful runs: {len(successful_runs)}\n\n")
 
     # Group results by model for easier comparison
-    models_tested = set(r.get('model_name', 'unknown') for r in all_results)
+    models_tested = set(r.get("model_name", "unknown") for r in all_results)
     f.write(f"Models tested: {', '.join(sorted(models_tested))}\n\n")
 
     f.write("Results by combination:\n")
