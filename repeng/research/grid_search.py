@@ -34,9 +34,6 @@ patch_sklearn()
 
 USE_TAGUCHI_REDUCTION = False
 
-# Model configuration
-model_name = "qwen/qwen3-4b"
-
 # Quantization config
 from transformers import BitsAndBytesConfig
 
@@ -48,18 +45,14 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_use_double_quant=True,
 )
 
-# Load base model
-base_model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    quantization_config=bnb_config,
-    dtype=torch.float16,
-)
-
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-tokenizer.pad_token = tokenizer.eos_token
-
 # Define parameter grid for comprehensive search
 param_grid = {
+    "model_name": [
+        "qwen/qwen3-4b", 
+        # "mistralai/Mistral-7B-Instruct-v0.3",
+        # "microsoft/DialoGPT-medium",
+        # Add more models here as needed
+    ],
     # "method": ["mean", "median", "pca_diff", "pca_center", "umap"],
     # "method": ["mean", "median"],
     "method": ["median", "pca_diff", "pca_center"],
@@ -139,7 +132,7 @@ strengths = [
 ]
 
 
-def get_data(dataset: str) -> tuple[str, list]:
+def get_data(dataset: str, tokenizer) -> tuple[str, list]:
     """
     Get scenario and dataset based on dataset name.
 
@@ -211,6 +204,7 @@ def format_layer_zones_for_filename(layer_zones: list) -> str:
 
 
 def test_configuration(
+    model_name: str,
     method: str,
     layer_zones: list,
     dataset: str,
@@ -219,16 +213,29 @@ def test_configuration(
 ) -> dict:
     """Test a single configuration and return results."""
     print(f"\n=== Combination {combo_idx+1}/{total_combos} ===")
+    print(f"Model: {model_name}")
     print(f"Method: {method}")
     print(f"Dataset: {dataset}")
     print(f"Layer zones: {layer_zones}")
 
+    # Load model and tokenizer for this configuration
+    print("Loading model and tokenizer...")
+    base_model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        quantization_config=bnb_config,
+        dtype=torch.float16,
+    )
+    
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer.pad_token = tokenizer.eos_token
+
     # Get scenario and dataset for this configuration
-    scenario, train_dataset = get_data(dataset)
+    scenario, train_dataset = get_data(dataset, tokenizer)
 
     # Create unique writer for this combination
     zones_tag = format_layer_zones_for_filename(layer_zones)
-    run_name = f"{dataset}_{method}_zones_{zones_tag}"
+    model_tag = model_name.replace("/", "_").replace("-", "_")
+    run_name = f"{model_tag}_{dataset}_{method}_zones_{zones_tag}"
     writer = SummaryWriter(f"./tensorboard_logs/grid_search/{run_name}")
 
     try:
@@ -273,8 +280,9 @@ def test_configuration(
 
             # Log the output text to tensorboard
             zones_tag = format_layer_zones_for_filename(layer_zones)
+            model_tag = model_name.replace("/", "_").replace("-", "_")
             writer.add_text(
-                f"{dataset}_{method}/zones_{zones_tag}/outputs",
+                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}/outputs",
                 f"Strength {strength}: {output}",
                 global_step=strength,
             )
@@ -349,7 +357,8 @@ def test_configuration(
 
             # Save plot
             zones_tag = format_layer_zones_for_filename(layer_zones)
-            plot_filename = f"./plots/grid_search/extracted_value_{dataset}_{method}_{zones_tag}.png"
+            model_tag = model_name.replace("/", "_").replace("-", "_")
+            plot_filename = f"./plots/grid_search/extracted_value_{model_tag}_{dataset}_{method}_{zones_tag}.png"
             try:
                 fig.savefig(
                     plot_filename, dpi=300, bbox_inches="tight", facecolor="white"
@@ -379,6 +388,7 @@ def test_configuration(
         writer.close()
 
         return {
+            "model_name": model_name,
             "method": method,
             "dataset": dataset,
             "layer_zones": layer_zones,
@@ -392,6 +402,7 @@ def test_configuration(
         # Close the writer even on error
         writer.close()
         return {
+            "model_name": model_name,
             "method": method,
             "dataset": dataset,
             "layer_zones": layer_zones,
@@ -414,7 +425,7 @@ main_writer.add_text(
     "metadata/grid_search_script_version", grid_search_script_version, 0
 )
 main_writer.add_text("metadata/repeng_version", repeng_version, 0)
-main_writer.add_text("metadata/model_name", model_name, 0)
+# Note: model_name is now part of the grid and logged per combination
 
 # Grid search
 grid = ParameterGrid(param_grid)
@@ -439,12 +450,13 @@ else:
 all_results = []
 
 for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green")):
+    model_name = params["model_name"]
     method = params["method"]
     dataset = params["dataset"]
     layer_zones = params["layer_zones"]
 
     # Test this configuration
-    result = test_configuration(method, layer_zones, dataset, i, total_combinations)
+    result = test_configuration(model_name, method, layer_zones, dataset, i, total_combinations)
     all_results.append(result)
 
     if result["success"] and result["scores"]:
@@ -452,10 +464,11 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
         # Log individual points to tensorboard (only valid scores, no NaN values)
         zones_tag = format_layer_zones_for_filename(layer_zones)
+        model_tag = model_name.replace("/", "_").replace("-", "_")
         for strength, score in scores.items():
             if not math.isnan(score):
                 main_writer.add_scalar(
-                    f"{dataset}_{method}/zones_{zones_tag}/extracted_value",
+                    f"{model_tag}_{dataset}_{method}/zones_{zones_tag}/extracted_value",
                     score,
                     strength,
                 )
@@ -495,6 +508,7 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
             # Log hyperparameters and metrics for easy filtering
             hparam_dict = {
+                "model_name": model_name,
                 "method": method,
                 "dataset": dataset,
                 "layer_zones_str": str(
@@ -536,45 +550,46 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
                 )
 
             # Use combination index as the x-axis for summary stats
+            model_tag = model_name.replace("/", "_").replace("-", "_")
             main_writer.add_scalar(
-                f"summary/{dataset}_{method}_zones_{zones_tag}/mean_score",
+                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/mean_score",
                 mean_score,
                 i,
             )
             main_writer.add_scalar(
-                f"summary/{dataset}_{method}_zones_{zones_tag}/max_score", max_score, i
+                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/max_score", max_score, i
             )
             main_writer.add_scalar(
-                f"summary/{dataset}_{method}_zones_{zones_tag}/min_score", min_score, i
+                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/min_score", min_score, i
             )
             main_writer.add_scalar(
-                f"summary/{dataset}_{method}_zones_{zones_tag}/score_range",
+                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/score_range",
                 score_range,
                 i,
             )
             main_writer.add_scalar(
-                f"summary/{dataset}_{method}_zones_{zones_tag}/correlation_coeff",
+                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/correlation_coeff",
                 correlation_coeff,
                 i,
             )
             main_writer.add_scalar(
-                f"summary/{dataset}_{method}_zones_{zones_tag}/correlation_p_value",
+                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/correlation_p_value",
                 correlation_p_value,
                 i,
             )
 
             # Also log by method for comparison across layer zones
             main_writer.add_scalar(
-                f"by_method/{dataset}_{method}/mean_score", mean_score, i
+                f"by_method/{model_tag}_{dataset}_{method}/mean_score", mean_score, i
             )
             main_writer.add_scalar(
-                f"by_method/{dataset}_{method}/max_score", max_score, i
+                f"by_method/{model_tag}_{dataset}_{method}/max_score", max_score, i
             )
             main_writer.add_scalar(
-                f"by_method/{dataset}_{method}/score_range", score_range, i
+                f"by_method/{model_tag}_{dataset}_{method}/score_range", score_range, i
             )
             main_writer.add_scalar(
-                f"by_method/{dataset}_{method}/correlation_coeff", correlation_coeff, i
+                f"by_method/{model_tag}_{dataset}_{method}/correlation_coeff", correlation_coeff, i
             )
 
     print(f"Completed combination {i+1}/{total_combinations}")
@@ -589,13 +604,17 @@ summary_file = "./plots/grid_search/summary_report.txt"
 with open(summary_file, "w") as f:
     f.write(f"Grid Search Summary Report\n")
     f.write(f"==========================\n\n")
-    f.write(f"Model: {model_name}\n")
     f.write(f"Total combinations tested: {total_combinations}\n")
     f.write(f"Successful runs: {len(successful_runs)}\n\n")
+
+    # Group results by model for easier comparison
+    models_tested = set(r.get('model_name', 'unknown') for r in all_results)
+    f.write(f"Models tested: {', '.join(sorted(models_tested))}\n\n")
 
     f.write("Results by combination:\n")
     for i, result in enumerate(all_results):
         f.write(f"\nCombination {i+1}:\n")
+        f.write(f"  Model: {result.get('model_name', 'unknown')}\n")
         f.write(f"  Method: {result['method']}\n")
         f.write(f"  Dataset: {result['dataset']}\n")
         f.write(f"  Layer zones: {result['layer_zones']}\n")
