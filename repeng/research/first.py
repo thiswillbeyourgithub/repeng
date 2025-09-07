@@ -13,7 +13,8 @@ from sklearnex import patch_sklearn
 patch_sklearn()
 
 # load and wrap model
-model_name = "mistralai/Mistral-7B-Instruct-v0.3"
+# model_name = "mistralai/Mistral-7B-Instruct-v0.3"
+model_name = "openai/gpt-oss-20b"
 # model to use:
 # model_name = "meta-llama/Llama-3.2-1B-Instruct"
 # model_name = "meta-llama/Llama-3.2-3B-Instruct"
@@ -35,13 +36,15 @@ model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 # model_name = "Qwen/Qwen2.5-7B-Instruct"
 
 # model_name = "tiiuae/Falcon3-10B-Instruct-1.58bit"
-model_name = "qwen/qwen3-4b"
+# model_name = "qwen/qwen3-4b"
+# model_name = "Qwen/Qwen1.5-7B-Chat"
 
 # If you need quantization
 from transformers import BitsAndBytesConfig
+from transformers import Mxfp4Config
 
 bnb_config = BitsAndBytesConfig(
-    device_map="cuda",
+    device_map="cpu",
     load_in_4bit=True,
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16,
@@ -50,8 +53,9 @@ bnb_config = BitsAndBytesConfig(
 
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    quantization_config=bnb_config,
-    dtype=torch.float16,
+    # quantization_config=bnb_config,
+    # quantization_config=Mxfp4Config(),
+    # dtype=torch.float16,
     # low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
 )
 
@@ -68,15 +72,15 @@ tokenizer.pad_token = tokenizer.eos_token
 
 # train the vector—takes less than a minute!
 # method="mean"
-# method="median"
+method="median"
 # method="pca_diff"
-method = "pca_center"
+# method = "pca_center"
 # method="umap"
 # method="pacmap"
 trained_vector = ControlVector.train(
     model,
     tokenizer,
-    datasets.dumb_genius_paragraph,
+    datasets.dumb_genius_paragraph[:5],
     batch_size=1,
     method=method,
     cache_path="./model_cache",
