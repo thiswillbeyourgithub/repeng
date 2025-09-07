@@ -63,7 +63,8 @@ model = AutoModelForCausalLM.from_pretrained(
 model = ControlModel(
     model,
     # layer_ids=list(range(-5, -18, -1))  # specify layers to control by layer ID
-    layer_zones=[[0.2, 0.51]],  # control layers with relative depth in [0.5, 0.9[
+    # layer_zones=[[0.2, 0.51]],  # control layers with relative depth in [0.5, 0.9[
+    layer_zones=[[0.1, 0.51]],  # control layers with relative depth in [0.5, 0.9[
 )
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -92,7 +93,11 @@ scenario: str = tokenizer.apply_chat_template(
     conversation=[
         {
             "role": "user",
-            "content": "My official IQ score is ",
+            "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human?",
+        },
+        {
+            "role": "assistant",
+            "content": "Alright. I got it. The IQ of the human I pick is exactly ",
         },
     ],
     continue_final_message=True,
@@ -101,13 +106,13 @@ scenario: str = tokenizer.apply_chat_template(
 
 # set the control strength and let inference rip!
 strengths = [
-    -20,
-    -15,
-    -10,
-    -9,
-    -8,
-    -7,
-    -6,
+    # -20,
+    # -15,
+    # -10,
+    # -9,
+    # -8,
+    # -7,
+    # -6,
     -5,
     -4,
     -3,
@@ -137,13 +142,13 @@ strengths = [
     3,
     4,
     5,
-    6,
-    7,
-    8,
-    9,
-    10,
-    15,
-    20,
+    # 6,
+    # 7,
+    # 8,
+    # 9,
+    # 10,
+    # 15,
+    # 20,
 ]
 scores = {}
 simple_scores = {}
