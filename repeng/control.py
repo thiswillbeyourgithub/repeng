@@ -259,6 +259,8 @@ def model_layer_list(model: ControlModel | PreTrainedModel) -> torch.nn.ModuleLi
 
     if hasattr(model, "model"):  # mistral-like
         layers = model.model.layers
+    elif hasattr(model, "base_model"):  # mamba like
+        layers = model.base_model.layers
     elif hasattr(model, "layers"):  # qwen3-like
         layers = model.layers
     elif hasattr(model, "transformer"):  # gpt-2-like
