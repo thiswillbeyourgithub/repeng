@@ -15,10 +15,10 @@ patch_sklearn()
 
 # load and wrap model
 # model_name = "mistralai/Mistral-7B-Instruct-v0.3"
-model_name = "openai/gpt-oss-20b"
+# model_name = "openai/gpt-oss-20b"
 # model to use:
 # model_name = "meta-llama/Llama-3.2-1B-Instruct"
-# model_name = "meta-llama/Llama-3.2-3B-Instruct"
+model_name = "meta-llama/Llama-3.2-3B-Instruct"
 
 # model_name = "mistralai/Mistral-7B-Instruct-v0.1"
 # model_name = "mistralai/Mistral-Nemo-Instruct-2407"
@@ -51,7 +51,7 @@ from transformers import BitsAndBytesConfig
 from transformers import Mxfp4Config
 
 bnb_config = BitsAndBytesConfig(
-    device_map="cpu",
+    device_map="auto",
     load_in_4bit=True,
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16,
@@ -60,7 +60,7 @@ bnb_config = BitsAndBytesConfig(
 
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    # quantization_config=bnb_config,
+    quantization_config=bnb_config,
     # quantization_config=Mxfp4Config(),
     # dtype=torch.float16,
     # low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
@@ -71,8 +71,8 @@ model = AutoModelForCausalLM.from_pretrained(
 model = ControlModel(
     model,
     # layer_ids=list(range(-5, -18, -1))  # specify layers to control by layer ID
-    # layer_zones=[[0.2, 0.51]],  # control layers with relative depth in [0.5, 0.9[
-    layer_zones=[[0.1, 0.51]],  # control layers with relative depth in [0.5, 0.9[
+    layer_zones=[[0.2, 0.51]],  # control layers with relative depth in [0.5, 0.9[
+    # layer_zones=[[0.1, 0.51]],  # control layers with relative depth in [0.5, 0.9[
 )
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
