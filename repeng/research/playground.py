@@ -81,28 +81,45 @@ method="median"
 trained_vector = ControlVector.train(
     model,
     tokenizer,
-    datasets.dumb_genius_paragraph[:5],
-    batch_size=1,
+    # datasets.dumb_genius_paragraph[:5],
+    # datasets.dumb_genius_paragraph,
+    datasets.young_old_paragraph[:10],
+    batch_size=5,
     method=method,
     cache_path="./model_cache",
 )
 
 # Now we must give the scenario for the generation we will engineer:
 # By turning chat messages into the format expected by the model [RECOMMENDED]
-scenario: str = tokenizer.apply_chat_template(
+# scenario: str = tokenizer.apply_chat_template(
+#     conversation=[
+#         {
+#             "role": "user",
+#             "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human?",
+#         },
+#         {
+#             "role": "assistant",
+#             "content": "Alright. I got it. The IQ of the human I pick is exactly ",
+#         },
+#     ],
+#     continue_final_message=True,
+#     tokenize=False,
+# )
+scenario = tokenizer.apply_chat_template(
     conversation=[
         {
             "role": "user",
-            "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human?",
+            "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, how old is this human?",
         },
         {
             "role": "assistant",
-            "content": "Alright. I got it. The IQ of the human I pick is exactly ",
+            "content": "Alright. I got it. The age of the human I pick is exactly ",
         },
     ],
     continue_final_message=True,
     tokenize=False,
 )
+
 
 # set the control strength and let inference rip!
 strengths = [
