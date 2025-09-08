@@ -198,8 +198,12 @@ def extract_first_number(text: str) -> float | None:
         li
         for li in lines
         if not (
+            # gpt oss
             li.startswith("Knowledge cutoff: ")
             or li.startswith("Current date: ")
+            # llama
+            or li.startswith("Cutting Knowledge Date: ")
+            or li.startswith("Today Date: ")
         )
     ]
     text = "\n".join(lines)
