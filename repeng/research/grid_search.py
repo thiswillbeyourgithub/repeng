@@ -49,9 +49,9 @@ bnb_config = BitsAndBytesConfig(
 param_grid = {
     "model_name": [
         "qwen/qwen3-4b",
-        # "mistralai/Mistral-7B-Instruct-v0.3",
-        # "microsoft/DialoGPT-medium",
-        # Add more models here as needed
+        "mistralai/Mistral-7B-Instruct-v0.3",
+        "meta-llama/Llama-3.2-3B-Instruct",
+        "google/gemma-3-4b-it",
     ],
     # "method": ["mean", "median"],
     "method": ["median", "mean", "pca_diff", "pca_center", "ica_diff", "ica_center", "umap", "umap_densmap"],
