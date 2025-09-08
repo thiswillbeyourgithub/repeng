@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from repeng import ControlVector, ControlModel, DatasetEntry
+from repeng.utils import autocorrect_chat_templates
 from repeng.research import datasets
 
 from sklearnex import patch_sklearn
@@ -39,6 +40,12 @@ model_name = "openai/gpt-oss-20b"
 # model_name = "qwen/qwen3-4b"
 # model_name = "Qwen/Qwen1.5-7B-Chat"
 
+# mamba model
+model_name = "state-spaces/mamba-2.8b-hf"
+
+# rwkv
+# model_name = "RWKV/RWKV7-Goose-World3-2.9B-HF"
+
 # If you need quantization
 from transformers import BitsAndBytesConfig
 from transformers import Mxfp4Config
@@ -57,6 +64,7 @@ model = AutoModelForCausalLM.from_pretrained(
     # quantization_config=Mxfp4Config(),
     # dtype=torch.float16,
     # low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
+    trust_remote_code=True,
 )
 
 # wrap the model to give us control
@@ -105,20 +113,36 @@ trained_vector = ControlVector.train(
 #     continue_final_message=True,
 #     tokenize=False,
 # )
-scenario = tokenizer.apply_chat_template(
-    conversation=[
-        {
-            "role": "user",
-            "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, how old is this human?",
-        },
-        {
-            "role": "assistant",
-            "content": "Alright. I got it. The age of the human I pick is exactly ",
-        },
-    ],
-    continue_final_message=True,
-    tokenize=False,
-)
+try:
+    scenario = tokenizer.apply_chat_template(
+        conversation=[
+            {
+                "role": "user",
+                "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, how old is this human?",
+            },
+            {
+                "role": "assistant",
+                "content": "Alright. I got it. The age of the human I pick is exactly ",
+            },
+        ],
+        continue_final_message=True,
+        tokenize=False,
+    )
+except Exception as e:
+    scenario: str = autocorrect_chat_templates(
+        messages=[
+            {
+                "role": "user",
+                "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, how old is this human?",
+            },
+            {
+                "role": "assistant",
+                "content": "Alright. I got it. The age of the human I pick is exactly ",
+            },
+        ],
+        tokenizer=tokenizer,
+        model=model,
+    )
 
 
 # set the control strength and let inference rip!
