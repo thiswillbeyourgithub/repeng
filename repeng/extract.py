@@ -16,7 +16,7 @@ from loguru import logger
 
 from .control import ControlModel, model_layer_list
 from .saes import Sae
-from .utils import DatasetEntry, get_model_name, autocorrect_chat_templates
+from .utils import DatasetEntry, get_model_name, autocorrect_chat_templates, get_num_hidden_layer
 
 __VERSION__ = "0.4.0"
 
@@ -408,7 +408,7 @@ def read_representations(
             are cached to disk to allow for better memory scaling. Defaults to None.
     """
     if not hidden_layers:
-        hidden_layers = list(range(model.config.num_hidden_layers))
+        hidden_layers = list(range(get_num_hidden_layer(model)))
 
     n_layers = len(model_layer_list(model))
 
@@ -729,15 +729,26 @@ def _get_model_args_string(model) -> str:
     """Generate a human-readable string for model arguments used in cache hierarchy."""
     config = model.config
     # Include key model parameters that would affect hidden states
-    args = [
-        f"layers_{config.num_hidden_layers}",
-        f"hidden_{config.hidden_size}",
-        f"type_{config.model_type}",
-    ]
-    if hasattr(config, "num_attention_heads"):
-        args.append(f"heads_{config.num_attention_heads}")
-    if hasattr(config, "intermediate_size"):
-        args.append(f"inter_{config.intermediate_size}")
+    if hasattr(config, "text_config"):  # gemma 3 config
+        args = [
+            f"layers_{config.text_config.num_hidden_layers}",
+            f"hidden_{config.text_config.hidden_size}",
+            f"type_{config.text_config.model_type}",
+        ]
+        if hasattr(config.text_config, "num_attention_heads"):
+            args.append(f"heads_{config.text_config.num_attention_heads}")
+        if hasattr(config.text_config, "intermediate_size"):
+            args.append(f"inter_{config.text_config.intermediate_size}")
+    else:
+        args = [
+            f"layers_{config.num_hidden_layers}",
+            f"hidden_{config.hidden_size}",
+            f"type_{config.model_type}",
+        ]
+        if hasattr(config, "num_attention_heads"):
+            args.append(f"heads_{config.num_attention_heads}")
+        if hasattr(config, "intermediate_size"):
+            args.append(f"inter_{config.intermediate_size}")
 
     # Include dtype information - critical for cache correctness
     if hasattr(model, "dtype") and model.dtype is not None:
