@@ -41,10 +41,12 @@ model_name = "meta-llama/Llama-3.2-3B-Instruct"
 # model_name = "Qwen/Qwen1.5-7B-Chat"
 
 # mamba model
-model_name = "state-spaces/mamba-2.8b-hf"
+# model_name = "state-spaces/mamba-2.8b-hf"
 
 # rwkv
 # model_name = "RWKV/RWKV7-Goose-World3-2.9B-HF"
+
+model_name = "google/gemma-3-4b-it"
 
 # If you need quantization
 from transformers import BitsAndBytesConfig
@@ -60,7 +62,7 @@ bnb_config = BitsAndBytesConfig(
 
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    quantization_config=bnb_config,
+    # quantization_config=bnb_config,  # does not work with gemma 3: it always end without generating
     # quantization_config=Mxfp4Config(),
     # dtype=torch.float16,
     # low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
@@ -77,7 +79,7 @@ model = ControlModel(
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 # tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-tokenizer.pad_token = tokenizer.eos_token
+# tokenizer.pad_token = tokenizer.eos_token
 
 # train the vector—takes less than a minute!
 # method="mean"
@@ -129,6 +131,7 @@ try:
         tokenize=False,
     )
 except Exception as e:
+    
     scenario: str = autocorrect_chat_templates(
         messages=[
             {
@@ -202,7 +205,7 @@ for strength in strengths:
         **tokenizer(scenario, return_tensors="pt").to(model.device),
         do_sample=False,
         # temperature=1.0,  # temperature can only be set if do_sample is True
-        max_new_tokens=30,
+        max_new_tokens=50,
         repetition_penalty=1.1,
     )
     output = tokenizer.decode(out.squeeze()).strip()
