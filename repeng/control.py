@@ -256,6 +256,10 @@ class ControlModule(torch.nn.Module):
 
 
 def model_layer_list(model: ControlModel | PreTrainedModel) -> torch.nn.ModuleList:
+    """
+    Heuristics to find the actual layers to modify by repeng, depending
+    on the architecture.
+    """
     if isinstance(model, ControlModel):
         model = model.model
 
