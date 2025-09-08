@@ -235,7 +235,7 @@ def test_configuration(
     print("Loading model and tokenizer...")
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        quantization_config=bnb_config,
+        quantization_config=bnb_config if not "gemma" in model_name.lower() else None,
         dtype=torch.float16,
     )
 
