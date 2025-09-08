@@ -183,6 +183,16 @@ def get_data(dataset: str, tokenizer) -> tuple[str, list]:
 
 def extract_first_number(text: str) -> float | None:
     """Extract the first number from text using regex."""
+    lines = text.splitlines()
+    lines = [
+        li
+        for li in lines
+        if not (
+            li.startswith("Knowledge cutoff: ")
+            or li.startswith("Current date: ")
+        )
+    ]
+    text = "\n".join(lines)
     match = re.search(r"\d+(?:\.\d+)?", text)
     if match:
         return float(match.group())

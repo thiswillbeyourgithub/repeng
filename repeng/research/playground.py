@@ -176,6 +176,16 @@ for strength in strengths:
 # Extract scores using regex to find the first number in each output
 def extract_first_number(text: str) -> float | None:
     """Extract the first number from text using regex."""
+    lines = text.splitlines()
+    lines = [
+        li
+        for li in lines
+        if not (
+            li.startswith("Knowledge cutoff: ")
+            or li.startswith("Current date: ")
+        )
+    ]
+    text = "\n".join(lines)
     match = re.search(r"\d+(?:\.\d+)?", text)
     if match:
         return float(match.group())
