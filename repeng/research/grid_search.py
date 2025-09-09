@@ -38,7 +38,7 @@ USE_TAGUCHI_REDUCTION = True
 from transformers import BitsAndBytesConfig
 
 bnb_config = BitsAndBytesConfig(
-    device_map="cpu",
+    device_map="cuda",
     load_in_4bit=True,
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16,
@@ -235,7 +235,7 @@ def test_configuration(
     print("Loading model and tokenizer...")
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        quantization_config=bnb_config if ("gemma" not in model_name.lower() and "llama" not in model_name.lower()) else None,
+        quantization_config=bnb_config if not "gemma" in model_name.lower() else None,
         dtype=torch.float16,
     )
 
