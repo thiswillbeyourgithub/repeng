@@ -420,7 +420,7 @@ def read_representations(
             enable_thinking=False,
         )
     except Exception as e:
-        logger.warning(
+        warnings.warn(
             f"Error when applying chat template: '{e}'\nTrying to autocorrect the template anyway."
         )
         train_strs: list[str] = autocorrect_chat_templates(
