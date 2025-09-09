@@ -38,7 +38,7 @@ USE_TAGUCHI_REDUCTION = True
 from transformers import BitsAndBytesConfig
 
 bnb_config = BitsAndBytesConfig(
-    device_map="cuda",
+    device_map="cpu",
     load_in_4bit=True,
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16,
