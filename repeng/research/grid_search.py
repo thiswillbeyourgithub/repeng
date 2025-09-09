@@ -39,16 +39,7 @@ patch_sklearn()
 
 USE_TAGUCHI_REDUCTION = True
 
-# Quantization config
 from transformers import BitsAndBytesConfig
-
-bnb_config = BitsAndBytesConfig(
-    device_map="auto",
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16,
-    bnb_4bit_use_double_quant=True,
-)
 
 # Define parameter grid for comprehensive search
 param_grid = {
