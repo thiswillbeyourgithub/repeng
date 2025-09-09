@@ -31,7 +31,7 @@ from sklearnex import patch_sklearn
 from tqdm import tqdm
 
 # Disable GPU
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
+# os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 
 patch_sklearn()
@@ -403,6 +403,8 @@ def test_configuration(
 
         # Close the writer for this combination
         writer.close()
+
+        del trained_vector, control_model
 
         return {
             "model_name": model_name,
