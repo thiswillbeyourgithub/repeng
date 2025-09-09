@@ -59,7 +59,16 @@ param_grid = {
         "google/gemma-3-4b-it",
     ],
     # "method": ["mean", "median"],
-    "method": ["median", "mean", "pca_diff", "pca_center", "ica_diff", "ica_center", "umap", "umap_densmap"],
+    "method": [
+        "median",
+        "mean",
+        "pca_diff",
+        "pca_center",
+        "ica_diff",
+        "ica_center",
+        "umap",
+        "umap_densmap",
+    ],
     "dataset": ["age", "iq"],
     "layer_zones": [
         # by increments of 0.1
@@ -407,7 +416,7 @@ def test_configuration(
 
         # Explicitly delete all model references to free GPU memory
         del trained_vector, control_model, unwrapped_model, base_model
-        
+
         # Force garbage collection and clear GPU cache
         gc.collect()
         if torch.cuda.is_available():
