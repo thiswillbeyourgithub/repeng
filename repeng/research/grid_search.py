@@ -6,6 +6,7 @@ import re
 import os
 import math
 import torch
+import gc
 
 # Set matplotlib backend before importing pyplot to ensure non-interactive plotting
 import matplotlib
@@ -399,12 +400,19 @@ def test_configuration(
 
         # Reset model control and unwrap to restore original state
         control_model.reset()
-        control_model.unwrap()
+        unwrapped_model = control_model.unwrap()
 
         # Close the writer for this combination
         writer.close()
 
-        del trained_vector, control_model
+        # Explicitly delete all model references to free GPU memory
+        del trained_vector, control_model, unwrapped_model, base_model
+        
+        # Force garbage collection and clear GPU cache
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
 
         return {
             "model_name": model_name,
