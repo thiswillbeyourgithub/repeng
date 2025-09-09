@@ -251,6 +251,7 @@ def test_configuration(
         model_name,
         quantization_config=bnb_config if not "gemma" in model_name.lower() else None,
         dtype=torch.float16,
+        low_cpu_mem_usage=True,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
