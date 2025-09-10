@@ -43,6 +43,8 @@ class ControlModel(torch.nn.Module):
 
         super().__init__()
         self.model = model
+        if hasattr(model, 'get_memory_footprint'):
+            self.get_memory_footprint = model.get_memory_footprint
 
         # Get the number of layers
         layer_ids = list(range(get_num_hidden_layer(model)))
