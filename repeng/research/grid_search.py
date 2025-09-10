@@ -580,7 +580,7 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
 
     # sort the grid to make sure that we switch model as little as possible
     grid = list(grid)
-    grid = sorted(grid, key=lambda dictparam: dictparam["model_name"])
+    grid = sorted(grid, key=lambda dictparam: str(dictparam["model_name"] + str(dictparam["layer_zones"])))
 
     all_results = []
 
