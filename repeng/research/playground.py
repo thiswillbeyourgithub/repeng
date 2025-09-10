@@ -47,8 +47,7 @@ model_name = "meta-llama/Llama-3.2-3B-Instruct"
 # rwkv
 # model_name = "RWKV/RWKV7-Goose-World3-2.9B-HF"
 
-# model_name = "google/gemma-3-4b-it"
-model_name = "google/gemma-3-4b-it"
+model_name = "google/gemma-7b-it"
 
 # If you need quantization
 from transformers import BitsAndBytesConfig
@@ -57,15 +56,16 @@ from transformers import Mxfp4Config
 # source: https://huggingface.co/docs/transformers/quantization/bitsandbytes
 bnb_config = BitsAndBytesConfig(
     device_map="auto",
-    # load_in_4bit=False,
-    load_in_8bit=True,
+    load_in_4bit=True,
+    # load_in_8bit=True,
     llm_int8_enable_fp32_cpu_offload=True,  # allow offloading between gpu and cpu, only for 8bit
     bnb_4bit_compute_dtype=torch.bfloat16,  # faster computation
 )
 
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    quantization_config=bnb_config if "gemma" not in model_name.lower() else None,
+    quantization_config=bnb_config,
+    # quantization_config=bnb_config if "gemma" not in model_name.lower() else None,
     # quantization_config=Mxfp4Config(),
     # dtype=torch.float16,
     low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
@@ -98,8 +98,8 @@ trained_vector = ControlVector.train(
     model,
     tokenizer,
     # datasets.dumb_genius_paragraph[:5],
-    # datasets.dumb_genius_paragraph,
-    datasets.young_old_paragraph,
+    # datasets.young_old_paragraph[:5],
+    datasets.dumb_genius_paragraph,
     batch_size=5,
     method=method,
     cache_path="./model_cache",
