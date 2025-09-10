@@ -35,10 +35,11 @@ model_name = "google/gemma-7b-it"
 
 # If you need quantization
 from transformers import BitsAndBytesConfig
-from transformers import Mxfp4Config
+# from transformers import Mxfp4Config
+# from transformers import HqqConfig
 
 # source: https://huggingface.co/docs/transformers/quantization/bitsandbytes
-bnb_config = BitsAndBytesConfig(
+quant_config = BitsAndBytesConfig(
     device_map="auto",
     load_in_4bit=True,
     # load_in_8bit=True,
@@ -48,10 +49,9 @@ bnb_config = BitsAndBytesConfig(
 
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    quantization_config=bnb_config,
-    # quantization_config=bnb_config if "gemma" not in model_name.lower() else None,
-    # quantization_config=Mxfp4Config(),
-    # dtype=torch.float16,
+    device_map="auto",
+    dtype=torch.float16,
+    quantization_config=quant_config,
     low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
     trust_remote_code=True,
 )
