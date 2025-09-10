@@ -44,9 +44,12 @@ CRASH_ON_ERRORS = True
 from transformers import BitsAndBytesConfig
 
 # Configure quantization for models that support it
+# source: https://huggingface.co/docs/transformers/quantization/bitsandbytes
 bnb_config = BitsAndBytesConfig(
     device_map="auto",
-    load_in_4bit=True,
+    load_in_8bit=True,
+    llm_int8_enable_fp32_cpu_offload=True,  # allow offloading between gpu and cpu, only for 8bit
+    bnb_4bit_compute_dtype=torch.bfloat16,  # faster computation
 )
 
 # Define parameter grid for comprehensive search
