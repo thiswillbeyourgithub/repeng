@@ -48,7 +48,8 @@ from transformers import BitsAndBytesConfig
 # source: https://huggingface.co/docs/transformers/quantization/bitsandbytes
 quant_config = BitsAndBytesConfig(
     device_map="auto",
-    load_in_8bit=True,
+    load_in_4bit=True,
+    # load_in_8bit=True,
     llm_int8_enable_fp32_cpu_offload=True,  # allow offloading between gpu and cpu, only for 8bit
     bnb_4bit_compute_dtype=torch.bfloat16,  # faster computation
 )
@@ -331,6 +332,14 @@ def test_configuration(
             if score is not None:
                 scores[strength] = score
                 logger.info(f"  Extracted score: {score}")
+                
+                # Log individual data point to TensorBoard for native plotting
+                # This creates an interactive plot for this specific configuration
+                writer.add_scalar(
+                    "extracted_value_vs_strength",
+                    score,
+                    global_step=int(strength * 100),  # Convert to int, scale by 100 for precision
+                )
             else:
                 scores[strength] = float("nan")
                 logger.info(f"  No score found in output, treating as NA")
