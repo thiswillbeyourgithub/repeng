@@ -475,6 +475,45 @@ grid_search_script_version = "1.0.0"
 
 
 def main(debug: bool = False, taguchi_reduction: bool = False):
+    """
+    Run comprehensive grid search over control vector configurations.
+    
+    This function performs an exhaustive evaluation of different control vector
+    training methods, layer zones, datasets, and models to find optimal configurations
+    for representation engineering. Results are logged to TensorBoard for analysis
+    and visualization.
+    
+    The grid search tests each combination by:
+    1. Loading a model and creating a ControlModel wrapper
+    2. Training a control vector using the specified method and layer zones
+    3. Testing the vector at various strength coefficients
+    4. Extracting numerical values from model outputs
+    5. Computing correlation between strength and extracted values
+    6. Logging results and creating plots
+    
+    Parameters
+    ----------
+    debug : bool, default=False
+        If True, raises exceptions instead of logging them and continuing.
+        Useful for debugging specific configuration failures.
+    taguchi_reduction : bool, default=False
+        If True, uses Taguchi orthogonal arrays to reduce the parameter grid size
+        while maintaining good coverage of the parameter space. This significantly
+        reduces computational cost but may miss some parameter interactions.
+        
+    Notes
+    -----
+    The function creates several output directories:
+    - ./plots/grid_search/ : Individual plots for each configuration
+    - ./tensorboard_logs/grid_search/ : TensorBoard logs for analysis
+    - ./logs/ : Text logs from loguru
+    
+    GPU memory is explicitly managed by deleting model references and calling
+    torch.cuda.empty_cache() after each configuration to prevent OOM errors.
+    
+    Results include correlation analysis between control strength and extracted
+    values, which helps identify effective control directions.
+    """
     # Create main writer for overall grid search logging
     main_writer = SummaryWriter(f"./tensorboard_logs/grid_search/main")
 
