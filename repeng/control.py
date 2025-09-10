@@ -47,6 +47,7 @@ class ControlModel(torch.nn.Module):
         # Get the number of layers
         layer_ids = list(range(get_num_hidden_layer(model)))
         nlayers = len(layer_ids)
+        assert nlayers
 
         if layer_zones:
             self.layer_ids = []
@@ -275,5 +276,6 @@ def model_layer_list(model: ControlModel | PreTrainedModel) -> torch.nn.ModuleLi
         layers = model.model.layers
     else:
         raise ValueError(f"don't know how to get layer list for {type(model)}")
+    assert layers, "No layers were found for the model"
 
     return layers

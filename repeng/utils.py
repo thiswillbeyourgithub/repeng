@@ -141,6 +141,7 @@ def get_num_hidden_layer(model) -> int:
         num_hidden_layers = model.config.text_config.num_hidden_layers
     else:
         raise ValueError("Can't find the number of hidden layers")
+    assert num_hidden_layers
     return num_hidden_layers
 
 
