@@ -16,7 +16,12 @@ from loguru import logger
 
 from .control import ControlModel, model_layer_list
 from .saes import Sae
-from .utils import DatasetEntry, get_model_name, autocorrect_chat_templates, get_num_hidden_layer
+from .utils import (
+    DatasetEntry,
+    get_model_name,
+    autocorrect_chat_templates,
+    get_num_hidden_layer,
+)
 
 __VERSION__ = "0.4.0"
 
@@ -33,6 +38,7 @@ class ControlVector:
         tokenizer: PreTrainedTokenizerBase,
         dataset: list[DatasetEntry],
         cache_path: os.PathLike[str] | str | None = None,
+        rescaling: str | None = "layer_magnitude",
         **kwargs,
     ) -> "ControlVector":
         """
@@ -45,6 +51,9 @@ class ControlVector:
             cache_path (os.PathLike[str] | str | None, optional): Path to directory for h5py caching.
                 If None, activations are computed and stored in memory. If provided, activations
                 are cached to disk to allow for better memory scaling. Defaults to None.
+            rescaling (str | None, optional): How to rescale the direction vectors. If None,
+                uses original scaling. If "layer_magnitude", rescales to match typical activation
+                magnitude in each layer. Defaults to "layer_magnitude".
             **kwargs: Additional keyword arguments. See help(repeng.extract.read_representations) for details.
 
         Returns:
@@ -56,6 +65,7 @@ class ControlVector:
                 tokenizer,
                 dataset,
                 cache_path=cache_path,
+                rescaling=rescaling,
                 **kwargs,
             )
         return cls(model_type=model.config.model_type, directions=dirs)
@@ -69,6 +79,7 @@ class ControlVector:
         sae: Sae,
         decode: bool = True,
         cache_path: os.PathLike[str] | str | None = None,
+        rescaling: str | None = "layer_magnitude",
         **kwargs,
     ) -> "ControlVector":
         """
@@ -86,6 +97,9 @@ class ControlVector:
             cache_path (os.PathLike[str] | str | None, optional): Path to directory for h5py caching.
                 If None, activations are computed and stored in memory. If provided, activations
                 are cached to disk to allow for better memory scaling. Defaults to None.
+            rescaling (str | None, optional): How to rescale the direction vectors. If None,
+                uses original scaling. If "layer_magnitude", rescales to match typical activation
+                magnitude in each layer. Defaults to "layer_magnitude".
             **kwargs: Additional keyword arguments. See help(repeng.extract.read_representations) for details.
 
         Returns:
@@ -98,7 +112,7 @@ class ControlVector:
                 dataset,
                 sae=sae,
                 sae_decode=decode,
-                method=method,
+                rescaling=rescaling,
                 cache_path=cache_path,
                 **kwargs,
             )
@@ -244,6 +258,7 @@ def compute_direction(
         ],
         typing.Callable[[np.ndarray], np.ndarray],
     ],
+    rescaling: str | None = None,
 ) -> np.ndarray:
     """
     Compute a direction vector from hidden states using the specified method.
@@ -255,19 +270,23 @@ def compute_direction(
         method: The method to use for computing the direction. Can be "pca_diff",
             "pca_center", "mean", "median", "umap", "umap_densmap", "ica_diff", "ica_center", "dict_diff", "dict_center", or a callable that takes hidden states and returns
             a direction vector.
+        rescaling (str | None, optional): How to rescale the direction vector. If None,
+            uses original scaling. If "layer_magnitude", rescales to match typical activation
+            magnitude. Defaults to None.
 
     Returns:
         np.ndarray: Direction vector of shape (hidden_dim,).
     """
+    # Compute the direction based on the method
     if callable(method):
         # Custom method: directly compute direction from hidden states
-        return method(hidden_states).astype(np.float32)
+        direction = method(hidden_states).astype(np.float32)
     elif method == "pca_diff":
         train = hidden_states[::2] - hidden_states[1::2]
         # shape (1, n_features)
         pca_model = PCA(n_components=1, whiten=False).fit(train)
         # shape (n_features,)
-        return pca_model.components_.astype(np.float32).squeeze(axis=0)
+        direction = pca_model.components_.astype(np.float32).squeeze(axis=0)
     elif method == "pca_center":
         center = (hidden_states[::2] + hidden_states[1::2]) / 2
         train = hidden_states.copy()
@@ -276,7 +295,7 @@ def compute_direction(
         # shape (1, n_features)
         pca_model = PCA(n_components=1, whiten=False).fit(train)
         # shape (n_features,)
-        return pca_model.components_.astype(np.float32).squeeze(axis=0)
+        direction = pca_model.components_.astype(np.float32).squeeze(axis=0)
     elif method == "mean":
         # Compute direction as difference between mean of positive and negative samples
         # Order is [positive, negative, positive, negative, ...]
@@ -287,7 +306,7 @@ def compute_direction(
         mean_negative = np.mean(negative_states, axis=0)
 
         # Direction points from negative to positive
-        return (mean_positive - mean_negative).astype(np.float32)
+        direction = (mean_positive - mean_negative).astype(np.float32)
     elif method == "median":
         # Compute direction as difference between median of positive and negative samples
         # Order is [positive, negative, positive, negative, ...]
@@ -298,7 +317,7 @@ def compute_direction(
         median_negative = np.median(negative_states, axis=0)
 
         # Direction points from negative to positive
-        return (median_positive - median_negative).astype(np.float32)
+        direction = (median_positive - median_negative).astype(np.float32)
     elif method == "umap":
         train = hidden_states
         # still experimental so don't want to add this as a real dependency yet
@@ -306,7 +325,7 @@ def compute_direction(
 
         umap_model = umap.UMAP(n_components=1)
         embedding = umap_model.fit_transform(train).astype(np.float32)
-        return np.sum(train * embedding, axis=0) / np.sum(embedding)
+        direction = np.sum(train * embedding, axis=0) / np.sum(embedding)
     elif method == "umap_densmap":
         train = hidden_states
         # still experimental so don't want to add this as a real dependency yet
@@ -314,7 +333,7 @@ def compute_direction(
 
         umap_model = umap.UMAP(n_components=1, densmap=True)
         embedding = umap_model.fit_transform(train).astype(np.float32)
-        return np.sum(train * embedding, axis=0) / np.sum(embedding)
+        direction = np.sum(train * embedding, axis=0) / np.sum(embedding)
     elif method == "ica_diff":
         # Use difference between positive and negative examples for ICA
         train = hidden_states[::2] - hidden_states[1::2]
@@ -322,7 +341,7 @@ def compute_direction(
         ica_model = FastICA(n_components=1, whiten="unit-variance", random_state=42)
         ica_model.fit(train)
         # Return the first (and only) component, shape (n_features,)
-        return ica_model.components_.astype(np.float32).squeeze(axis=0)
+        direction = ica_model.components_.astype(np.float32).squeeze(axis=0)
     elif method == "ica_center":
         # Use centered data for ICA (like pca_center)
         center = (hidden_states[::2] + hidden_states[1::2]) / 2
@@ -333,7 +352,7 @@ def compute_direction(
         ica_model = FastICA(n_components=1, whiten="unit-variance", random_state=42)
         ica_model.fit(train)
         # Return the first (and only) component, shape (n_features,)
-        return ica_model.components_.astype(np.float32).squeeze(axis=0)
+        direction = ica_model.components_.astype(np.float32).squeeze(axis=0)
     elif method == "dict_diff":
         # Use difference between positive and negative examples for Dictionary Learning
         train = hidden_states[::2] - hidden_states[1::2]
@@ -341,7 +360,7 @@ def compute_direction(
         dict_model = DictionaryLearning(n_components=1, random_state=42, max_iter=100)
         dict_model.fit(train)
         # Return the first (and only) dictionary atom, shape (n_features,)
-        return dict_model.components_.astype(np.float32).squeeze(axis=0)
+        direction = dict_model.components_.astype(np.float32).squeeze(axis=0)
     elif method == "dict_center":
         # Use centered data for Dictionary Learning (like pca_center)
         center = (hidden_states[::2] + hidden_states[1::2]) / 2
@@ -352,9 +371,24 @@ def compute_direction(
         dict_model = DictionaryLearning(n_components=1, random_state=42, max_iter=100)
         dict_model.fit(train)
         # Return the first (and only) dictionary atom, shape (n_features,)
-        return dict_model.components_.astype(np.float32).squeeze(axis=0)
+        direction = dict_model.components_.astype(np.float32).squeeze(axis=0)
     else:
         raise ValueError(f"unknown method {method}")
+
+    # Apply rescaling if requested
+    if rescaling == "layer_magnitude":
+        # Calculate typical magnitude of activations in this layer
+        activation_magnitudes = np.linalg.norm(hidden_states, axis=1)
+        typical_magnitude = np.mean(activation_magnitudes)
+
+        # Normalize direction to unit length, then scale by typical magnitude
+        direction_norm = np.linalg.norm(direction)
+        if direction_norm > 0:
+            direction = (direction / direction_norm) * typical_magnitude
+    elif rescaling is not None:
+        raise ValueError(f"unknown rescaling method {rescaling}")
+
+    return direction
 
 
 def read_representations(
@@ -380,6 +414,7 @@ def read_representations(
     ] = "pca_diff",
     sae: Sae | None = None,
     sae_decode: bool = True,
+    rescaling: str | None = None,
     cache_path: os.PathLike[str] | str | None = None,
 ) -> dict[int, np.ndarray]:
     """
@@ -403,6 +438,9 @@ def read_representations(
         sae_decode (bool, optional): If using SAE, whether to decode the direction vectors
             back to the original space. If False, returns directions in SAE feature space.
             Defaults to True.
+        rescaling (str | None, optional): How to rescale the direction vectors. If None,
+            uses original scaling. If "layer_magnitude", rescales to match typical activation
+            magnitude in each layer. Defaults to None.
         cache_path (os.PathLike[str] | str | None, optional): Path to directory for h5py caching.
             If None, activations are computed and stored in memory. If provided, activations
             are cached to disk to allow for better memory scaling. Defaults to None.
@@ -509,7 +547,7 @@ def read_representations(
 
         assert h.shape[0] == len(inputs) * 2
 
-        directions[layer] = compute_direction(h, method)
+        directions[layer] = compute_direction(h, method, rescaling)
 
         if method not in ["mean", "median"]:
             # calculate sign as pca can return a direction vector that points
