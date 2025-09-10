@@ -40,9 +40,6 @@ patch_sklearn()
 os.makedirs("./logs", exist_ok=True)
 logger.add("./logs/grid_search.logs", rotation="10 MB", retention="10 days", level="INFO")
 
-USE_TAGUCHI_REDUCTION = False
-
-CRASH_ON_ERRORS = True
 
 from transformers import BitsAndBytesConfig
 
@@ -242,6 +239,7 @@ def test_configuration(
     dataset: str,
     combo_idx: int,
     total_combos: int,
+    crash_on_errors: bool = False,
 ) -> dict:
     """Test a single configuration and return results."""
     logger.info(f"\n=== Combination {combo_idx+1}/{total_combos} ===")
@@ -392,7 +390,7 @@ def test_configuration(
                 logger.info(f"  Plot successfully logged to TensorBoard")
             except Exception as e:
                 logger.info(f"  Error logging plot to TensorBoard: {e}")
-                if CRASH_ON_ERRORS:
+                if crash_on_errors:
                     raise
 
             # Save plot
@@ -413,7 +411,7 @@ def test_configuration(
                     logger.info(f"  Warning: Plot file was not created!")
             except Exception as e:
                 logger.info(f"  Error saving plot: {e}")
-                if CRASH_ON_ERRORS:
+                if crash_on_errors:
                     raise
 
             plt.close(fig)  # Close the specific figure to save memory
@@ -452,7 +450,7 @@ def test_configuration(
         logger.info(f"Error in combination {combo_idx+1}: {e}")
         # Close the writer even on error
         writer.close()
-        if CRASH_ON_ERRORS:
+        if crash_on_errors:
             raise
         return {
             "model_name": model_name,
@@ -475,7 +473,7 @@ os.makedirs("./logs", exist_ok=True)
 grid_search_script_version = "1.0.0"
 
 
-def main():
+def main(crash_on_errors: bool = False, use_taguchi_reduction: bool = False):
     # Create main writer for overall grid search logging
     main_writer = SummaryWriter(f"./tensorboard_logs/grid_search/main")
 
@@ -489,7 +487,7 @@ def main():
     # Grid search
     grid = ParameterGrid(param_grid)
 
-    if USE_TAGUCHI_REDUCTION:
+    if use_taguchi_reduction:
         # Use taguchi arrays to reduce the size of the grid
         converter = TaguchiGridSearchConverter()
         old_grid = grid
@@ -516,7 +514,7 @@ def main():
 
         # Test this configuration
         result = test_configuration(
-            model_name, method, layer_zones, dataset, i, total_combinations
+            model_name, method, layer_zones, dataset, i, total_combinations, crash_on_errors
         )
         all_results.append(result)
 
@@ -564,7 +562,7 @@ def main():
                         )
                 except Exception as e:
                     logger.info(f"  Error calculating correlation: {e}")
-                    if CRASH_ON_ERRORS:
+                    if crash_on_errors:
                         raise
                     correlation_coeff = 0.0
                     correlation_p_value = 1.0
@@ -712,8 +710,8 @@ def main():
                             f.write(f"  Correlation coefficient: N/A (insufficient data)\n")
                     except Exception as e:
                         f.write(f"  Correlation coefficient: Error - {e}\n")
-                    if CRASH_ON_ERRORS:
-                        raise
+                        if crash_on_errors:
+                            raise
                 else:
                     f.write(f"  No valid scores extracted\n")
             else:
@@ -725,5 +723,5 @@ def main():
     logger.info(f"Summary report saved to: {summary_file}")
     logger.info("Results logged to tensorboard. Run: tensorboard --logdir=./tensorboard_logs")
 
-if __name__ == "__main___":
-    fire.Fire(main)
+if __name__ == "__main__":
+    Fire(main)
