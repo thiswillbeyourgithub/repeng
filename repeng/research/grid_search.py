@@ -339,7 +339,7 @@ def test_configuration(
                 writer.add_scalar(
                     "extracted_value_vs_strength",
                     score,
-                    global_step=int(strength),
+                    global_step=strength,
                 )
             else:
                 scores[strength] = float("nan")
