@@ -394,11 +394,13 @@ def test_configuration(
                 fontsize=14,
             )
             ax.grid(True, alpha=0.3)
-            
+
             # Fix x-axis to show full range of possible strength values
             ax.set_xlim(min(strengths), max(strengths))
             # Set x-axis ticks to show key strength values for better readability
-            ax.set_xticks([s for s in strengths if s % 0.5 == 0])  # Show every 0.5 increment
+            ax.set_xticks(
+                [s for s in strengths if s % 0.5 == 0]
+            )  # Show every 0.5 increment
 
             # Add dataset-specific reference lines and y-axis limits
             if dataset == "iq":
@@ -585,7 +587,12 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
 
     # sort the grid to make sure that we switch model as little as possible
     grid = list(grid)
-    grid = sorted(grid, key=lambda dictparam: str(dictparam["model_name"] + str(dictparam["layer_zones"])))
+    grid = sorted(
+        grid,
+        key=lambda dictparam: str(
+            dictparam["model_name"] + str(dictparam["layer_zones"])
+        ),
+    )
 
     all_results = []
 
