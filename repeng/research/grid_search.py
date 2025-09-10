@@ -56,7 +56,7 @@ param_grid = {
         "qwen/qwen3-4b",
         "mistralai/Mistral-7B-Instruct-v0.3",
         "meta-llama/Llama-3.2-3B-Instruct",
-        "google/gemma-3-4b-it",
+        "google/gemma-7b-it",
     ],
     # "method": ["mean", "median"],
     "method": [
