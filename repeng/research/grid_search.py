@@ -1,3 +1,4 @@
+from typing import List, Dict
 from fire import Fire
 import re
 import os
@@ -544,7 +545,7 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
         # Use taguchi arrays to reduce the size of the grid
         converter = TaguchiGridSearchConverter()
         old_grid = grid
-        grid = converter.fit_transform(old_grid)
+        grid: List[Dict] = converter.fit_transform(old_grid)
         assert len(grid) <= len(old_grid)
         total_combinations = len(grid)
 
@@ -556,6 +557,10 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
         logger.info(
             f"Starting grid search with {total_combinations} combinations (no taguchi reduction)"
         )
+
+    # sort the grid to make sure that we switch model as little as possible
+    grid = list(grid)
+    grid = sorted(grid, key=lambda dictparam: dictparam["model_name"])
 
     all_results = []
 
