@@ -473,7 +473,7 @@ os.makedirs("./logs", exist_ok=True)
 grid_search_script_version = "1.0.0"
 
 
-def main(crash_on_errors: bool = False, use_taguchi_reduction: bool = False):
+def main(crash_on_errors: bool = False, taguchi_reduction: bool = False):
     # Create main writer for overall grid search logging
     main_writer = SummaryWriter(f"./tensorboard_logs/grid_search/main")
 
@@ -487,7 +487,7 @@ def main(crash_on_errors: bool = False, use_taguchi_reduction: bool = False):
     # Grid search
     grid = ParameterGrid(param_grid)
 
-    if use_taguchi_reduction:
+    if taguchi_reduction:
         # Use taguchi arrays to reduce the size of the grid
         converter = TaguchiGridSearchConverter()
         old_grid = grid
