@@ -550,7 +550,7 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
         total_combinations = len(grid)
 
         logger.info(
-            f"Starting grid search with {total_combinations} combinations (before taguchi: {len(old_grid)}..."
+            f"Starting grid search with {total_combinations} combinations (before taguchi: {len(old_grid)})"
         )
     else:
         total_combinations = len(grid)
