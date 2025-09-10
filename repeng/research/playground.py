@@ -46,7 +46,8 @@ model_name = "meta-llama/Llama-3.2-3B-Instruct"
 # rwkv
 # model_name = "RWKV/RWKV7-Goose-World3-2.9B-HF"
 
-model_name = "google/gemma-3-4b-it"
+# model_name = "google/gemma-3-4b-it"
+model_name = "qwen/qwen3-4b"
 
 # If you need quantization
 from transformers import BitsAndBytesConfig
@@ -62,10 +63,10 @@ bnb_config = BitsAndBytesConfig(
 
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    # quantization_config=bnb_config,  # does not work with gemma 3: it always end without generating
+    quantization_config=bnb_config,  # does not work with gemma 3: it always end without generating
     # quantization_config=Mxfp4Config(),
     # dtype=torch.float16,
-    # low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
+    low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
     trust_remote_code=True,
 )
 
@@ -96,7 +97,7 @@ trained_vector = ControlVector.train(
     tokenizer,
     # datasets.dumb_genius_paragraph[:5],
     # datasets.dumb_genius_paragraph,
-    datasets.young_old_paragraph[:10],
+    datasets.young_old_paragraph,
     batch_size=5,
     method=method,
     cache_path="./model_cache",
