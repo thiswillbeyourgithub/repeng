@@ -71,7 +71,8 @@ param_grid = {
         "umap",
         "umap_densmap",
     ],
-    "dataset": ["age", "iq"],
+    #"dataset": ["age", "iq"],
+    "dataset": ["age"],
     "layer_zones": [
         # by increments of 0.1
         [[0.0, 0.1]],
