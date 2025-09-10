@@ -150,6 +150,16 @@ strengths = [
     5,
 ]
 
+# check that with the way we turn strengths into global_step for tensorboard we don't have collisions, adjust the multiplier if needed
+assert len(strengths) == len(set(strengths)), "Found duplicate elements of strengths"
+strengths_multiplier_tensorboard = 10
+while True:
+    _stren = [int(s * strengths_multiplier_tensorboard) for s in strengths]
+    if len(_stren) == len(set(_stren)):
+        break
+    else:
+        strengths_multiplier_tensorboard *= 10
+
 
 def get_data(dataset: str, tokenizer) -> tuple[str, list]:
     """
@@ -325,7 +335,7 @@ def test_configuration(
             writer.add_text(
                 f"{model_tag}_{dataset}_{method}/zones_{zones_tag}/outputs",
                 f"Strength {strength}: {output}",
-                global_step=int(strength * 10),
+                global_step=int(strength * strengths_multiplier_tensorboard),
             )
 
             # Extract score
@@ -339,7 +349,7 @@ def test_configuration(
                 writer.add_scalar(
                     "extracted_value_vs_strength",
                     score,
-                    global_step=int(strength * 10),
+                    global_step=int(strength * strengths_multiplier_tensorboard),
                 )
             else:
                 scores[strength] = float("nan")
