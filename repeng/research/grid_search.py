@@ -394,6 +394,11 @@ def test_configuration(
                 fontsize=14,
             )
             ax.grid(True, alpha=0.3)
+            
+            # Fix x-axis to show full range of possible strength values
+            ax.set_xlim(min(strengths), max(strengths))
+            # Set x-axis ticks to show key strength values for better readability
+            ax.set_xticks([s for s in strengths if s % 0.5 == 0])  # Show every 0.5 increment
 
             # Add dataset-specific reference lines and y-axis limits
             if dataset == "iq":
