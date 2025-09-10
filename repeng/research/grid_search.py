@@ -556,7 +556,14 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
 
         # Test this configuration
         result = test_configuration(
-            model_name, method, layer_zones, dataset, i, total_combinations, debug, batch_size
+            model_name,
+            method,
+            layer_zones,
+            dataset,
+            i,
+            total_combinations,
+            debug,
+            batch_size,
         )
         all_results.append(result)
 
