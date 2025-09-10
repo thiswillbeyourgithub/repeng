@@ -47,7 +47,7 @@ model_name = "meta-llama/Llama-3.2-3B-Instruct"
 # model_name = "RWKV/RWKV7-Goose-World3-2.9B-HF"
 
 # model_name = "google/gemma-3-4b-it"
-model_name = "qwen/qwen3-4b"
+model_name = "google/gemma-3-4b-it"
 
 # If you need quantization
 from transformers import BitsAndBytesConfig
@@ -56,9 +56,6 @@ from transformers import Mxfp4Config
 bnb_config = BitsAndBytesConfig(
     device_map="auto",
     load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16,
-    bnb_4bit_use_double_quant=True,
 )
 
 model = AutoModelForCausalLM.from_pretrained(
