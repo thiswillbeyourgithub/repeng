@@ -63,7 +63,7 @@ bnb_config = BitsAndBytesConfig(
 
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    quantization_config=bnb_config,  # does not work with gemma 3: it always end without generating
+    quantization_config=bnb_config if "gemma" not in model_name.lower() else None,
     # quantization_config=Mxfp4Config(),
     # dtype=torch.float16,
     low_cpu_mem_usage=True,  # avoids oom when loading the model but takes much more time to load the model
