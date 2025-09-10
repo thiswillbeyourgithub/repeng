@@ -37,7 +37,9 @@ patch_sklearn()
 
 # Configure loguru to write to file
 os.makedirs("./logs", exist_ok=True)
-logger.add("./logs/grid_search.logs", rotation="10 MB", retention="10 days", level="INFO")
+logger.add(
+    "./logs/grid_search.logs", rotation="10 MB", retention="10 days", level="INFO"
+)
 
 
 from transformers import BitsAndBytesConfig
@@ -70,7 +72,7 @@ param_grid = {
         "umap",
         "umap_densmap",
     ],
-    #"dataset": ["age", "iq"],
+    # "dataset": ["age", "iq"],
     "dataset": ["age"],
     "layer_zones": [
         # by increments of 0.1
@@ -263,7 +265,7 @@ def test_configuration(
         if tokenizer.eos_token:
             tokenizer.pad_token = tokenizer.eos_token
         else:
-            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+            tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
     # Get scenario and dataset for this configuration
     scenario, train_dataset = get_data(dataset, tokenizer)
@@ -476,12 +478,12 @@ grid_search_script_version = "1.0.0"
 def main(debug: bool = False, taguchi_reduction: bool = False):
     """
     Run comprehensive grid search over control vector configurations.
-    
+
     This function performs an exhaustive evaluation of different control vector
     training methods, layer zones, datasets, and models to find optimal configurations
     for representation engineering. Results are logged to TensorBoard for analysis
     and visualization.
-    
+
     The grid search tests each combination by:
     1. Loading a model and creating a ControlModel wrapper
     2. Training a control vector using the specified method and layer zones
@@ -489,7 +491,7 @@ def main(debug: bool = False, taguchi_reduction: bool = False):
     4. Extracting numerical values from model outputs
     5. Computing correlation between strength and extracted values
     6. Logging results and creating plots
-    
+
     Parameters
     ----------
     debug : bool, default=False
@@ -499,17 +501,17 @@ def main(debug: bool = False, taguchi_reduction: bool = False):
         If True, uses Taguchi orthogonal arrays to reduce the parameter grid size
         while maintaining good coverage of the parameter space. This significantly
         reduces computational cost but may miss some parameter interactions.
-        
+
     Notes
     -----
     The function creates several output directories:
     - ./plots/grid_search/ : Individual plots for each configuration
     - ./tensorboard_logs/grid_search/ : TensorBoard logs for analysis
     - ./logs/ : Text logs from loguru
-    
+
     GPU memory is explicitly managed by deleting model references and calling
     torch.cuda.empty_cache() after each configuration to prevent OOM errors.
-    
+
     Results include correlation analysis between control strength and extracted
     values, which helps identify effective control directions.
     """
@@ -684,13 +686,17 @@ def main(debug: bool = False, taguchi_reduction: bool = False):
 
                 # Also log by method for comparison across layer zones
                 main_writer.add_scalar(
-                    f"by_method/{model_tag}_{dataset}_{method}/mean_score", mean_score, i
+                    f"by_method/{model_tag}_{dataset}_{method}/mean_score",
+                    mean_score,
+                    i,
                 )
                 main_writer.add_scalar(
                     f"by_method/{model_tag}_{dataset}_{method}/max_score", max_score, i
                 )
                 main_writer.add_scalar(
-                    f"by_method/{model_tag}_{dataset}_{method}/score_range", score_range, i
+                    f"by_method/{model_tag}_{dataset}_{method}/score_range",
+                    score_range,
+                    i,
                 )
                 main_writer.add_scalar(
                     f"by_method/{model_tag}_{dataset}_{method}/correlation_coeff",
@@ -746,7 +752,9 @@ def main(debug: bool = False, taguchi_reduction: bool = False):
                                 f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})\n"
                             )
                         else:
-                            f.write(f"  Correlation coefficient: N/A (insufficient data)\n")
+                            f.write(
+                                f"  Correlation coefficient: N/A (insufficient data)\n"
+                            )
                     except Exception as e:
                         f.write(f"  Correlation coefficient: Error - {e}\n")
                         if debug:
@@ -760,7 +768,10 @@ def main(debug: bool = False, taguchi_reduction: bool = False):
     main_writer.close()
 
     logger.info(f"Summary report saved to: {summary_file}")
-    logger.info("Results logged to tensorboard. Run: tensorboard --logdir=./tensorboard_logs")
+    logger.info(
+        "Results logged to tensorboard. Run: tensorboard --logdir=./tensorboard_logs"
+    )
+
 
 if __name__ == "__main__":
     Fire(main)
