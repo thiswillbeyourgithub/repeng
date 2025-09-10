@@ -228,6 +228,14 @@ def autocorrect_chat_templates(
             "content"
         ].strip(), f"message of role '{message['role']}' contains empty string(s)"
 
+        # some models don't support system roles (e.g. gemma-7b-it)
+    if "system role not supported" in tokenizer.chat_template.lower():
+        for message in messages:
+            if messages[0]["role"] == "system" and messages[1]["role"] == "user":
+                messages[1]["content"] = messages[0]["content"] + "\n\n" + messages[1]["content"]
+                messages.pop(0)
+                warnings.warn("Model does not support 'system' role but found it in dataset. Modifying the dataset for compatibility")
+
     templated = tokenizer.apply_chat_template(messages, tokenize=False, **kwargs)
 
     if not all(message["content"] in templated for message in messages):
