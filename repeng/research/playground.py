@@ -35,6 +35,7 @@ model_name = "google/gemma-7b-it"
 
 # If you need quantization
 from transformers import BitsAndBytesConfig
+
 # from transformers import Mxfp4Config
 # from transformers import HqqConfig
 
@@ -69,11 +70,11 @@ if not tokenizer.pad_token:
     if tokenizer.eos_token:
         tokenizer.pad_token = tokenizer.eos_token
     else:
-        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
 # train the vector—takes less than a minute!
 # method="mean"
-method="median"
+method = "median"
 # method="pca_diff"
 # method = "pca_center"
 # method="umap"
@@ -121,7 +122,7 @@ try:
         tokenize=False,
     )
 except Exception as e:
-    
+
     scenario: str = autocorrect_chat_templates(
         messages=[
             {
