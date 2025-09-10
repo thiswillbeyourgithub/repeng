@@ -240,7 +240,7 @@ def test_configuration(
     dataset: str,
     combo_idx: int,
     total_combos: int,
-    crash_on_errors: bool = False,
+    debug: bool = False,
 ) -> dict:
     """Test a single configuration and return results."""
     logger.info(f"\n=== Combination {combo_idx+1}/{total_combos} ===")
@@ -391,7 +391,7 @@ def test_configuration(
                 logger.info(f"  Plot successfully logged to TensorBoard")
             except Exception as e:
                 logger.info(f"  Error logging plot to TensorBoard: {e}")
-                if crash_on_errors:
+                if debug:
                     raise
 
             # Save plot
@@ -412,7 +412,7 @@ def test_configuration(
                     logger.info(f"  Warning: Plot file was not created!")
             except Exception as e:
                 logger.info(f"  Error saving plot: {e}")
-                if crash_on_errors:
+                if debug:
                     raise
 
             plt.close(fig)  # Close the specific figure to save memory
@@ -451,7 +451,7 @@ def test_configuration(
         logger.info(f"Error in combination {combo_idx+1}: {e}")
         # Close the writer even on error
         writer.close()
-        if crash_on_errors:
+        if debug:
             raise
         return {
             "model_name": model_name,
@@ -474,7 +474,7 @@ os.makedirs("./logs", exist_ok=True)
 grid_search_script_version = "1.0.0"
 
 
-def main(crash_on_errors: bool = False, taguchi_reduction: bool = False):
+def main(debug: bool = False, taguchi_reduction: bool = False):
     # Create main writer for overall grid search logging
     main_writer = SummaryWriter(f"./tensorboard_logs/grid_search/main")
 
@@ -515,7 +515,7 @@ def main(crash_on_errors: bool = False, taguchi_reduction: bool = False):
 
         # Test this configuration
         result = test_configuration(
-            model_name, method, layer_zones, dataset, i, total_combinations, crash_on_errors
+            model_name, method, layer_zones, dataset, i, total_combinations, debug
         )
         all_results.append(result)
 
@@ -563,7 +563,7 @@ def main(crash_on_errors: bool = False, taguchi_reduction: bool = False):
                         )
                 except Exception as e:
                     logger.info(f"  Error calculating correlation: {e}")
-                    if crash_on_errors:
+                    if debug:
                         raise
                     correlation_coeff = 0.0
                     correlation_p_value = 1.0
@@ -711,7 +711,7 @@ def main(crash_on_errors: bool = False, taguchi_reduction: bool = False):
                             f.write(f"  Correlation coefficient: N/A (insufficient data)\n")
                     except Exception as e:
                         f.write(f"  Correlation coefficient: Error - {e}\n")
-                        if crash_on_errors:
+                        if debug:
                             raise
                 else:
                     f.write(f"  No valid scores extracted\n")
