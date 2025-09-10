@@ -325,7 +325,7 @@ def test_configuration(
             writer.add_text(
                 f"{model_tag}_{dataset}_{method}/zones_{zones_tag}/outputs",
                 f"Strength {strength}: {output}",
-                global_step=strength,
+                global_step=int(strength * 10),
             )
 
             # Extract score
@@ -339,7 +339,7 @@ def test_configuration(
                 writer.add_scalar(
                     "extracted_value_vs_strength",
                     score,
-                    global_step=strength,
+                    global_step=int(strength * 10),
                 )
             else:
                 scores[strength] = float("nan")
