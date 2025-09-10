@@ -43,7 +43,7 @@ from transformers import BitsAndBytesConfig
 
 # Configure quantization for models that support it
 # source: https://huggingface.co/docs/transformers/quantization/bitsandbytes
-bnb_config = BitsAndBytesConfig(
+quant_config = BitsAndBytesConfig(
     device_map="auto",
     load_in_8bit=True,
     llm_int8_enable_fp32_cpu_offload=True,  # allow offloading between gpu and cpu, only for 8bit
@@ -249,7 +249,7 @@ def test_configuration(
     print("Loading model and tokenizer...")
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        quantization_config=bnb_config if "gemma" not in model_name.lower() else None,
+        quantization_config=quant_config,
         dtype=torch.float16,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
