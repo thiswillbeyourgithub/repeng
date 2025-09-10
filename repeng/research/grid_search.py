@@ -37,7 +37,7 @@ from tqdm import tqdm
 
 patch_sklearn()
 
-USE_TAGUCHI_REDUCTION = True
+USE_TAGUCHI_REDUCTION = False
 
 from transformers import BitsAndBytesConfig
 
