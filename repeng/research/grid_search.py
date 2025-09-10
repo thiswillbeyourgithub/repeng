@@ -254,6 +254,7 @@ def test_configuration(
         quantization_config=bnb_config if "gemma" not in model_name.lower() else None,
         dtype=torch.float16,
         low_cpu_mem_usage=True,
+        trust_remote_code=True,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -302,7 +303,7 @@ def test_configuration(
             out = control_model.generate(
                 **tokenizer(scenario, return_tensors="pt").to(control_model.device),
                 do_sample=False,
-                max_new_tokens=30,
+                max_new_tokens=50,
                 repetition_penalty=1.1,
             )
 
