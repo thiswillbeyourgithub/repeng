@@ -255,7 +255,11 @@ def test_configuration(
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    tokenizer.pad_token = tokenizer.eos_token
+    if not tokenizer.pad_token:
+        if tokenizer.eos_token:
+            tokenizer.pad_token = tokenizer.eos_token
+        else:
+            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
     # Get scenario and dataset for this configuration
     scenario, train_dataset = get_data(dataset, tokenizer)

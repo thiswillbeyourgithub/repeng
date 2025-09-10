@@ -78,8 +78,11 @@ model = ControlModel(
 )
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-# tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-# tokenizer.pad_token = tokenizer.eos_token
+if not tokenizer.pad_token:
+    if tokenizer.eos_token:
+        tokenizer.pad_token = tokenizer.eos_token
+    else:
+        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
 # train the vector—takes less than a minute!
 # method="mean"
