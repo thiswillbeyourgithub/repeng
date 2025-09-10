@@ -1,10 +1,11 @@
 from fire import Fire
-from pprint import pprint
+from plogger.info import plogger.info
 import re
 import os
 import math
 import torch
 import gc
+from loguru import logger
 
 # Set matplotlib backend before importing pyplot to ensure non-interactive plotting
 import matplotlib
@@ -239,14 +240,14 @@ def test_configuration(
     total_combos: int,
 ) -> dict:
     """Test a single configuration and return results."""
-    print(f"\n=== Combination {combo_idx+1}/{total_combos} ===")
-    print(f"Model: {model_name}")
-    print(f"Method: {method}")
-    print(f"Dataset: {dataset}")
-    print(f"Layer zones: {layer_zones}")
+    logger.info(f"\n=== Combination {combo_idx+1}/{total_combos} ===")
+    logger.info(f"Model: {model_name}")
+    logger.info(f"Method: {method}")
+    logger.info(f"Dataset: {dataset}")
+    logger.info(f"Layer zones: {layer_zones}")
 
     # Load model and tokenizer for this configuration
-    print("Loading model and tokenizer...")
+    logger.info("Loading model and tokenizer...")
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
         quantization_config=quant_config,
@@ -280,7 +281,7 @@ def test_configuration(
         )
 
         # Train control vector
-        print("Training control vector...")
+        logger.info("Training control vector...")
         trained_vector = ControlVector.train(
             control_model,
             tokenizer,
@@ -295,7 +296,7 @@ def test_configuration(
         outputs = {}
 
         for strength in strengths:
-            print(f"Testing strength: {strength}")
+            logger.info(f"Testing strength: {strength}")
             control_model.set_control(trained_vector, strength)
 
             out = control_model.generate(
@@ -308,8 +309,8 @@ def test_configuration(
             output = tokenizer.decode(out.squeeze(), skip_special_tokens=True).strip()
             outputs[strength] = output
 
-            # Print the actual LLM output to screen
-            print(f"  Output: {output}")
+            # logger.info the actual LLM output to screen
+            logger.info(f"  Output: {output}")
 
             # Log the output text to tensorboard
             zones_tag = format_layer_zones_for_filename(layer_zones)
@@ -324,10 +325,10 @@ def test_configuration(
             score = extract_first_number(output)
             if score is not None:
                 scores[strength] = score
-                print(f"  Extracted score: {score}")
+                logger.info(f"  Extracted score: {score}")
             else:
                 scores[strength] = float("nan")
-                print(f"  No score found in output, treating as NA")
+                logger.info(f"  No score found in output, treating as NA")
 
         # Create plot for this combination if we have valid scores
         # Filter out NaN values for plotting
@@ -336,12 +337,12 @@ def test_configuration(
         ]
 
         if valid_data:
-            print(f"  Creating plot with {len(valid_data)} valid data points")
+            logger.info(f"  Creating plot with {len(valid_data)} valid data points")
             strengths_list, scores_list = zip(*valid_data)
 
-            # Debug: Print the data being plotted
-            print(f"  Plotting strengths: {strengths_list}")
-            print(f"  Plotting scores: {scores_list}")
+            # Debug: logger.info the data being plotted
+            logger.info(f"  Plotting strengths: {strengths_list}")
+            logger.info(f"  Plotting scores: {scores_list}")
 
             # Create the figure
             fig, ax = plt.subplots(figsize=(12, 8))
@@ -384,9 +385,9 @@ def test_configuration(
                     fig,
                     global_step=0,
                 )
-                print(f"  Plot successfully logged to TensorBoard")
+                logger.info(f"  Plot successfully logged to TensorBoard")
             except Exception as e:
-                print(f"  Error logging plot to TensorBoard: {e}")
+                logger.info(f"  Error logging plot to TensorBoard: {e}")
                 if CRASH_ON_ERRORS:
                     raise
 
@@ -398,22 +399,22 @@ def test_configuration(
                 fig.savefig(
                     plot_filename, dpi=300, bbox_inches="tight", facecolor="white"
                 )
-                print(f"  Plot saved: {plot_filename}")
+                logger.info(f"  Plot saved: {plot_filename}")
 
                 # Check if file was actually created and has content
                 if os.path.exists(plot_filename):
                     file_size = os.path.getsize(plot_filename)
-                    print(f"  Plot file size: {file_size} bytes")
+                    logger.info(f"  Plot file size: {file_size} bytes")
                 else:
-                    print(f"  Warning: Plot file was not created!")
+                    logger.info(f"  Warning: Plot file was not created!")
             except Exception as e:
-                print(f"  Error saving plot: {e}")
+                logger.info(f"  Error saving plot: {e}")
                 if CRASH_ON_ERRORS:
                     raise
 
             plt.close(fig)  # Close the specific figure to save memory
         else:
-            print(
+            logger.info(
                 f"  No valid scores to plot for this combination - all values are NaN"
             )
 
@@ -444,7 +445,7 @@ def test_configuration(
         }
 
     except Exception as e:
-        print(f"Error in combination {combo_idx+1}: {e}")
+        logger.info(f"Error in combination {combo_idx+1}: {e}")
         # Close the writer even on error
         writer.close()
         if CRASH_ON_ERRORS:
@@ -491,12 +492,12 @@ def main():
         assert len(grid) <= len(old_grid)
         total_combinations = len(grid)
 
-        print(
+        logger.info(
             f"Starting grid search with {total_combinations} combinations (before taguchi: {len(old_grid)}..."
         )
     else:
         total_combinations = len(grid)
-        print(
+        logger.info(
             f"Starting grid search with {total_combinations} combinations (no taguchi reduction)"
         )
 
@@ -553,11 +554,11 @@ def main():
                         correlation_coeff, correlation_p_value = pearsonr(
                             strengths_list, scores_list
                         )
-                        print(
+                        logger.info(
                             f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})"
                         )
                 except Exception as e:
-                    print(f"  Error calculating correlation: {e}")
+                    logger.info(f"  Error calculating correlation: {e}")
                     if CRASH_ON_ERRORS:
                         raise
                     correlation_coeff = 0.0
@@ -655,12 +656,12 @@ def main():
                     i,
                 )
 
-        print(f"Completed combination {i+1}/{total_combinations}")
+        logger.info(f"Completed combination {i+1}/{total_combinations}")
 
     # Log final summary
     successful_runs = [r for r in all_results if r["success"]]
-    print(f"\nGrid search completed!")
-    print(f"Successful runs: {len(successful_runs)}/{total_combinations}")
+    logger.info(f"\nGrid search completed!")
+    logger.info(f"Successful runs: {len(successful_runs)}/{total_combinations}")
 
     # Create summary report
     summary_file = "./plots/grid_search/summary_report.txt"
@@ -716,8 +717,8 @@ def main():
     # Close the main writer
     main_writer.close()
 
-    print(f"Summary report saved to: {summary_file}")
-    print("Results logged to tensorboard. Run: tensorboard --logdir=./tensorboard_logs")
+    logger.info(f"Summary report saved to: {summary_file}")
+    logger.info("Results logged to tensorboard. Run: tensorboard --logdir=./tensorboard_logs")
 
 if __name__ == "__main___":
     fire.Fire(main)
