@@ -39,6 +39,8 @@ patch_sklearn()
 
 USE_TAGUCHI_REDUCTION = False
 
+CRASH_ON_ERRORS = True
+
 from transformers import BitsAndBytesConfig
 
 # Configure quantization for models that support it
@@ -386,6 +388,8 @@ def test_configuration(
                 print(f"  Plot successfully logged to TensorBoard")
             except Exception as e:
                 print(f"  Error logging plot to TensorBoard: {e}")
+                if CRASH_ON_ERRORS:
+                    raise
 
             # Save plot
             zones_tag = format_layer_zones_for_filename(layer_zones)
@@ -405,6 +409,8 @@ def test_configuration(
                     print(f"  Warning: Plot file was not created!")
             except Exception as e:
                 print(f"  Error saving plot: {e}")
+                if CRASH_ON_ERRORS:
+                    raise
 
             plt.close(fig)  # Close the specific figure to save memory
         else:
@@ -442,6 +448,8 @@ def test_configuration(
         print(f"Error in combination {combo_idx+1}: {e}")
         # Close the writer even on error
         writer.close()
+        if CRASH_ON_ERRORS:
+            raise
         return {
             "model_name": model_name,
             "method": method,
@@ -546,6 +554,8 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
                     )
             except Exception as e:
                 print(f"  Error calculating correlation: {e}")
+                if CRASH_ON_ERRORS:
+                    raise
                 correlation_coeff = 0.0
                 correlation_p_value = 1.0
 
@@ -692,6 +702,8 @@ with open(summary_file, "w") as f:
                         f.write(f"  Correlation coefficient: N/A (insufficient data)\n")
                 except Exception as e:
                     f.write(f"  Correlation coefficient: Error - {e}\n")
+                if CRASH_ON_ERRORS:
+                    raise
             else:
                 f.write(f"  No valid scores extracted\n")
         else:
