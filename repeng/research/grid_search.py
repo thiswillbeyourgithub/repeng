@@ -1,6 +1,4 @@
-# Grid search script version for tracking experiments
-grid_search_script_version = "1.0.0"
-
+from fire import Fire
 from pprint import pprint
 import re
 import os
@@ -467,251 +465,259 @@ def test_configuration(
 os.makedirs("./plots/grid_search", exist_ok=True)
 os.makedirs("./tensorboard_logs", exist_ok=True)
 
-# Create main writer for overall grid search logging
-main_writer = SummaryWriter(f"./tensorboard_logs/grid_search/main")
+# Grid search script version for tracking experiments
+grid_search_script_version = "1.0.0"
 
-# Log version information as metadata
-main_writer.add_text(
-    "metadata/grid_search_script_version", grid_search_script_version, 0
-)
-main_writer.add_text("metadata/repeng_version", repeng_version, 0)
-# Note: model_name is now part of the grid and logged per combination
 
-# Grid search
-grid = ParameterGrid(param_grid)
+def main():
+    # Create main writer for overall grid search logging
+    main_writer = SummaryWriter(f"./tensorboard_logs/grid_search/main")
 
-if USE_TAGUCHI_REDUCTION:
-    # Use taguchi arrays to reduce the size of the grid
-    converter = TaguchiGridSearchConverter()
-    old_grid = grid
-    grid = converter.fit_transform(old_grid)
-    assert len(grid) <= len(old_grid)
-    total_combinations = len(grid)
-
-    print(
-        f"Starting grid search with {total_combinations} combinations (before taguchi: {len(old_grid)}..."
+    # Log version information as metadata
+    main_writer.add_text(
+        "metadata/grid_search_script_version", grid_search_script_version, 0
     )
-else:
-    total_combinations = len(grid)
-    print(
-        f"Starting grid search with {total_combinations} combinations (no taguchi reduction)"
-    )
+    main_writer.add_text("metadata/repeng_version", repeng_version, 0)
+    # Note: model_name is now part of the grid and logged per combination
 
-all_results = []
+    # Grid search
+    grid = ParameterGrid(param_grid)
 
-for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green")):
-    model_name = params["model_name"]
-    method = params["method"]
-    dataset = params["dataset"]
-    layer_zones = params["layer_zones"]
+    if USE_TAGUCHI_REDUCTION:
+        # Use taguchi arrays to reduce the size of the grid
+        converter = TaguchiGridSearchConverter()
+        old_grid = grid
+        grid = converter.fit_transform(old_grid)
+        assert len(grid) <= len(old_grid)
+        total_combinations = len(grid)
 
-    # Test this configuration
-    result = test_configuration(
-        model_name, method, layer_zones, dataset, i, total_combinations
-    )
-    all_results.append(result)
+        print(
+            f"Starting grid search with {total_combinations} combinations (before taguchi: {len(old_grid)}..."
+        )
+    else:
+        total_combinations = len(grid)
+        print(
+            f"Starting grid search with {total_combinations} combinations (no taguchi reduction)"
+        )
 
-    if result["success"] and result["scores"]:
-        scores = result["scores"]
+    all_results = []
 
-        # Log individual points to tensorboard (only valid scores, no NaN values)
-        zones_tag = format_layer_zones_for_filename(layer_zones)
-        model_tag = model_name.replace("/", "_").replace("-", "_")
-        for strength, score in scores.items():
-            if not math.isnan(score):
-                main_writer.add_scalar(
-                    f"{model_tag}_{dataset}_{method}/zones_{zones_tag}/extracted_value",
-                    score,
-                    strength,
-                )
+    for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green")):
+        model_name = params["model_name"]
+        method = params["method"]
+        dataset = params["dataset"]
+        layer_zones = params["layer_zones"]
 
-        # Log summary statistics to tensorboard
+        # Test this configuration
+        result = test_configuration(
+            model_name, method, layer_zones, dataset, i, total_combinations
+        )
+        all_results.append(result)
+
         if result["success"] and result["scores"]:
             scores = result["scores"]
-            # Filter out NaN values for statistics
-            valid_data = [
-                (s, scores[s])
-                for s in sorted(scores.keys())
-                if not math.isnan(scores[s])
-            ]
 
-            if valid_data:
-                strengths_list, scores_list = zip(*valid_data)
-            mean_score = sum(scores_list) / len(scores_list)
-            max_score = max(scores_list)
-            min_score = min(scores_list)
-            score_range = max_score - min_score
+            # Log individual points to tensorboard (only valid scores, no NaN values)
+            zones_tag = format_layer_zones_for_filename(layer_zones)
+            model_tag = model_name.replace("/", "_").replace("-", "_")
+            for strength, score in scores.items():
+                if not math.isnan(score):
+                    main_writer.add_scalar(
+                        f"{model_tag}_{dataset}_{method}/zones_{zones_tag}/extracted_value",
+                        score,
+                        strength,
+                    )
 
-            # Calculate correlation between control strength and extracted value
-            correlation_coeff = 0.0
-            correlation_p_value = 1.0
-            try:
-                if len(strengths_list) > 1 and len(scores_list) > 1:
-                    correlation_coeff, correlation_p_value = pearsonr(
-                        strengths_list, scores_list
-                    )
-                    print(
-                        f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})"
-                    )
-            except Exception as e:
-                print(f"  Error calculating correlation: {e}")
-                if CRASH_ON_ERRORS:
-                    raise
+            # Log summary statistics to tensorboard
+            if result["success"] and result["scores"]:
+                scores = result["scores"]
+                # Filter out NaN values for statistics
+                valid_data = [
+                    (s, scores[s])
+                    for s in sorted(scores.keys())
+                    if not math.isnan(scores[s])
+                ]
+
+                if valid_data:
+                    strengths_list, scores_list = zip(*valid_data)
+                mean_score = sum(scores_list) / len(scores_list)
+                max_score = max(scores_list)
+                min_score = min(scores_list)
+                score_range = max_score - min_score
+
+                # Calculate correlation between control strength and extracted value
                 correlation_coeff = 0.0
                 correlation_p_value = 1.0
-
-            # Log hyperparameters and metrics for easy filtering
-            hparam_dict = {
-                "model_name": model_name,
-                "method": method,
-                "dataset": dataset,
-                "layer_zones_str": str(
-                    layer_zones
-                ),  # String representation for filtering
-                "num_layer_zones": len(layer_zones),  # Number of zone pairs
-                "combo_idx": i,  # Unique identifier for this combination
-                "grid_search_script_version": grid_search_script_version,
-                "repeng_version": repeng_version,
-            }
-
-            # Add individual zone boundaries as separate hyperparameters for easier filtering
-            for zone_idx, zone in enumerate(layer_zones):
-                hparam_dict[f"zone_{zone_idx}_start"] = zone[0]
-                hparam_dict[f"zone_{zone_idx}_end"] = zone[1]
-                hparam_dict[f"zone_{zone_idx}_width"] = zone[1] - zone[0]
-
-            metric_dict = {
-                "hparam/mean_score": mean_score,
-                "hparam/max_score": max_score,
-                "hparam/min_score": min_score,
-                "hparam/score_range": score_range,
-                "hparam/correlation_coeff": correlation_coeff,
-                "hparam/correlation_p_value": correlation_p_value,
-                "hparam/num_valid_scores": len(scores_list),
-            }
-
-            # Log hyperparameters with metrics - this allows filtering in TensorBoard
-            main_writer.add_hparams(hparam_dict, metric_dict)
-
-            # Also log individual parameters as scalars for time-series analysis
-            main_writer.add_scalar("params/combo_idx", i, i)
-            main_writer.add_scalar("params/num_layer_zones", len(layer_zones), i)
-            for zone_idx, zone in enumerate(layer_zones):
-                main_writer.add_scalar(f"params/zone_{zone_idx}_start", zone[0], i)
-                main_writer.add_scalar(f"params/zone_{zone_idx}_end", zone[1], i)
-                main_writer.add_scalar(
-                    f"params/zone_{zone_idx}_width", zone[1] - zone[0], i
-                )
-
-            # Use combination index as the x-axis for summary stats
-            model_tag = model_name.replace("/", "_").replace("-", "_")
-            main_writer.add_scalar(
-                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/mean_score",
-                mean_score,
-                i,
-            )
-            main_writer.add_scalar(
-                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/max_score",
-                max_score,
-                i,
-            )
-            main_writer.add_scalar(
-                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/min_score",
-                min_score,
-                i,
-            )
-            main_writer.add_scalar(
-                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/score_range",
-                score_range,
-                i,
-            )
-            main_writer.add_scalar(
-                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/correlation_coeff",
-                correlation_coeff,
-                i,
-            )
-            main_writer.add_scalar(
-                f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/correlation_p_value",
-                correlation_p_value,
-                i,
-            )
-
-            # Also log by method for comparison across layer zones
-            main_writer.add_scalar(
-                f"by_method/{model_tag}_{dataset}_{method}/mean_score", mean_score, i
-            )
-            main_writer.add_scalar(
-                f"by_method/{model_tag}_{dataset}_{method}/max_score", max_score, i
-            )
-            main_writer.add_scalar(
-                f"by_method/{model_tag}_{dataset}_{method}/score_range", score_range, i
-            )
-            main_writer.add_scalar(
-                f"by_method/{model_tag}_{dataset}_{method}/correlation_coeff",
-                correlation_coeff,
-                i,
-            )
-
-    print(f"Completed combination {i+1}/{total_combinations}")
-
-# Log final summary
-successful_runs = [r for r in all_results if r["success"]]
-print(f"\nGrid search completed!")
-print(f"Successful runs: {len(successful_runs)}/{total_combinations}")
-
-# Create summary report
-summary_file = "./plots/grid_search/summary_report.txt"
-with open(summary_file, "w") as f:
-    f.write(f"Grid Search Summary Report\n")
-    f.write(f"==========================\n\n")
-    f.write(f"Total combinations tested: {total_combinations}\n")
-    f.write(f"Successful runs: {len(successful_runs)}\n\n")
-
-    # Group results by model for easier comparison
-    models_tested = set(r.get("model_name", "unknown") for r in all_results)
-    f.write(f"Models tested: {', '.join(sorted(models_tested))}\n\n")
-
-    f.write("Results by combination:\n")
-    for i, result in enumerate(all_results):
-        f.write(f"\nCombination {i+1}:\n")
-        f.write(f"  Model: {result.get('model_name', 'unknown')}\n")
-        f.write(f"  Method: {result['method']}\n")
-        f.write(f"  Dataset: {result['dataset']}\n")
-        f.write(f"  Layer zones: {result['layer_zones']}\n")
-        f.write(f"  Success: {result['success']}\n")
-        if result["success"]:
-            scores = result["scores"]
-            if scores:
-                scores_list = list(scores.values())
-                strengths_list = list(scores.keys())
-                f.write(f"  Scores found: {len(scores)}/{len(strengths)}\n")
-                f.write(f"  Mean score: {sum(scores_list)/len(scores_list):.2f}\n")
-                f.write(
-                    f"  Score range: {min(scores_list):.2f} - {max(scores_list):.2f}\n"
-                )
-
-                # Calculate and report correlation
                 try:
                     if len(strengths_list) > 1 and len(scores_list) > 1:
                         correlation_coeff, correlation_p_value = pearsonr(
                             strengths_list, scores_list
                         )
-                        f.write(
-                            f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})\n"
+                        print(
+                            f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})"
                         )
-                    else:
-                        f.write(f"  Correlation coefficient: N/A (insufficient data)\n")
                 except Exception as e:
-                    f.write(f"  Correlation coefficient: Error - {e}\n")
-                if CRASH_ON_ERRORS:
-                    raise
+                    print(f"  Error calculating correlation: {e}")
+                    if CRASH_ON_ERRORS:
+                        raise
+                    correlation_coeff = 0.0
+                    correlation_p_value = 1.0
+
+                # Log hyperparameters and metrics for easy filtering
+                hparam_dict = {
+                    "model_name": model_name,
+                    "method": method,
+                    "dataset": dataset,
+                    "layer_zones_str": str(
+                        layer_zones
+                    ),  # String representation for filtering
+                    "num_layer_zones": len(layer_zones),  # Number of zone pairs
+                    "combo_idx": i,  # Unique identifier for this combination
+                    "grid_search_script_version": grid_search_script_version,
+                    "repeng_version": repeng_version,
+                }
+
+                # Add individual zone boundaries as separate hyperparameters for easier filtering
+                for zone_idx, zone in enumerate(layer_zones):
+                    hparam_dict[f"zone_{zone_idx}_start"] = zone[0]
+                    hparam_dict[f"zone_{zone_idx}_end"] = zone[1]
+                    hparam_dict[f"zone_{zone_idx}_width"] = zone[1] - zone[0]
+
+                metric_dict = {
+                    "hparam/mean_score": mean_score,
+                    "hparam/max_score": max_score,
+                    "hparam/min_score": min_score,
+                    "hparam/score_range": score_range,
+                    "hparam/correlation_coeff": correlation_coeff,
+                    "hparam/correlation_p_value": correlation_p_value,
+                    "hparam/num_valid_scores": len(scores_list),
+                }
+
+                # Log hyperparameters with metrics - this allows filtering in TensorBoard
+                main_writer.add_hparams(hparam_dict, metric_dict)
+
+                # Also log individual parameters as scalars for time-series analysis
+                main_writer.add_scalar("params/combo_idx", i, i)
+                main_writer.add_scalar("params/num_layer_zones", len(layer_zones), i)
+                for zone_idx, zone in enumerate(layer_zones):
+                    main_writer.add_scalar(f"params/zone_{zone_idx}_start", zone[0], i)
+                    main_writer.add_scalar(f"params/zone_{zone_idx}_end", zone[1], i)
+                    main_writer.add_scalar(
+                        f"params/zone_{zone_idx}_width", zone[1] - zone[0], i
+                    )
+
+                # Use combination index as the x-axis for summary stats
+                model_tag = model_name.replace("/", "_").replace("-", "_")
+                main_writer.add_scalar(
+                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/mean_score",
+                    mean_score,
+                    i,
+                )
+                main_writer.add_scalar(
+                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/max_score",
+                    max_score,
+                    i,
+                )
+                main_writer.add_scalar(
+                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/min_score",
+                    min_score,
+                    i,
+                )
+                main_writer.add_scalar(
+                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/score_range",
+                    score_range,
+                    i,
+                )
+                main_writer.add_scalar(
+                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/correlation_coeff",
+                    correlation_coeff,
+                    i,
+                )
+                main_writer.add_scalar(
+                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/correlation_p_value",
+                    correlation_p_value,
+                    i,
+                )
+
+                # Also log by method for comparison across layer zones
+                main_writer.add_scalar(
+                    f"by_method/{model_tag}_{dataset}_{method}/mean_score", mean_score, i
+                )
+                main_writer.add_scalar(
+                    f"by_method/{model_tag}_{dataset}_{method}/max_score", max_score, i
+                )
+                main_writer.add_scalar(
+                    f"by_method/{model_tag}_{dataset}_{method}/score_range", score_range, i
+                )
+                main_writer.add_scalar(
+                    f"by_method/{model_tag}_{dataset}_{method}/correlation_coeff",
+                    correlation_coeff,
+                    i,
+                )
+
+        print(f"Completed combination {i+1}/{total_combinations}")
+
+    # Log final summary
+    successful_runs = [r for r in all_results if r["success"]]
+    print(f"\nGrid search completed!")
+    print(f"Successful runs: {len(successful_runs)}/{total_combinations}")
+
+    # Create summary report
+    summary_file = "./plots/grid_search/summary_report.txt"
+    with open(summary_file, "w") as f:
+        f.write(f"Grid Search Summary Report\n")
+        f.write(f"==========================\n\n")
+        f.write(f"Total combinations tested: {total_combinations}\n")
+        f.write(f"Successful runs: {len(successful_runs)}\n\n")
+
+        # Group results by model for easier comparison
+        models_tested = set(r.get("model_name", "unknown") for r in all_results)
+        f.write(f"Models tested: {', '.join(sorted(models_tested))}\n\n")
+
+        f.write("Results by combination:\n")
+        for i, result in enumerate(all_results):
+            f.write(f"\nCombination {i+1}:\n")
+            f.write(f"  Model: {result.get('model_name', 'unknown')}\n")
+            f.write(f"  Method: {result['method']}\n")
+            f.write(f"  Dataset: {result['dataset']}\n")
+            f.write(f"  Layer zones: {result['layer_zones']}\n")
+            f.write(f"  Success: {result['success']}\n")
+            if result["success"]:
+                scores = result["scores"]
+                if scores:
+                    scores_list = list(scores.values())
+                    strengths_list = list(scores.keys())
+                    f.write(f"  Scores found: {len(scores)}/{len(strengths)}\n")
+                    f.write(f"  Mean score: {sum(scores_list)/len(scores_list):.2f}\n")
+                    f.write(
+                        f"  Score range: {min(scores_list):.2f} - {max(scores_list):.2f}\n"
+                    )
+
+                    # Calculate and report correlation
+                    try:
+                        if len(strengths_list) > 1 and len(scores_list) > 1:
+                            correlation_coeff, correlation_p_value = pearsonr(
+                                strengths_list, scores_list
+                            )
+                            f.write(
+                                f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})\n"
+                            )
+                        else:
+                            f.write(f"  Correlation coefficient: N/A (insufficient data)\n")
+                    except Exception as e:
+                        f.write(f"  Correlation coefficient: Error - {e}\n")
+                    if CRASH_ON_ERRORS:
+                        raise
+                else:
+                    f.write(f"  No valid scores extracted\n")
             else:
-                f.write(f"  No valid scores extracted\n")
-        else:
-            f.write(f"  Error: {result.get('error', 'Unknown error')}\n")
+                f.write(f"  Error: {result.get('error', 'Unknown error')}\n")
 
-# Close the main writer
-main_writer.close()
+    # Close the main writer
+    main_writer.close()
 
-print(f"Summary report saved to: {summary_file}")
-print("Results logged to tensorboard. Run: tensorboard --logdir=./tensorboard_logs")
+    print(f"Summary report saved to: {summary_file}")
+    print("Results logged to tensorboard. Run: tensorboard --logdir=./tensorboard_logs")
+
+if __name__ == "__main___":
+    fire.Fire(main)
