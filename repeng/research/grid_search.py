@@ -36,6 +36,10 @@ from tqdm import tqdm
 
 patch_sklearn()
 
+# Configure loguru to write to file
+os.makedirs("./logs", exist_ok=True)
+logger.add("./logs/grid_search.logs", rotation="10 MB", retention="10 days", level="INFO")
+
 USE_TAGUCHI_REDUCTION = False
 
 CRASH_ON_ERRORS = True
@@ -465,6 +469,7 @@ def test_configuration(
 # Create directories
 os.makedirs("./plots/grid_search", exist_ok=True)
 os.makedirs("./tensorboard_logs", exist_ok=True)
+os.makedirs("./logs", exist_ok=True)
 
 # Grid search script version for tracking experiments
 grid_search_script_version = "1.0.0"
