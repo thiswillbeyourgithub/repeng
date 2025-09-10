@@ -1,3 +1,4 @@
+from loguru import logger
 from pprint import pprint
 import re
 import os
@@ -204,6 +205,8 @@ simple_scores = {}
 outputs = {}
 
 for strength in strengths:
+    logger.debug(f"Memory footprint: {model.get_memory_footprint()}")
+
     print(f"strength={strength}")
     model.set_control(trained_vector, strength)
     out = model.generate(
