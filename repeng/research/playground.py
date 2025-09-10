@@ -20,30 +20,14 @@ patch_sklearn()
 # model to use:
 # model_name = "meta-llama/Llama-3.2-1B-Instruct"
 model_name = "meta-llama/Llama-3.2-3B-Instruct"
-
 # model_name = "mistralai/Mistral-7B-Instruct-v0.1"
 # model_name = "mistralai/Mistral-Nemo-Instruct-2407"
-
-# # GGUF don't always work because there is a dequantization step. See here: https://github.com/huggingface/transformers/issues/34417
-# fname = None
-# model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
-# fname = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
-# fname = "Mistral-7B-Instruct-v0.3.Q2_K.gguf"
-# model_name = "TheBloke/Mistral-7B-Instruct-v0.1-GGUF"
-# fname = "mistral-7b-instruct-v0.1.Q2_K.gguf"
-# model_name = "bartowski/Llama-3.2-1B-Instruct-GGUF"
-# fname = "Llama-3.2-1B-Instruct-Q4_K_S.gguf"
-# model_name = "unsloth/Llama-3.2-11B-Vision-Instruct"
-
 # model_name = "Qwen/Qwen2.5-7B-Instruct"
-
 # model_name = "tiiuae/Falcon3-10B-Instruct-1.58bit"
 # model_name = "qwen/qwen3-4b"
 # model_name = "Qwen/Qwen1.5-7B-Chat"
-
 # mamba model
 # model_name = "state-spaces/mamba-2.8b-hf"
-
 # rwkv
 # model_name = "RWKV/RWKV7-Goose-World3-2.9B-HF"
 
