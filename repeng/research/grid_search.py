@@ -242,6 +242,7 @@ def test_configuration(
     combo_idx: int,
     total_combos: int,
     debug: bool = False,
+    batch_size: int = 1,
 ) -> dict:
     """Test a single configuration and return results."""
     logger.info(f"\n=== Combination {combo_idx+1}/{total_combos} ===")
@@ -290,7 +291,7 @@ def test_configuration(
             control_model,
             tokenizer,
             train_dataset,
-            batch_size=1,
+            batch_size=batch_size,
             method=method,
             cache_path="./model_cache",
         )
@@ -475,7 +476,7 @@ os.makedirs("./logs", exist_ok=True)
 grid_search_script_version = "1.0.0"
 
 
-def main(debug: bool = False, taguchi_reduction: bool = False):
+def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int = 1):
     """
     Run comprehensive grid search over control vector configurations.
 
@@ -555,7 +556,7 @@ def main(debug: bool = False, taguchi_reduction: bool = False):
 
         # Test this configuration
         result = test_configuration(
-            model_name, method, layer_zones, dataset, i, total_combinations, debug
+            model_name, method, layer_zones, dataset, i, total_combinations, debug, batch_size
         )
         all_results.append(result)
 
