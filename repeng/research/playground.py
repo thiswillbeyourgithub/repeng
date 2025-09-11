@@ -140,10 +140,10 @@ except Exception:
 
 
 # Import shared strength configuration to ensure consistency across experiments
-from repeng.research.shared import FINE_GRAINED_STRENGTHS, extract_first_number
+from repeng.research.shared import DEFAULT_STRENGTHS, extract_first_number
 
 # set the control strength and let inference rip!
-strengths = FINE_GRAINED_STRENGTHS
+strengths = DEFAULT_STRENGTHS
 
 scores = {}
 simple_scores = {}
