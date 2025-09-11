@@ -5,7 +5,7 @@ import tempfile
 
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizerBase
 
-from . import ControlModel, ControlVector, DatasetEntry
+from . import ControlModel, ControlVector
 from .control import model_layer_list
 from .utils import make_dataset
 

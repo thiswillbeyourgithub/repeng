@@ -41,7 +41,7 @@ def make_dataset(
     assert len(negative_personas) == len(set(negative_personas)), "Found duplicates in negative personas"
 
     if suffix_list:
-        if not "{suffix}" in str(template):
+        if "{suffix}" not in str(template):
             if isinstance(template, str):
                 template += "{suffix}"
             else:
@@ -218,7 +218,7 @@ def autocorrect_chat_templates(
         assert sorted(list(message.keys())) == [
             "content",
             "role",
-        ], f"messages should consist of 'content' and 'role' keys only"
+        ], "messages should consist of 'content' and 'role' keys only"
         assert message["role"] in [
             "user",
             "assistant",
@@ -254,8 +254,7 @@ def autocorrect_chat_templates(
             )
         except Exception as e:
             if (
-                not "After the optional system message, conversation roles must alternate user/assistant/user/assistant/..."
-                in str(e)
+                "After the optional system message, conversation roles must alternate user/assistant/user/assistant/..." not in str(e)
             ):
                 raise
         if templated2:
@@ -327,12 +326,12 @@ def autocorrect_chat_templates(
                     ):
                         assert (
                             tokenizer_version is None
-                        ), f"Couldn't identify mistral tokenizer version (conflict)"
+                        ), "Couldn't identify mistral tokenizer version (conflict)"
                         tokenizer_version = vn
                         break
             assert (
                 tokenizer_version is not None
-            ), f"Couldn't identify mistral tokenizer version (no match found)"
+            ), "Couldn't identify mistral tokenizer version (no match found)"
 
             if tokenizer_version == "v1":
                 # other source https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407/discussions/76
