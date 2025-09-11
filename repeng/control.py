@@ -43,7 +43,7 @@ class ControlModel(torch.nn.Module):
 
         super().__init__()
         self.model = model
-        if hasattr(model, 'get_memory_footprint'):
+        if hasattr(model, "get_memory_footprint"):
             self.get_memory_footprint = model.get_memory_footprint
 
         # Get the number of layers
@@ -197,7 +197,7 @@ class ControlModule(torch.nn.Module):
         super().__init__()
         self.block: torch.nn.Module = block
         self.params: BlockControlParams = BlockControlParams.default()
-        if hasattr(block, 'attention_type'):
+        if hasattr(block, "attention_type"):
             self.attention_type = block.attention_type
 
     def set_control(self, params: BlockControlParams) -> None:
@@ -248,7 +248,6 @@ class ControlModule(torch.nn.Module):
             modified = self.params.operator(modified, control * mask)
         else:
             modified = self.params.operator(modified, control)
-
 
         if self.params.normalize:
             norm_post = torch.norm(modified, dim=-1, keepdim=True)
