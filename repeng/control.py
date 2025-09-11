@@ -123,11 +123,7 @@ class ControlModel(torch.nn.Module):
         by `coeff`. (Negative `coeff` values invert the control vector, e.g. happiness→sadness.)
         `coeff` defaults to `1.0`.
 
-        Additional kwargs:
-        - `normalize: bool`: track the magnitude of the non-modified activation, and rescale the
-          activation to that magnitude after control (default: `False`)
-        - `operator: Callable[[Tensor, Tensor], Tensor]`: how to combine the base output and control
-          (default: +)
+        Additional kwargs passed to ControlModel.set_raw_control so are documented there.
         """
 
         raw_control = {}
@@ -153,6 +149,8 @@ class ControlModel(torch.nn.Module):
 
         Passing `control=None` will reset the control tensor for all layer_ids, making the model act
         like a non-control model.
+
+        The kwargs are used to instantiate a BlockControlParams object.
 
         Additional kwargs:
         - `normalize: bool`: track the magnitude of the non-modified activation, and rescale the
