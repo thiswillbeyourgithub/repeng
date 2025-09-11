@@ -154,7 +154,8 @@ class ControlModel(torch.nn.Module):
 
         Additional kwargs:
         - `normalize: bool`: track the magnitude of the non-modified activation, and rescale the
-          activation to that magnitude after control (default: `False`)
+          activation to that magnitude after control. Also take a look at
+          extract.py:ControlVector.train's `rescaling` argument. (default: `False`)
         - `operator: Callable[[Tensor, Tensor], Tensor]`: how to combine the base output and control
           (default: +)
         """
