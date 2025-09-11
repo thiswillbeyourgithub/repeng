@@ -191,7 +191,6 @@ def get_data(dataset: str, tokenizer) -> tuple[str, list]:
         raise ValueError(f"Unknown dataset: {dataset}")
 
 
-
 def format_layer_zones_for_filename(layer_zones: list) -> str:
     """Format layer zones for use in filenames."""
     zones_str = (

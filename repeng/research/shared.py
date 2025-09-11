@@ -56,17 +56,17 @@ FINE_GRAINED_STRENGTHS: List[float] = [x / 100 for x in range(-50, 55, 5)]
 def extract_first_number(text: str, max_value: float | None = None) -> float | None:
     """
     Extract the first number from text using regex.
-    
+
     This function handles various number formats including comma/dot thousand
     separators and applies preprocessing to filter out common model metadata lines.
-    
+
     Parameters
     ----------
     text : str
         Text to extract number from
     max_value : float | None, optional
         Maximum value to return - if extracted value exceeds this, returns max_value
-        
+
     Returns
     -------
     float | None

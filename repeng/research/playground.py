@@ -170,7 +170,6 @@ for strength in strengths:
     print("###" * 5)
 
 
-
 # Process outputs to extract scores
 scores = {}
 for strength, output in outputs.items():
