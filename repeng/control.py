@@ -292,23 +292,22 @@ def model_layer_list(model: ControlModel | PreTrainedModel, _recursive: bool=Fal
                 candidates[k] = v
 
         if len(candidates) == 1:  # gemma or mistral-like
-            layers = model_layer_list(list(candidates.values())[0], _recursive=True)
+            good = model_layer_list(list(candidates.values())[0], _recursive=True)
         else:
             candidates2 = {}
             for k, v in candidates.items():
                 if (
-                    "language" in k.lower()
-                    or "text" in k.lower()
-                    or "language" in str(v).lower()
-                    or "text" in str(v).lower()
+                    "language" in (str(k) + str(v)).lower()
+                    or "text" in (str(k) + str(v)).lower()
                 ):
                     candidates2[k] = v
             if len(candidates2) == 1:
-                layers = model_layer_list(list(candidates2.values())[0], _recursive=True)
+                good = list(candidates2.values())[0]
             elif "" in candidates:  # the default name module, if it works we take it
-                layers = model_layer_list(candidates[""], _recursive=True)
+                good = candidates[""]
             else:
                 raise ValueError(f"Don't know how to get layer list for {type(model)}")
+        layers = model_layer_list(good, _recursive=True)
         return layers
     else:
         raise ValueError(f"Don't know how to get layer list for {type(model)}")
