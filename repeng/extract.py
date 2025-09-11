@@ -272,7 +272,8 @@ def compute_direction(
             a direction vector.
         rescaling (str | None, optional): How to rescale the direction vector. If None,
             uses original scaling. If "layer_magnitude", rescales to match typical activation
-            magnitude.
+            magnitude. If interesting in rescaling, you might want to look
+            at the `normalize` argument of `control.py:ControlModel.set_control`.py`.
 
     Returns:
         np.ndarray: Direction vector of shape (hidden_dim,).
