@@ -1,7 +1,6 @@
 # Grid search script version for tracking experiments
 grid_search_script_version = "1.0.0"
 
-from pprint import pprint
 import re
 import os
 import math
@@ -22,7 +21,6 @@ from scipy.stats import pearsonr
 from repeng import (
     ControlVector,
     ControlModel,
-    DatasetEntry,
     __VERSION__ as repeng_version,
 )
 from repeng.research import datasets
@@ -286,7 +284,7 @@ def test_configuration(
                 print(f"  Extracted score: {score}")
             else:
                 scores[strength] = float("nan")
-                print(f"  No score found in output, treating as NA")
+                print("  No score found in output, treating as NA")
 
         # Create plot for this combination if we have valid scores
         # Filter out NaN values for plotting
@@ -343,7 +341,7 @@ def test_configuration(
                     fig,
                     global_step=0,
                 )
-                print(f"  Plot successfully logged to TensorBoard")
+                print("  Plot successfully logged to TensorBoard")
             except Exception as e:
                 print(f"  Error logging plot to TensorBoard: {e}")
 
@@ -361,14 +359,14 @@ def test_configuration(
                     file_size = os.path.getsize(plot_filename)
                     print(f"  Plot file size: {file_size} bytes")
                 else:
-                    print(f"  Warning: Plot file was not created!")
+                    print("  Warning: Plot file was not created!")
             except Exception as e:
                 print(f"  Error saving plot: {e}")
 
             plt.close(fig)  # Close the specific figure to save memory
         else:
             print(
-                f"  No valid scores to plot for this combination - all values are NaN"
+                "  No valid scores to plot for this combination - all values are NaN"
             )
 
         # Reset model control and unwrap to restore original state
@@ -407,7 +405,7 @@ os.makedirs("./plots/grid_search", exist_ok=True)
 os.makedirs("./tensorboard_logs", exist_ok=True)
 
 # Create main writer for overall grid search logging
-main_writer = SummaryWriter(f"./tensorboard_logs/grid_search/main")
+main_writer = SummaryWriter("./tensorboard_logs/grid_search/main")
 
 # Log version information as metadata
 main_writer.add_text(
@@ -581,14 +579,14 @@ for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green
 
 # Log final summary
 successful_runs = [r for r in all_results if r["success"]]
-print(f"\nGrid search completed!")
+print("\nGrid search completed!")
 print(f"Successful runs: {len(successful_runs)}/{total_combinations}")
 
 # Create summary report
 summary_file = "./plots/grid_search/summary_report.txt"
 with open(summary_file, "w") as f:
-    f.write(f"Grid Search Summary Report\n")
-    f.write(f"==========================\n\n")
+    f.write("Grid Search Summary Report\n")
+    f.write("==========================\n\n")
     f.write(f"Model: {model_name}\n")
     f.write(f"Total combinations tested: {total_combinations}\n")
     f.write(f"Successful runs: {len(successful_runs)}\n\n")
@@ -621,11 +619,11 @@ with open(summary_file, "w") as f:
                             f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})\n"
                         )
                     else:
-                        f.write(f"  Correlation coefficient: N/A (insufficient data)\n")
+                        f.write("  Correlation coefficient: N/A (insufficient data)\n")
                 except Exception as e:
                     f.write(f"  Correlation coefficient: Error - {e}\n")
             else:
-                f.write(f"  No valid scores extracted\n")
+                f.write("  No valid scores extracted\n")
         else:
             f.write(f"  Error: {result.get('error', 'Unknown error')}\n")
 
