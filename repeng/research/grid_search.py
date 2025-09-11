@@ -239,12 +239,47 @@ def extract_first_number(text: str, max_value: float | None = None) -> float | N
         )
     ]
     text = "\n".join(lines)
+    
+    # Try to match numbers with comma thousand separators first: 1,000 or 1,000.50
+    match = re.search(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?", text)
+    if match:
+        number_str = match.group()
+        # Remove commas (thousand separators) and convert to float
+        cleaned_number = number_str.replace(",", "")
+        try:
+            value = float(cleaned_number)
+            if max_value is not None and value > max_value:
+                return max_value
+            return value
+        except ValueError:
+            pass
+    
+    # Try to match numbers with dot thousand separators (European style): 10.000
+    # Only match if it looks like thousand separators (groups of 3 digits)
+    match = re.search(r"\d{1,3}(?:\.\d{3})+(?!\.\d)", text)
+    if match:
+        number_str = match.group()
+        # Remove dots (treating as thousand separators) and convert to float
+        cleaned_number = number_str.replace(".", "")
+        try:
+            value = float(cleaned_number)
+            if max_value is not None and value > max_value:
+                return max_value
+            return value
+        except ValueError:
+            pass
+    
+    # Fall back to original pattern for simple numbers: 123 or 123.45
     match = re.search(r"\d+(?:\.\d+)?", text)
     if match:
-        value = float(match.group())
-        if max_value is not None and value > max_value:
-            return max_value
-        return value
+        try:
+            value = float(match.group())
+            if max_value is not None and value > max_value:
+                return max_value
+            return value
+        except ValueError:
+            pass
+    
     return None
 
 
