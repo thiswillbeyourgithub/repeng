@@ -223,7 +223,7 @@ def get_data(dataset: str, tokenizer) -> tuple[str, list]:
         raise ValueError(f"Unknown dataset: {dataset}")
 
 
-def extract_first_number(text: str) -> float | None:
+def extract_first_number(text: str, max_value: float | None = None) -> float | None:
     """Extract the first number from text using regex."""
     lines = text.splitlines()
     lines = [
@@ -241,7 +241,10 @@ def extract_first_number(text: str) -> float | None:
     text = "\n".join(lines)
     match = re.search(r"\d+(?:\.\d+)?", text)
     if match:
-        return float(match.group())
+        value = float(match.group())
+        if max_value is not None and value > max_value:
+            return max_value
+        return value
     return None
 
 
@@ -355,7 +358,8 @@ def test_configuration(
             )
 
             # Extract score
-            score = extract_first_number(output)
+            max_value = 9999 if dataset == "age" else None
+            score = extract_first_number(output, max_value=max_value)
             if score is not None:
                 scores[strength] = score
                 logger.info(f"  Extracted score: {score}")
