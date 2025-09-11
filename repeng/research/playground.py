@@ -6,7 +6,7 @@ import torch
 import matplotlib.pyplot as plt
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from repeng import ControlVector, ControlModel, DatasetEntry
+from repeng import ControlVector, ControlModel
 from repeng.utils import autocorrect_chat_templates
 from repeng.research import datasets
 
@@ -121,7 +121,7 @@ try:
         continue_final_message=True,
         tokenize=False,
     )
-except Exception as e:
+except Exception:
 
     scenario: str = autocorrect_chat_templates(
         messages=[

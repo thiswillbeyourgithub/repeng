@@ -22,7 +22,6 @@ from scipy.stats import pearsonr
 from repeng import (
     ControlVector,
     ControlModel,
-    DatasetEntry,
     __VERSION__ as repeng_version,
 )
 from repeng.research import datasets
@@ -365,7 +364,7 @@ def test_configuration(
                 )
             else:
                 scores[strength] = float("nan")
-                logger.info(f"  No score found in output, treating as NA")
+                logger.info("  No score found in output, treating as NA")
 
         # Create plot for this combination if we have valid scores
         # Filter out NaN values for plotting
@@ -429,7 +428,7 @@ def test_configuration(
                     fig,
                     global_step=0,
                 )
-                logger.info(f"  Plot successfully logged to TensorBoard")
+                logger.info("  Plot successfully logged to TensorBoard")
             except Exception as e:
                 logger.info(f"  Error logging plot to TensorBoard: {e}")
                 if debug:
@@ -450,7 +449,7 @@ def test_configuration(
                     file_size = os.path.getsize(plot_filename)
                     logger.info(f"  Plot file size: {file_size} bytes")
                 else:
-                    logger.info(f"  Warning: Plot file was not created!")
+                    logger.info("  Warning: Plot file was not created!")
             except Exception as e:
                 logger.info(f"  Error saving plot: {e}")
                 if debug:
@@ -459,7 +458,7 @@ def test_configuration(
             plt.close(fig)  # Close the specific figure to save memory
         else:
             logger.info(
-                f"  No valid scores to plot for this combination - all values are NaN"
+                "  No valid scores to plot for this combination - all values are NaN"
             )
 
         # Reset model control and unwrap to restore original state
@@ -556,7 +555,7 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
     values, which helps identify effective control directions.
     """
     # Create main writer for overall grid search logging
-    main_writer = SummaryWriter(f"./tensorboard_logs/grid_search/main")
+    main_writer = SummaryWriter("./tensorboard_logs/grid_search/main")
 
     # Log version information as metadata
     main_writer.add_text(
@@ -764,14 +763,14 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
 
     # Log final summary
     successful_runs = [r for r in all_results if r["success"]]
-    logger.info(f"\nGrid search completed!")
+    logger.info("\nGrid search completed!")
     logger.info(f"Successful runs: {len(successful_runs)}/{total_combinations}")
 
     # Create summary report
     summary_file = "./plots/grid_search/summary_report.txt"
     with open(summary_file, "w") as f:
-        f.write(f"Grid Search Summary Report\n")
-        f.write(f"==========================\n\n")
+        f.write("Grid Search Summary Report\n")
+        f.write("==========================\n\n")
         f.write(f"Total combinations tested: {total_combinations}\n")
         f.write(f"Successful runs: {len(successful_runs)}\n\n")
 
@@ -809,14 +808,14 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
                             )
                         else:
                             f.write(
-                                f"  Correlation coefficient: N/A (insufficient data)\n"
+                                "  Correlation coefficient: N/A (insufficient data)\n"
                             )
                     except Exception as e:
                         f.write(f"  Correlation coefficient: Error - {e}\n")
                         if debug:
                             raise
                 else:
-                    f.write(f"  No valid scores extracted\n")
+                    f.write("  No valid scores extracted\n")
             else:
                 f.write(f"  Error: {result.get('error', 'Unknown error')}\n")
 
