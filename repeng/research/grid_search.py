@@ -76,7 +76,8 @@ param_grid = {
     ],
     # "dataset": ["age", "iq"],
     "dataset": ["age"],
-    "normalize": [True, False],
+    # "normalize": [True, False],
+    "normalize": [False],
     "layer_zones": [
         # by increments of 0.1
         [[0.0, 0.1]],
@@ -125,10 +126,10 @@ param_grid = {
 }
 
 # Import shared strength configuration to ensure consistency across experiments
-from repeng.research.shared import DEFAULT_STRENGTHS
+from repeng.research.shared import DEFAULT_STRENGTHS, FINE_GRAINED_STRENGTHS
 
 # Strengths to test (same as playground.py but using standard range)
-strengths = DEFAULT_STRENGTHS
+strengths = FINE_GRAINED_STRENGTHS
 
 # check that with the way we turn strengths into global_step for tensorboard we don't have collisions, adjust the multiplier if needed
 assert len(strengths) == len(set(strengths)), "Found duplicate elements of strengths"
