@@ -324,7 +324,7 @@ def compute_direction(
         # still experimental so don't want to add this as a real dependency yet
         import umap  # type: ignore
 
-        umap_model = umap.UMAP(n_components=1)
+        umap_model = umap.UMAP(n_components=1, low_memory=True)
         embedding = umap_model.fit_transform(train).astype(np.float32)
         direction = np.sum(train * embedding, axis=0) / np.sum(embedding)
     elif method == "umap_densmap":
@@ -332,7 +332,7 @@ def compute_direction(
         # still experimental so don't want to add this as a real dependency yet
         import umap  # type: ignore
 
-        umap_model = umap.UMAP(n_components=1, densmap=True)
+        umap_model = umap.UMAP(n_components=1, densmap=True, low_memory=True)
         embedding = umap_model.fit_transform(train).astype(np.float32)
         direction = np.sum(train * embedding, axis=0) / np.sum(embedding)
     elif method == "ica_diff":
