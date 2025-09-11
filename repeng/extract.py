@@ -258,7 +258,7 @@ def compute_direction(
         ],
         typing.Callable[[np.ndarray], np.ndarray],
     ],
-    rescaling: str | None = None,
+    rescaling: str | None,
 ) -> np.ndarray:
     """
     Compute a direction vector from hidden states using the specified method.
@@ -272,7 +272,7 @@ def compute_direction(
             a direction vector.
         rescaling (str | None, optional): How to rescale the direction vector. If None,
             uses original scaling. If "layer_magnitude", rescales to match typical activation
-            magnitude. Defaults to None.
+            magnitude.
 
     Returns:
         np.ndarray: Direction vector of shape (hidden_dim,).
