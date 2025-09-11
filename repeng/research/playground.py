@@ -139,49 +139,11 @@ except Exception:
     )
 
 
-# set the control strength and let inference rip!
-strengths = [
-    # -5,
-    # -4,
-    # -3,
-    # -2,
-    # -1.5,
-    # -1.4,
-    # -1.3,
-    # -1.2,
-    # -1.1,
-    -1.0,
-    -0.9,
-    -0.8,
-    -0.7,
-    -0.6,
-    -0.5,
-    -0.4,
-    -0.3,
-    -0.2,
-    -0.1,
-    0.0,
-    0.1,
-    0.2,
-    0.3,
-    0.4,
-    0.5,
-    0.6,
-    0.7,
-    0.8,
-    0.9,
-    1.0,
-    1.1,
-    1.2,
-    1.3,
-    1.4,
-    1.5,
-]
+# Import shared strength configuration to ensure consistency across experiments
+from repeng.research.shared import FINE_GRAINED_STRENGTHS
 
-strengths = [
-        x / 100
-        for x in range(-50, 55, 5)
-]
+# set the control strength and let inference rip!
+strengths = FINE_GRAINED_STRENGTHS
 
 scores = {}
 simple_scores = {}
