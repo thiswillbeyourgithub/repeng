@@ -75,6 +75,7 @@ param_grid = {
     ],
     # "dataset": ["age", "iq"],
     "dataset": ["age"],
+    "normalize": [True, False],
     "layer_zones": [
         # by increments of 0.1
         [[0.0, 0.1]],
@@ -262,6 +263,7 @@ def test_configuration(
     method: str,
     layer_zones: list,
     dataset: str,
+    normalize: bool,
     combo_idx: int,
     total_combos: int,
     debug: bool = False,
@@ -273,6 +275,7 @@ def test_configuration(
     logger.info(f"Method: {method}")
     logger.info(f"Dataset: {dataset}")
     logger.info(f"Layer zones: {layer_zones}")
+    logger.info(f"Normalize: {normalize}")
 
     # Load model and tokenizer for this configuration
     logger.info("Loading model and tokenizer...")
@@ -297,7 +300,8 @@ def test_configuration(
     # Create unique writer for this combination
     zones_tag = format_layer_zones_for_filename(layer_zones)
     model_tag = model_name.replace("/", "_").replace("-", "_")
-    run_name = f"{model_tag}_{dataset}_{method}_zones_{zones_tag}"
+    normalize_tag = "norm" if normalize else "nonorm"
+    run_name = f"{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}"
     writer = SummaryWriter(f"./tensorboard_logs/grid_search/{run_name}")
 
     try:
@@ -325,7 +329,7 @@ def test_configuration(
 
         for strength in strengths:
             logger.info(f"Testing strength: {strength}")
-            control_model.set_control(trained_vector, strength)
+            control_model.set_control(trained_vector, strength, normalize=normalize)
 
             out = control_model.generate(
                 **tokenizer(scenario, return_tensors="pt").to(control_model.device),
@@ -343,8 +347,9 @@ def test_configuration(
             # Log the output text to tensorboard
             zones_tag = format_layer_zones_for_filename(layer_zones)
             model_tag = model_name.replace("/", "_").replace("-", "_")
+            normalize_tag = "norm" if normalize else "nonorm"
             writer.add_text(
-                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}/outputs",
+                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}/outputs",
                 f"Strength {strength}: {output}",
                 global_step=int(strength * strengths_multiplier_tensorboard),
             )
@@ -388,7 +393,7 @@ def test_configuration(
             ax.set_ylabel("Extracted Value", fontsize=12)
             ax.set_title(
                 f"Extracted value vs Control Strength ({dataset} dataset)\n"
-                f"Method: {method}, Layer zones: {layer_zones}\n"
+                f"Method: {method}, Layer zones: {layer_zones}, Normalize: {normalize}\n"
                 f"Model: {model_name}",
                 fontsize=14,
             )
@@ -437,7 +442,8 @@ def test_configuration(
             # Save plot
             zones_tag = format_layer_zones_for_filename(layer_zones)
             model_tag = model_name.replace("/", "_").replace("-", "_")
-            plot_filename = f"./plots/grid_search/extracted_value_{model_tag}_{dataset}_{method}_{zones_tag}.png"
+            normalize_tag = "norm" if normalize else "nonorm"
+            plot_filename = f"./plots/grid_search/extracted_value_{model_tag}_{dataset}_{method}_{zones_tag}_{normalize_tag}.png"
             try:
                 fig.savefig(
                     plot_filename, dpi=300, bbox_inches="tight", facecolor="white"
@@ -482,6 +488,7 @@ def test_configuration(
             "method": method,
             "dataset": dataset,
             "layer_zones": layer_zones,
+            "normalize": normalize,
             "scores": scores,
             "outputs": outputs,
             "success": True,
@@ -498,6 +505,7 @@ def test_configuration(
             "method": method,
             "dataset": dataset,
             "layer_zones": layer_zones,
+            "normalize": normalize,
             "scores": {},
             "outputs": {},
             "success": False,
@@ -600,6 +608,7 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
         method = params["method"]
         dataset = params["dataset"]
         layer_zones = params["layer_zones"]
+        normalize = params["normalize"]
 
         # Test this configuration
         result = test_configuration(
@@ -607,6 +616,7 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
             method,
             layer_zones,
             dataset,
+            normalize,
             i,
             total_combinations,
             debug,
@@ -668,6 +678,7 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
                     "model_name": model_name,
                     "method": method,
                     "dataset": dataset,
+                    "normalize": normalize,
                     "layer_zones_str": str(
                         layer_zones
                     ),  # String representation for filtering
@@ -785,6 +796,7 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
             f.write(f"  Method: {result['method']}\n")
             f.write(f"  Dataset: {result['dataset']}\n")
             f.write(f"  Layer zones: {result['layer_zones']}\n")
+            f.write(f"  Normalize: {result.get('normalize', 'unknown')}\n")
             f.write(f"  Success: {result['success']}\n")
             if result["success"]:
                 scores = result["scores"]
