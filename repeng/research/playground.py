@@ -15,11 +15,11 @@ from sklearnex import patch_sklearn
 patch_sklearn()
 
 # load and wrap model
-# model_name = "mistralai/Mistral-7B-Instruct-v0.3"
+model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 # model_name = "openai/gpt-oss-20b"
 # model to use:
 # model_name = "meta-llama/Llama-3.2-1B-Instruct"
-model_name = "meta-llama/Llama-3.2-3B-Instruct"
+# model_name = "meta-llama/Llama-3.2-3B-Instruct"
 # model_name = "mistralai/Mistral-7B-Instruct-v0.1"
 # model_name = "mistralai/Mistral-Nemo-Instruct-2407"
 # model_name = "Qwen/Qwen2.5-7B-Instruct"
@@ -31,7 +31,7 @@ model_name = "meta-llama/Llama-3.2-3B-Instruct"
 # rwkv
 # model_name = "RWKV/RWKV7-Goose-World3-2.9B-HF"
 
-model_name = "google/gemma-7b-it"
+# model_name = "google/gemma-7b-it"
 
 # If you need quantization
 from transformers import BitsAndBytesConfig

@@ -57,10 +57,10 @@ quant_config = BitsAndBytesConfig(
 # Define parameter grid for comprehensive search
 param_grid = {
     "model_name": [
-        "qwen/qwen3-4b",
+        # "qwen/qwen3-4b",
         "mistralai/Mistral-7B-Instruct-v0.3",
-        "meta-llama/Llama-3.2-3B-Instruct",
-        "google/gemma-7b-it",
+        # "meta-llama/Llama-3.2-3B-Instruct",
+        # "google/gemma-7b-it",
     ],
     # "method": ["mean", "median"],
     "method": [
