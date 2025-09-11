@@ -49,7 +49,4 @@ DEFAULT_STRENGTHS: List[float] = [
 ]
 
 # Alternative fine-grained strength values (increments of 0.05 from -0.5 to +0.5)
-FINE_GRAINED_STRENGTHS: List[float] = [
-    x / 100
-    for x in range(-50, 55, 5)
-]
+FINE_GRAINED_STRENGTHS: List[float] = [x / 100 for x in range(-50, 55, 5)]
