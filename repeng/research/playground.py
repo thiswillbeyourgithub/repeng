@@ -140,7 +140,7 @@ except Exception:
 
 
 # Import shared strength configuration to ensure consistency across experiments
-from repeng.research.shared import FINE_GRAINED_STRENGTHS
+from repeng.research.shared import FINE_GRAINED_STRENGTHS, extract_first_number
 
 # set the control strength and let inference rip!
 strengths = FINE_GRAINED_STRENGTHS
@@ -169,28 +169,6 @@ for strength in strengths:
     # print(tokenizer.decode(out.squeeze(), skip_special_tokens=False).strip())
     print("###" * 5)
 
-
-# Extract scores using regex to find the first number in each output
-def extract_first_number(text: str) -> float | None:
-    """Extract the first number from text using regex."""
-    lines = text.splitlines()
-    lines = [
-        li
-        for li in lines
-        if not (
-            # gpt oss
-            li.startswith("Knowledge cutoff: ")
-            or li.startswith("Current date: ")
-            # llama
-            or li.startswith("Cutting Knowledge Date: ")
-            or li.startswith("Today Date: ")
-        )
-    ]
-    text = "\n".join(lines)
-    match = re.search(r"\d+(?:\.\d+)?", text)
-    if match:
-        return float(match.group())
-    return None
 
 
 # Process outputs to extract scores
