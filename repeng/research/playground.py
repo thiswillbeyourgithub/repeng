@@ -191,7 +191,7 @@ for strength in strengths:
     logger.debug(f"Memory footprint: {model.get_memory_footprint()}")
 
     print(f"strength={strength}")
-    model.set_control(trained_vector, strength)
+    model.set_control(trained_vector, strength, normalize=False)
     out = model.generate(
         **tokenizer(scenario, return_tensors="pt").to(model.device),
         do_sample=False,
