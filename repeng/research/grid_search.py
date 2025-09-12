@@ -76,6 +76,7 @@ param_grid = {
     # "dataset": ["age", "iq"],
     "dataset": ["age"],
     "normalize": [True, False],
+    "rescaling": [None, "layer_magnitude"],
     "layer_zones": [
         # by increments of 0.1
         [[0.0, 0.1]],
@@ -160,6 +161,7 @@ def test_configuration(
     layer_zones: list,
     dataset: str,
     normalize: bool,
+    rescaling: str | None,
     combo_idx: int,
     total_combos: int,
     debug: bool = False,
@@ -172,6 +174,7 @@ def test_configuration(
     logger.info(f"Dataset: {dataset}")
     logger.info(f"Layer zones: {layer_zones}")
     logger.info(f"Normalize: {normalize}")
+    logger.info(f"Rescaling: {rescaling}")
 
     gc.collect()
     if torch.cuda.is_available():
@@ -238,7 +241,8 @@ def test_configuration(
     zones_tag = format_layer_zones_for_filename(layer_zones)
     model_tag = model_name.replace("/", "_").replace("-", "_")
     normalize_tag = "norm" if normalize else "nonorm"
-    run_name = f"{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}"
+    rescaling_tag = rescaling if rescaling else "norescale"
+    run_name = f"{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}_{rescaling_tag}"
     writer = SummaryWriter(f"./tensorboard_logs/grid_search/{run_name}")
 
     try:
@@ -257,6 +261,7 @@ def test_configuration(
             train_dataset,
             batch_size=batch_size,
             method=method,
+            rescaling=rescaling,
             cache_path="./model_cache",
         )
 
@@ -285,8 +290,9 @@ def test_configuration(
             zones_tag = format_layer_zones_for_filename(layer_zones)
             model_tag = model_name.replace("/", "_").replace("-", "_")
             normalize_tag = "norm" if normalize else "nonorm"
+            rescaling_tag = rescaling if rescaling else "norescale"
             writer.add_text(
-                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}/outputs",
+                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}_{rescaling_tag}/outputs",
                 f"Strength {strength}: {output}",
                 global_step=int(strength * strengths_multiplier_tensorboard),
             )
@@ -331,7 +337,7 @@ def test_configuration(
             ax.set_ylabel("Extracted Value", fontsize=12)
             ax.set_title(
                 f"Extracted value vs Control Strength ({dataset} dataset)\n"
-                f"Method: {method}, Layer zones: {layer_zones}, Normalize: {normalize}\n"
+                f"Method: {method}, Layer zones: {layer_zones}, Normalize: {normalize}, Rescaling: {rescaling}\n"
                 f"Model: {model_name}",
                 fontsize=14,
             )
@@ -381,7 +387,8 @@ def test_configuration(
             zones_tag = format_layer_zones_for_filename(layer_zones)
             model_tag = model_name.replace("/", "_").replace("-", "_")
             normalize_tag = "norm" if normalize else "nonorm"
-            plot_filename = f"./plots/grid_search/extracted_value_{model_tag}_{dataset}_{method}_{zones_tag}_{normalize_tag}.png"
+            rescaling_tag = rescaling if rescaling else "norescale"
+            plot_filename = f"./plots/grid_search/extracted_value_{model_tag}_{dataset}_{method}_{zones_tag}_{normalize_tag}_{rescaling_tag}.png"
             try:
                 fig.savefig(
                     plot_filename, dpi=300, bbox_inches="tight", facecolor="white"
@@ -428,6 +435,7 @@ def test_configuration(
             "dataset": dataset,
             "layer_zones": layer_zones,
             "normalize": normalize,
+            "rescaling": rescaling,
             "scores": scores,
             "outputs": outputs,
             "success": True,
@@ -445,6 +453,7 @@ def test_configuration(
             "dataset": dataset,
             "layer_zones": layer_zones,
             "normalize": normalize,
+            "rescaling": rescaling,
             "scores": {},
             "outputs": {},
             "success": False,
@@ -562,6 +571,7 @@ def main(
         dataset = params["dataset"]
         layer_zones = params["layer_zones"]
         normalize = params["normalize"]
+        rescaling = params["rescaling"]
 
         # Test this configuration
         result = test_configuration(
@@ -570,6 +580,7 @@ def main(
             layer_zones,
             dataset,
             normalize,
+            rescaling,
             i,
             total_combinations,
             debug,
@@ -632,6 +643,7 @@ def main(
                     "method": method,
                     "dataset": dataset,
                     "normalize": normalize,
+                    "rescaling": rescaling if rescaling else "none",
                     "layer_zones_str": str(
                         layer_zones
                     ),  # String representation for filtering
@@ -750,6 +762,7 @@ def main(
             f.write(f"  Dataset: {result['dataset']}\n")
             f.write(f"  Layer zones: {result['layer_zones']}\n")
             f.write(f"  Normalize: {result.get('normalize', 'unknown')}\n")
+            f.write(f"  Rescaling: {result.get('rescaling', 'unknown')}\n")
             f.write(f"  Success: {result['success']}\n")
             if result["success"]:
                 scores = result["scores"]
