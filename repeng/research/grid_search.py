@@ -241,6 +241,7 @@ def test_configuration(
         conversation=conversation,
         continue_final_message=True,
         tokenize=False,
+        enable_thinking=True,
     )
 
     # Create unique writer for this combination
