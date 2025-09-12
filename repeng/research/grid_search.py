@@ -141,7 +141,6 @@ while True:
         strengths_multiplier_tensorboard *= 10
 
 
-
 def format_layer_zones_for_filename(layer_zones: list) -> str:
     """Format layer zones for use in filenames."""
     zones_str = (
