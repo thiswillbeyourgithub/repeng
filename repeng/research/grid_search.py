@@ -78,6 +78,7 @@ param_grid = {
     "dataset": ["age"],
     "normalize": [True, False],
     "rescaling": [None, "layer_magnitude"],
+    "enable_thinking": [True],
     "layer_zones": [
         # by increments of 0.1
         [[0.0, 0.1]],
@@ -162,6 +163,7 @@ def test_configuration(
     dataset: str,
     normalize: bool,
     rescaling: str | None,
+    enable_thinking: bool,
     combo_idx: int,
     total_combos: int,
     debug: bool = False,
@@ -176,6 +178,7 @@ def test_configuration(
     logger.info(f"Layer zones: {layer_zones}")
     logger.info(f"Normalize: {normalize}")
     logger.info(f"Rescaling: {rescaling}")
+    logger.info(f"Enable thinking: {enable_thinking}")
 
     gc.collect()
     if torch.cuda.is_available():
@@ -241,7 +244,7 @@ def test_configuration(
         conversation=conversation,
         continue_final_message=True,
         tokenize=False,
-        enable_thinking=True,
+        enable_thinking=enable_thinking,
     )
 
     # Create unique writer for this combination
@@ -249,7 +252,8 @@ def test_configuration(
     model_tag = model_name.replace("/", "_").replace("-", "_")
     normalize_tag = "norm" if normalize else "nonorm"
     rescaling_tag = rescaling if rescaling else "norescale"
-    run_name = f"{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}_{rescaling_tag}"
+    thinking_tag = "thinking" if enable_thinking else "nothinking"
+    run_name = f"{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}"
     writer = SummaryWriter(f"./tensorboard_logs/grid_search/{run_name}")
 
     # Initialize correlation variables at function start to ensure they're always defined
@@ -275,7 +279,7 @@ def test_configuration(
             rescaling=rescaling,
             cache_path="./model_cache",
             output_training_avg_logprob=True,
-            enable_thinking=True,
+            enable_thinking=enable_thinking,
         )
         trained_vector, avg_logprobs = result
 
@@ -353,8 +357,9 @@ def test_configuration(
             model_tag = model_name.replace("/", "_").replace("-", "_")
             normalize_tag = "norm" if normalize else "nonorm"
             rescaling_tag = rescaling if rescaling else "norescale"
+            thinking_tag = "thinking" if enable_thinking else "nothinking"
             writer.add_text(
-                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}_{rescaling_tag}/outputs",
+                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}/outputs",
                 f"Strength {strength}: {output} (avg_log_prob: {avg_log_prob:.4f})",
                 global_step=int(strength * strengths_multiplier_tensorboard),
             )
@@ -422,7 +427,7 @@ def test_configuration(
             ax.set_ylabel("Extracted Value", fontsize=12)
             ax.set_title(
                 f"Extracted value vs Control Strength ({dataset} dataset)\n"
-                f"Method: {method}, Layer zones: {layer_zones}, Normalize: {normalize}, Rescaling: {rescaling}\n"
+                f"Method: {method}, Layer zones: {layer_zones}, Normalize: {normalize}, Rescaling: {rescaling}, Thinking: {enable_thinking}\n"
                 f"Model: {model_name}\n"
                 f"Correlation: r={correlation_coeff:.3f}, p={correlation_p_value:.3f}",
                 fontsize=14,
@@ -479,7 +484,8 @@ def test_configuration(
             model_tag = model_name.replace("/", "_").replace("-", "_")
             normalize_tag = "norm" if normalize else "nonorm"
             rescaling_tag = rescaling if rescaling else "norescale"
-            plot_filename = f"./plots/grid_search/extracted_value_{model_tag}_{dataset}_{method}_{zones_tag}_{normalize_tag}_{rescaling_tag}.png"
+            thinking_tag = "thinking" if enable_thinking else "nothinking"
+            plot_filename = f"./plots/grid_search/extracted_value_{model_tag}_{dataset}_{method}_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}.png"
             try:
                 fig.savefig(
                     plot_filename, dpi=300, bbox_inches="tight", facecolor="white"
@@ -527,6 +533,7 @@ def test_configuration(
             "layer_zones": layer_zones,
             "normalize": normalize,
             "rescaling": rescaling,
+            "enable_thinking": enable_thinking,
             "scores": scores,
             "outputs": outputs,
             "correlation_coeff": correlation_coeff,
@@ -547,6 +554,7 @@ def test_configuration(
             "layer_zones": layer_zones,
             "normalize": normalize,
             "rescaling": rescaling,
+            "enable_thinking": enable_thinking,
             "scores": {},
             "outputs": {},
             "correlation_coeff": 0.0,
@@ -670,6 +678,7 @@ def main(
         layer_zones = params["layer_zones"]
         normalize = params["normalize"]
         rescaling = params["rescaling"]
+        enable_thinking = params["enable_thinking"]
 
         # Test this configuration
         result = test_configuration(
@@ -679,6 +688,7 @@ def main(
             dataset,
             normalize,
             rescaling,
+            enable_thinking,
             i,
             total_combinations,
             debug,
@@ -729,6 +739,7 @@ def main(
                     "dataset": dataset,
                     "normalize": normalize,
                     "rescaling": rescaling if rescaling else "none",
+                    "enable_thinking": enable_thinking,
                     "layer_zones_str": str(
                         layer_zones
                     ),  # String representation for filtering
@@ -848,6 +859,7 @@ def main(
             f.write(f"  Layer zones: {result['layer_zones']}\n")
             f.write(f"  Normalize: {result.get('normalize', 'unknown')}\n")
             f.write(f"  Rescaling: {result.get('rescaling', 'unknown')}\n")
+            f.write(f"  Enable thinking: {result.get('enable_thinking', 'unknown')}\n")
             f.write(f"  Success: {result['success']}\n")
             if result["success"]:
                 scores = result["scores"]
