@@ -450,6 +450,9 @@ def read_representations(
         cache_path (os.PathLike[str] | str | None, optional): Path to directory for h5py caching.
             If None, activations are computed and stored in memory. If provided, activations
             are cached to disk to allow for better memory scaling. Defaults to None.
+        enable_thinking (bool, optional): Whether to enable thinking tokens when applying
+            chat templates to the dataset entries. This controls the `enable_thinking`
+            parameter passed to `tokenizer.apply_chat_template()`. Defaults to False.
     """
     if not hidden_layers:
         hidden_layers = list(range(get_num_hidden_layer(model)))
