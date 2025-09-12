@@ -47,10 +47,10 @@ def extract_first_number(text: str, max_value: float | None = None) -> float | N
         r"\[THINKING\].*?\[/THINKING\]",
         r"\[thinking\].*?\[/thinking\]",
     ]
-    
+
     for pattern in thinking_patterns:
         text = re.sub(pattern, "", text, flags=re.DOTALL | re.IGNORECASE)
-    
+
     lines = text.splitlines()
     lines = [
         li
