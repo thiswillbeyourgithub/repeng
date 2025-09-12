@@ -281,7 +281,7 @@ def test_configuration(
                         global_step=sample_idx,
                     )
                 logged_training_logprobs.add(model_dataset_key)
-        
+
         # Test all strengths
         scores = {}
         outputs = {}
@@ -584,7 +584,7 @@ def main(
         logger.info(f"Set CUDA_VISIBLE_DEVICES to: {cuda_visible_devices}")
     # Create main writer for overall grid search logging
     main_writer = SummaryWriter("./tensorboard_logs/grid_search/main")
-    
+
     # Track model+dataset combinations for which we've already logged training logprobs
     logged_training_logprobs = set()
 
