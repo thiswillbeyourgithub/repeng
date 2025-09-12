@@ -58,8 +58,8 @@ quant_config = BitsAndBytesConfig(
 # Define parameter grid for comprehensive search
 param_grid = {
     "model_name": [
-        # "qwen/qwen3-4b",
-        "mistralai/Mistral-7B-Instruct-v0.3",
+        "qwen/qwen3-4b",
+        # "mistralai/Mistral-7B-Instruct-v0.3",
         # "meta-llama/Llama-3.2-3B-Instruct",
         # "google/gemma-7b-it",
     ],
@@ -166,6 +166,7 @@ def test_configuration(
     total_combos: int,
     debug: bool = False,
     batch_size: int = 1,
+    logged_training_logprobs: set | None = None,
 ) -> dict:
     """Test a single configuration and return results."""
     logger.info(f"\n=== Combination {combo_idx+1}/{total_combos} ===")
@@ -255,7 +256,7 @@ def test_configuration(
 
         # Train control vector
         logger.info("Training control vector...")
-        trained_vector = ControlVector.train(
+        result = ControlVector.train(
             control_model,
             tokenizer,
             train_dataset,
@@ -263,8 +264,24 @@ def test_configuration(
             method=method,
             rescaling=rescaling,
             cache_path="./model_cache",
+            output_training_avg_logprob=True,
         )
+        trained_vector, avg_logprobs = result
 
+        # Log training average log probabilities to TensorBoard (once per model+dataset combination)
+        if logged_training_logprobs is not None:
+            model_dataset_key = f"{model_name}_{dataset}"
+            if model_dataset_key not in logged_training_logprobs:
+                logger.info(f"Logging training avg logprobs for {model_dataset_key}")
+                model_tag = model_name.replace("/", "_").replace("-", "_")
+                for sample_idx, avg_logprob in enumerate(avg_logprobs):
+                    writer.add_scalar(
+                        f"training_logprobs/{model_tag}_{dataset}/avg_logprob_per_sample",
+                        avg_logprob,
+                        global_step=sample_idx,
+                    )
+                logged_training_logprobs.add(model_dataset_key)
+        
         # Test all strengths
         scores = {}
         outputs = {}
@@ -567,6 +584,9 @@ def main(
         logger.info(f"Set CUDA_VISIBLE_DEVICES to: {cuda_visible_devices}")
     # Create main writer for overall grid search logging
     main_writer = SummaryWriter("./tensorboard_logs/grid_search/main")
+    
+    # Track model+dataset combinations for which we've already logged training logprobs
+    logged_training_logprobs = set()
 
     # Log version information as metadata
     main_writer.add_text(
@@ -626,6 +646,7 @@ def main(
             total_combinations,
             debug,
             batch_size,
+            logged_training_logprobs,
         )
         all_results.append(result)
 
