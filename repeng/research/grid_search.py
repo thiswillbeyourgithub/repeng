@@ -246,6 +246,10 @@ def test_configuration(
     run_name = f"{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}_{rescaling_tag}"
     writer = SummaryWriter(f"./tensorboard_logs/grid_search/{run_name}")
 
+    # Initialize correlation variables at function start to ensure they're always defined
+    correlation_coeff = 0.0
+    correlation_p_value = 1.0
+
     try:
         # Create fresh control model for this configuration
         # Note: ControlModel mutates the base model, so we work with the same instance
@@ -388,8 +392,6 @@ def test_configuration(
             logger.info(f"  Plotting scores: {scores_list}")
 
             # Calculate correlation between control strength and extracted value
-            correlation_coeff = 0.0
-            correlation_p_value = 1.0
             try:
                 if len(strengths_list) > 1 and len(scores_list) > 1:
                     correlation_coeff, correlation_p_value = pearsonr(
@@ -520,6 +522,8 @@ def test_configuration(
             "rescaling": rescaling,
             "scores": scores,
             "outputs": outputs,
+            "correlation_coeff": correlation_coeff,
+            "correlation_p_value": correlation_p_value,
             "success": True,
         }
 
@@ -538,6 +542,8 @@ def test_configuration(
             "rescaling": rescaling,
             "scores": {},
             "outputs": {},
+            "correlation_coeff": 0.0,
+            "correlation_p_value": 1.0,
             "success": False,
             "error": str(e),
         }
@@ -705,7 +711,9 @@ def main(
                 min_score = min(scores_list)
                 score_range = max_score - min_score
 
-                # Correlation was already calculated during plot creation above
+                # Get correlation values from the result
+                correlation_coeff = result.get("correlation_coeff", 0.0)
+                correlation_p_value = result.get("correlation_p_value", 1.0)
 
                 # Log hyperparameters and metrics for easy filtering
                 hparam_dict = {
