@@ -473,15 +473,17 @@ def read_representations(
             f"Error when applying chat template: '{e}'\nTrying to autocorrect the template anyway."
         )
         train_strs: list[str] = [
-                autocorrect_chat_templates(
-                    messages=chat,
-                    tokenizer=tokenizer,
-                    model=model,
-                )
-                for chat in train_list
+            autocorrect_chat_templates(
+                messages=chat,
+                tokenizer=tokenizer,
+                model=model,
+            )
+            for chat in train_list
         ]
 
-    assert len(train_strs) == len(set(train_strs)), "There are duplicates in the training dataset"
+    assert len(train_strs) == len(
+        set(train_strs)
+    ), "There are duplicates in the training dataset"
 
     if cache_path is None:
         # Original behavior - store all activation layers in memory
@@ -565,7 +567,9 @@ def read_representations(
 
         # check that there are no duplicates
         unique_rows, counts = np.unique(h, axis=0, return_counts=True)
-        assert not np.any(counts > 1), f"Duplicates hidden layer activation found. Counts: {counts}"
+        assert not np.any(
+            counts > 1
+        ), f"Duplicates hidden layer activation found. Counts: {counts}"
 
         directions[layer] = compute_direction(h, method, rescaling)
 
