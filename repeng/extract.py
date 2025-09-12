@@ -39,6 +39,7 @@ class ControlVector:
         dataset: list[DatasetEntry],
         cache_path: os.PathLike[str] | str | None = None,
         rescaling: str | None = "layer_magnitude",
+        enable_thinking: bool = False,
         **kwargs,
     ) -> "ControlVector":
         """
@@ -66,6 +67,7 @@ class ControlVector:
                 dataset,
                 cache_path=cache_path,
                 rescaling=rescaling,
+                enable_thinking=enable_thinking,
                 **kwargs,
             )
         return cls(model_type=model.config.model_type, directions=dirs)
@@ -80,6 +82,7 @@ class ControlVector:
         decode: bool = True,
         cache_path: os.PathLike[str] | str | None = None,
         rescaling: str | None = "layer_magnitude",
+        enable_thinking: bool = False,
         **kwargs,
     ) -> "ControlVector":
         """
@@ -114,6 +117,7 @@ class ControlVector:
                 sae_decode=decode,
                 rescaling=rescaling,
                 cache_path=cache_path,
+                enable_thinking=enable_thinking,
                 **kwargs,
             )
 
@@ -417,6 +421,7 @@ def read_representations(
     sae_decode: bool = True,
     rescaling: str | None = None,
     cache_path: os.PathLike[str] | str | None = None,
+    enable_thinking: bool = False,
 ) -> dict[int, np.ndarray]:
     """
     Extract the representations based on the contrast dataset.
@@ -459,7 +464,7 @@ def read_representations(
             tokenizer.apply_chat_template(
                 conversation=chat,
                 tokenize=False,
-                enable_thinking=False,
+                enable_thinking=enable_thinking,
             )
             for chat in train_list
         ]
