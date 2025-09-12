@@ -17,7 +17,7 @@ def make_dataset(
     template: typing.Union[str, list],
     positive_personas: list[str],
     negative_personas: list[str],
-    suffix_list: typing.Optional[list[str]]=None,
+    suffix_list: typing.Optional[list[str]] = None,
 ) -> list[DatasetEntry]:
     """
     Create a dataset of positive and negative examples based on provided templates and personas.
@@ -36,16 +36,24 @@ def make_dataset(
         AssertionError: If the template doesn't contain required placeholders, or if there are duplicate items in the dataset.
     """
     assert "{persona}" in str(template), "Missing {persona} placeholder in template"
-    assert len(positive_personas) == len(negative_personas), "You must give the same number of positive and negative personas"
-    assert len(positive_personas) == len(set(positive_personas)), "Found duplicates in positive personas"
-    assert len(negative_personas) == len(set(negative_personas)), "Found duplicates in negative personas"
+    assert len(positive_personas) == len(
+        negative_personas
+    ), "You must give the same number of positive and negative personas"
+    assert len(positive_personas) == len(
+        set(positive_personas)
+    ), "Found duplicates in positive personas"
+    assert len(negative_personas) == len(
+        set(negative_personas)
+    ), "Found duplicates in negative personas"
 
     if suffix_list:
         if "{suffix}" not in str(template):
             if isinstance(template, str):
                 template += "{suffix}"
             else:
-                raise Exception("You have to specify a {suffix} placeholder if the template is a dict")
+                raise Exception(
+                    "You have to specify a {suffix} placeholder if the template is a dict"
+                )
     else:
         suffix_list = []
     dataset = []
@@ -92,7 +100,9 @@ def make_dataset(
     as_strings = []
     for de in dataset:
         as_strings.extend([json.dumps(de.positive), json.dumps(de.negative)])
-    assert len(as_strings) == len(set(as_strings)), "Found duplicate examples in the dataset"
+    assert len(as_strings) == len(
+        set(as_strings)
+    ), "Found duplicate examples in the dataset"
     return dataset
 
 
@@ -120,6 +130,7 @@ def get_model_name(model) -> str:
         return model.config.to_dict()["_name_or_path"]
     else:
         raise ValueError("Couldn't find model name")
+
 
 def get_num_hidden_layer(model) -> int:
     """
@@ -233,9 +244,13 @@ def autocorrect_chat_templates(
     if "system role not supported" in tokenizer.chat_template.lower():
         for message in messages:
             if messages[0]["role"] == "system" and messages[1]["role"] == "user":
-                messages[1]["content"] = messages[0]["content"] + "\n\n" + messages[1]["content"]
+                messages[1]["content"] = (
+                    messages[0]["content"] + "\n\n" + messages[1]["content"]
+                )
                 messages.pop(0)
-                warnings.warn("Model does not support 'system' role but found it in dataset. Modifying the dataset for compatibility")
+                warnings.warn(
+                    "Model does not support 'system' role but found it in dataset. Modifying the dataset for compatibility"
+                )
 
     templated = tokenizer.apply_chat_template(messages, tokenize=False, **kwargs)
 
@@ -255,7 +270,8 @@ def autocorrect_chat_templates(
             )
         except Exception as e:
             if (
-                "After the optional system message, conversation roles must alternate user/assistant/user/assistant/..." not in str(e)
+                "After the optional system message, conversation roles must alternate user/assistant/user/assistant/..."
+                not in str(e)
             ):
                 raise
         if templated2:
@@ -265,7 +281,9 @@ def autocorrect_chat_templates(
         copied_mes = copy.deepcopy(messages)
         for message in messages:
             if message["content"] not in templated:
-                logger.debug(f"Message '{message['content']}' with role '{message['role']}' is missing after chat template application")
+                logger.debug(
+                    f"Message '{message['content']}' with role '{message['role']}' is missing after chat template application"
+                )
         copied_mes = [e for e in copied_mes if e["role"] != "system"]
 
         first_user_index = [i for i, m in enumerate(copied_mes) if m["role"] == "user"][
@@ -358,7 +376,9 @@ def autocorrect_chat_templates(
             # raise ValueError(
             #     "Besides mistral and llama model, no other chat template correction are implemented"
             # )
-            warnings.warn("Failed to properly autocorrect the chat template, will use a sane default template")
+            warnings.warn(
+                "Failed to properly autocorrect the chat template, will use a sane default template"
+            )
             copied_mes[first_user_index][
                 "content"
             ] = f"{sys_message['content'].rstrip()}\n\n{copied_mes[first_user_index]['content'].lstrip()}"
@@ -368,7 +388,9 @@ def autocorrect_chat_templates(
         if not all(message["content"] in templated for message in messages):
             for message in messages:
                 if message["content"] not in templated:
-                    logger.error(f"Message '{message['content']}' with role '{message['role']}' is STILL missing after chat template application")
+                    logger.error(
+                        f"Message '{message['content']}' with role '{message['role']}' is STILL missing after chat template application"
+                    )
             raise Exception(
                 "Some chat messages are still missing after correcting chat template"
             )
