@@ -28,6 +28,8 @@ For this project I had to make substantial modifications to repeng:
 - Added optional [beartype](https://beartype.readthedocs.io/) runtime type checking.
 - Wrote `./repeng/research/datasets.py` to organize example datasets for repeng.
 - Added some [loguru](https://pypi.org/project/loguru/) logging.
+- Added code to extract the logprobs from the generation used to find the directions.
+- Added code to scale the extracted direction according to the typical magnitude of the inner activations.
 
 
 # Current plan:
