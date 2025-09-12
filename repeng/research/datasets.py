@@ -57,7 +57,7 @@ with open("./notebooks/data/all_truncated_outputs.json", "r") as f:
 sober_trippy_paragraph = make_dataset(
     template=default_str_template_paragraph,
     positive_personas=["high on psychedelic drugs"],
-    negative_personas=["sober from psychedelic drugs"],
+    negative_personas=["now sober and clear headed"],
     suffix_list=suffixes_paragraph,
 )
 
