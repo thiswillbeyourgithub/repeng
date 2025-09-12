@@ -452,9 +452,11 @@ def read_representations(
     n_layers = len(model_layer_list(model))
 
     # the order is [positive, negative, positive, negative, ...]
+    train_list = []
+    [train_list.extend([ex.positive, ex.negative]) for ex in inputs]
     try:
         train_strs: list[str] = tokenizer.apply_chat_template(
-            conversation=[s for ex in inputs for s in (ex.positive, ex.negative)],
+            conversation=train_list,
             tokenize=False,
             enable_thinking=False,
         )
@@ -463,7 +465,7 @@ def read_representations(
             f"Error when applying chat template: '{e}'\nTrying to autocorrect the template anyway."
         )
         train_strs: list[str] = autocorrect_chat_templates(
-            messages=[s for ex in inputs for s in (ex.positive, ex.negative)],
+            messages=train_list,
             tokenizer=tokenizer,
             model=model,
         )
