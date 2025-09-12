@@ -232,13 +232,48 @@ def test_configuration(
 
     # Load model and tokenizer for this configuration
     logger.info("Loading model and tokenizer...")
-    base_model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        quantization_config=quant_config,
-        dtype=torch.float16,
-        low_cpu_mem_usage=True,
-        trust_remote_code=True,
-    )
+    
+    # Retry logic for model loading with CUDA error handling
+    max_retries = 10 if debug else 1
+    base_model = None
+    
+    for attempt in range(max_retries):
+        try:
+            base_model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                quantization_config=quant_config,
+                dtype=torch.float16,
+                low_cpu_mem_usage=True,
+                trust_remote_code=True,
+            )
+            logger.info(f"Model loaded successfully on attempt {attempt + 1}")
+            break  # Success, exit retry loop
+            
+        except (torch.cuda.OutOfMemoryError, RuntimeError) as e:
+            if "CUDA" in str(e) or "out of memory" in str(e).lower():
+                logger.info(f"CUDA error on attempt {attempt + 1}/{max_retries}: {e}")
+                if debug:
+                    logger.info("Entering breakpoint to allow freeing GPU memory...")
+                    breakpoint()  # Allow user to free GPU memory and continue
+                    # After resuming from breakpoint, force cleanup before retry
+                    gc.collect()
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                        torch.cuda.synchronize()
+                    gc.collect()
+                else:
+                    # If not in debug mode, just raise the error immediately
+                    raise
+            else:
+                # Non-CUDA error, re-raise immediately
+                raise
+        except Exception as e:
+            # Any other error, re-raise immediately
+            logger.info(f"Non-CUDA error during model loading: {e}")
+            raise
+    
+    if base_model is None:
+        raise RuntimeError(f"Failed to load model after {max_retries} attempts")
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     if not tokenizer.pad_token:
