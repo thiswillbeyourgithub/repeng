@@ -564,7 +564,7 @@ def main(
     """
     # Set CUDA device visibility if specified
     if cuda_visible_devices is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = cuda_visible_devices
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(cuda_visible_devices)
         logger.info(f"Set CUDA_VISIBLE_DEVICES to: {cuda_visible_devices}")
     # Create main writer for overall grid search logging
     main_writer = SummaryWriter("./tensorboard_logs/grid_search/main")
