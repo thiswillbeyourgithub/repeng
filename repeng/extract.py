@@ -455,20 +455,26 @@ def read_representations(
     train_list = []
     [train_list.extend([ex.positive, ex.negative]) for ex in inputs]
     try:
-        train_strs: list[str] = tokenizer.apply_chat_template(
-            conversation=train_list,
-            tokenize=False,
-            enable_thinking=False,
-        )
+        train_strs: list[str] = [
+            tokenizer.apply_chat_template(
+                conversation=chat,
+                tokenize=False,
+                enable_thinking=False,
+            )
+            for chat in train_list
+        ]
     except Exception as e:
         warnings.warn(
             f"Error when applying chat template: '{e}'\nTrying to autocorrect the template anyway."
         )
-        train_strs: list[str] = autocorrect_chat_templates(
-            messages=train_list,
-            tokenizer=tokenizer,
-            model=model,
-        )
+        train_strs: list[str] = [
+                autocorrect_chat_templates(
+                    messages=chat,
+                    tokenizer=tokenizer,
+                    model=model,
+                )
+                for chat in train_list
+        ]
 
     assert len(train_strs) == len(set(train_strs)), "There are duplicates in the training dataset"
 
