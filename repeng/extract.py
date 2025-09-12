@@ -41,8 +41,9 @@ class ControlVector:
         cache_path: os.PathLike[str] | str | None = None,
         rescaling: str | None = "layer_magnitude",
         enable_thinking: bool = False,
+        output_training_avg_logprob: bool = False,
         **kwargs,
-    ) -> "ControlVector":
+    ) -> "ControlVector | tuple[ControlVector, list[float]]":
         """
         Train a ControlVector for a given model and tokenizer using the provided dataset.
 
@@ -56,22 +57,35 @@ class ControlVector:
             rescaling (str | None, optional): How to rescale the direction vectors. If None,
                 uses original scaling. If "layer_magnitude", rescales to match typical activation
                 magnitude in each layer. Defaults to "layer_magnitude".
+            output_training_avg_logprob (bool, optional): If True, also return average log
+                probabilities for each training example. Defaults to False.
             **kwargs: Additional keyword arguments. See help(repeng.extract.read_representations) for details.
 
         Returns:
-            ControlVector: The trained vector.
+            ControlVector | tuple[ControlVector, list[float]]: The trained vector, and optionally
+                the average log probabilities for each training example if output_training_avg_logprob is True.
         """
         with torch.inference_mode():
-            dirs = read_representations(
+            result = read_representations(
                 model,
                 tokenizer,
                 dataset,
                 cache_path=cache_path,
                 rescaling=rescaling,
                 enable_thinking=enable_thinking,
+                output_training_avg_logprob=output_training_avg_logprob,
                 **kwargs,
             )
-        return cls(model_type=model.config.model_type, directions=dirs)
+
+            if output_training_avg_logprob:
+                dirs, avg_logprobs = result
+                control_vector = cls(
+                    model_type=model.config.model_type, directions=dirs
+                )
+                return control_vector, avg_logprobs
+            else:
+                dirs = result
+                return cls(model_type=model.config.model_type, directions=dirs)
 
     @classmethod
     def train_with_sae(
@@ -84,8 +98,9 @@ class ControlVector:
         cache_path: os.PathLike[str] | str | None = None,
         rescaling: str | None = "layer_magnitude",
         enable_thinking: bool = False,
+        output_training_avg_logprob: bool = False,
         **kwargs,
-    ) -> "ControlVector":
+    ) -> "ControlVector | tuple[ControlVector, list[float]]":
         """
         Like ControlVector.train, but using an SAE. It's better! WIP.
 
@@ -104,13 +119,16 @@ class ControlVector:
             rescaling (str | None, optional): How to rescale the direction vectors. If None,
                 uses original scaling. If "layer_magnitude", rescales to match typical activation
                 magnitude in each layer. Defaults to "layer_magnitude".
+            output_training_avg_logprob (bool, optional): If True, also return average log
+                probabilities for each training example. Defaults to False.
             **kwargs: Additional keyword arguments. See help(repeng.extract.read_representations) for details.
 
         Returns:
-            ControlVector: The trained vector.
+            ControlVector | tuple[ControlVector, list[float]]: The trained vector, and optionally
+                the average log probabilities for each training example if output_training_avg_logprob is True.
         """
         with torch.inference_mode():
-            dirs = read_representations(
+            result = read_representations(
                 model,
                 tokenizer,
                 dataset,
@@ -119,10 +137,19 @@ class ControlVector:
                 rescaling=rescaling,
                 cache_path=cache_path,
                 enable_thinking=enable_thinking,
+                output_training_avg_logprob=output_training_avg_logprob,
                 **kwargs,
             )
 
-        return cls(model_type=model.config.model_type, directions=dirs)
+            if output_training_avg_logprob:
+                dirs, avg_logprobs = result
+                control_vector = cls(
+                    model_type=model.config.model_type, directions=dirs
+                )
+                return control_vector, avg_logprobs
+            else:
+                dirs = result
+                return cls(model_type=model.config.model_type, directions=dirs)
 
     def export_gguf(self, path: os.PathLike[str] | str):
         """
@@ -423,7 +450,8 @@ def read_representations(
     rescaling: str | None = None,
     cache_path: os.PathLike[str] | str | None = None,
     enable_thinking: bool = False,
-) -> dict[int, np.ndarray]:
+    output_training_avg_logprob: bool = False,
+) -> "dict[int, np.ndarray] | tuple[dict[int, np.ndarray], list[float]]":
     """
     Extract the representations based on the contrast dataset.
     Called by ControlVector.train
@@ -454,6 +482,8 @@ def read_representations(
         enable_thinking (bool, optional): Whether to enable thinking tokens when applying
             chat templates to the dataset entries. This controls the `enable_thinking`
             parameter passed to `tokenizer.apply_chat_template()`. Defaults to False.
+        output_training_avg_logprob (bool, optional): If True, also return average log
+            probabilities for each training example. Defaults to False.
     """
     if not hidden_layers:
         hidden_layers = list(range(get_num_hidden_layer(model)))
@@ -500,7 +530,7 @@ def read_representations(
     if cache_path is None:
         # Original behavior - store all activation layers in memory
         logger.debug("No cache path provided, computing activations in memory")
-        layer_hiddens = batched_get_hiddens(
+        layer_hiddens, log_probs = batched_get_hiddens(
             model=model,
             tokenizer=tokenizer,
             inputs=train_strs,
@@ -528,6 +558,11 @@ def read_representations(
         model_args = _get_model_args_string(model)
         train_strs_hash = _hash_train_strs(train_strs)
         group_path = f"{model_args}/{train_strs_hash}"
+
+        # Load log probabilities from cache if needed
+        if output_training_avg_logprob:
+            with h5py.File(cache_file, "r") as f:
+                log_probs = f[group_path]["log_probs"][:]
 
         # SAE transformation with caching
         if sae is not None:
@@ -561,7 +596,23 @@ def read_representations(
                     f"Found existing SAE cache at {sae_group_path}, skipping SAE computation"
                 )
 
-    # get directions for each layer using PCA
+    # Compute average log probabilities if requested
+    avg_logprobs = None
+    if output_training_avg_logprob:
+        # log_probs shape: (n_inputs, max_seq_len)
+        # We need to compute average for each input, excluding padding tokens
+        avg_logprobs = []
+        for i, input_str in enumerate(train_strs):
+            # Get the actual length of this input (non-padding tokens)
+            tokens = tokenizer(input_str, return_tensors="pt")
+            actual_length = tokens["attention_mask"].sum().item()
+            # Average log prob for this input, excluding padding
+            avg_logprob = np.mean(
+                log_probs[i][: actual_length - 1]
+            )  # -1 because log_probs exclude first token
+            avg_logprobs.append(float(avg_logprob))
+
+    # get directions for each layer using the specified method
     directions: dict[int, np.ndarray] = {}
     for layer in tqdm.tqdm(hidden_layers, desc="Altering directions"):
         # Load hidden states either from memory dict or h5py cache
@@ -616,7 +667,10 @@ def read_representations(
         if sae is not None and sae_decode:
             directions[layer] = sae.layers[layer].decode(directions[layer])
 
-    return directions
+    if output_training_avg_logprob:
+        return directions, avg_logprobs
+    else:
+        return directions
 
 
 def batched_get_hiddens(
@@ -625,17 +679,21 @@ def batched_get_hiddens(
     inputs: list[str],
     hidden_layers: list[int],
     batch_size: int,
-) -> dict[int, np.ndarray]:
+) -> tuple[dict[int, np.ndarray], np.ndarray]:
     """
     Using the given model and tokenizer, pass the inputs through the model and get the hidden
-    states for each layer in `hidden_layers` for the last token.
+    states for each layer in `hidden_layers` for the last token, plus log probabilities for all tokens.
 
-    Returns a dictionary from `hidden_layers` layer id to an numpy array of shape `(n_inputs, hidden_dim)`
+    Returns a tuple of:
+    - Dictionary from `hidden_layers` layer id to numpy array of shape `(n_inputs, hidden_dim)`
+    - Log probabilities array of shape `(n_inputs, max_seq_len)` for all tokens
     """
     batched_inputs = [
         inputs[p : p + batch_size] for p in range(0, len(inputs), batch_size)
     ]
     hidden_states = {layer: [] for layer in hidden_layers}
+    all_log_probs = []
+
     with torch.no_grad():
         for batch in tqdm.tqdm(batched_inputs, desc="Computing activations"):
             # get the last token, handling right padding if present
@@ -644,7 +702,33 @@ def batched_get_hiddens(
             )
             out = model(**encoded_batch, output_hidden_states=True)
             attention_mask = encoded_batch["attention_mask"]
+
+            # Compute log probabilities for all tokens
+            logits = out.logits  # shape: (batch_size, seq_len, vocab_size)
+            log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
+            input_ids = encoded_batch["input_ids"]
+
+            # Get log prob for each actual token (excluding padding)
+            batch_log_probs = []
             for i in range(len(batch)):
+                # Get log probs for this sequence's actual tokens
+                seq_len = attention_mask[i].sum().item()
+                # Get log prob of each actual token in the sequence
+                token_log_probs = (
+                    log_probs[i, : seq_len - 1, :]
+                    .gather(dim=1, index=input_ids[i, 1:seq_len].unsqueeze(1))
+                    .squeeze(1)
+                )
+
+                # Pad to max sequence length for consistent storage
+                max_len = (
+                    logits.shape[1] - 1
+                )  # -1 because we skip first token for log prob
+                padded_log_probs = torch.zeros(max_len, device=token_log_probs.device)
+                padded_log_probs[: len(token_log_probs)] = token_log_probs
+                batch_log_probs.append(padded_log_probs.cpu().float().numpy())
+
+                # Get hidden states for last non-padding token
                 last_non_padding_index = (
                     attention_mask[i].nonzero(as_tuple=True)[0][-1].item()
                 )
@@ -657,9 +741,11 @@ def batched_get_hiddens(
                         .numpy()
                     )
                     hidden_states[layer].append(hidden_state)
+
+            all_log_probs.extend(batch_log_probs)
             del out
 
-    return {k: np.vstack(v) for k, v in hidden_states.items()}
+    return {k: np.vstack(v) for k, v in hidden_states.items()}, np.vstack(all_log_probs)
 
 
 def batched_get_hiddens_cached(
@@ -672,10 +758,9 @@ def batched_get_hiddens_cached(
 ) -> str:
     """
     Cached version of batched_get_hiddens using h5py for disk storage.
-    The memory requirements should be approximately the same as the batch
-    itself as we don't have to hold all passed activations.
+    Always computes and caches log probabilities along with hidden states.
 
-    It does not return the dict of activations but the path to the h5 cache.
+    Returns the path to the h5 cache file.
     """
     model_name = get_model_name(model)
     cache_file = os.path.join(cache_path, f"{model_name}.h5")
@@ -704,7 +789,7 @@ def batched_get_hiddens_cached(
     logger.debug(f"Activation cache not found, computing activations for {group_path}")
 
     # Compute hidden states and cache them
-    # First, we need to get one batch to determine the hidden dimension
+    # First, we need to get one batch to determine dimensions
     with torch.no_grad():
         sample_batch = inputs[: min(batch_size, len(inputs))]
         encoded_sample = tokenizer(sample_batch, padding=True, return_tensors="pt").to(
@@ -712,6 +797,7 @@ def batched_get_hiddens_cached(
         )
         sample_out = model(**encoded_sample, output_hidden_states=True)
         hidden_dim = sample_out.hidden_states[0].shape[-1]
+        max_seq_len = sample_out.logits.shape[1] - 1  # -1 for log prob computation
         del sample_out
 
     # Initialize h5py datasets
@@ -737,6 +823,17 @@ def batched_get_hiddens_cached(
                     fillvalue=0.0,
                 )
 
+            # Initialize log probabilities dataset
+            f.create_dataset(
+                f"{group_path}/log_probs",
+                shape=(len(inputs), max_seq_len),
+                dtype=np.float32,
+                compression="lzf",
+                shuffle=True,
+                chunks=True,
+                fillvalue=0.0,
+            )
+
             # Initialize done flag as False
             f.create_dataset(f"{group_path}/done", data=False)
 
@@ -757,13 +854,21 @@ def batched_get_hiddens_cached(
             out = model(**encoded_batch, output_hidden_states=True)
             attention_mask = encoded_batch["attention_mask"]
 
-            # Collect batch results by layer
+            # Compute log probabilities for all tokens
+            logits = out.logits  # shape: (batch_size, seq_len, vocab_size)
+            log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
+            input_ids = encoded_batch["input_ids"]
+
+            # Collect batch results by layer and log probs
             batch_hiddens = {layer: [] for layer in hidden_layers}
+            batch_log_probs = []
 
             for i in range(batch_size_actual):
                 last_non_padding_index = (
                     attention_mask[i].nonzero(as_tuple=True)[0][-1].item()
                 )
+
+                # Collect hidden states
                 for layer in hidden_layers:
                     hidden_idx = layer + 1 if layer >= 0 else layer
                     hidden_state = (
@@ -773,15 +878,39 @@ def batched_get_hiddens_cached(
                         .numpy()
                     )
                     batch_hiddens[layer].append(hidden_state)
+
+                # Collect log probabilities
+                seq_len = attention_mask[i].sum().item()
+                # Get log prob of each actual token in the sequence
+                token_log_probs = (
+                    log_probs[i, : seq_len - 1, :]
+                    .gather(dim=1, index=input_ids[i, 1:seq_len].unsqueeze(1))
+                    .squeeze(1)
+                )
+
+                # Pad to max sequence length for consistent storage
+                padded_log_probs = torch.zeros(
+                    max_seq_len, device=token_log_probs.device
+                )
+                padded_log_probs[: len(token_log_probs)] = token_log_probs
+                batch_log_probs.append(padded_log_probs.cpu().float().numpy())
+
             del out
 
             # Write batch results to h5py
             with h5py.File(cache_file, "a") as f:
+                # Store hidden states
                 for layer in hidden_layers:
                     layer_data = np.vstack(batch_hiddens[layer])
                     f[f"{group_path}/layer_{layer}"][
                         batch_start_idx : batch_start_idx + batch_size_actual
                     ] = layer_data
+
+                # Store log probabilities
+                log_prob_data = np.vstack(batch_log_probs)
+                f[f"{group_path}/log_probs"][
+                    batch_start_idx : batch_start_idx + batch_size_actual
+                ] = log_prob_data
 
             batch_start_idx += batch_size_actual
 
