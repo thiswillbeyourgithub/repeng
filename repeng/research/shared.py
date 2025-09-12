@@ -18,28 +18,25 @@ DEFAULT_STRENGTHS: List[float] = [x for x in range(-10, 11, 1)]
 FINE_GRAINED_STRENGTHS: List[float] = [x / 100 for x in range(-50, 55, 5)]
 
 
-def extract_first_number(text: str, max_value: float | None = None) -> float | None:
+def extract_first_number(text: str, dataset_name: str) -> float | None:
     """
-    Extract the first number from text using regex.
-
-    This function handles various number formats including comma/dot thousand
-    separators and applies preprocessing to filter out common model metadata lines
-    and thinking sections.
+    Extract numbers from text based on dataset requirements.
 
     Parameters
     ----------
     text : str
         Text to extract number from
-    max_value : float | None, optional
-        Maximum value to return - if extracted value exceeds this, returns max_value
+    dataset_name : str
+        Name of dataset ("iq" or "age") to determine extraction strategy
 
     Returns
     -------
     float | None
-        First number found in text, or None if no valid number found
+        Extracted value or None if no valid number found
+        - For "iq": first number found
+        - For "age": average of all 4-digit years between 1900-2050, cast to int
     """
     # Remove thinking sections before processing
-    # Handle various thinking section formats: <thinking>...</thinking>, <|thinking|>...</|thinking|>, etc.
     thinking_patterns = [
         r"<thinking>.*?</thinking>",
         r"<\|thinking\|>.*?<\|/thinking\|>",
@@ -51,62 +48,46 @@ def extract_first_number(text: str, max_value: float | None = None) -> float | N
     for pattern in thinking_patterns:
         text = re.sub(pattern, "", text, flags=re.DOTALL | re.IGNORECASE)
 
+    # Remove model metadata lines
     lines = text.splitlines()
     lines = [
         li
         for li in lines
         if not (
-            # gpt oss
             li.startswith("Knowledge cutoff: ")
             or li.startswith("Current date: ")
-            # llama
             or li.startswith("Cutting Knowledge Date: ")
             or li.startswith("Today Date: ")
         )
     ]
     text = "\n".join(lines)
 
-    # Try to match numbers with comma thousand separators first: 1,000 or 1,000.50
-    match = re.search(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?", text)
-    if match:
-        number_str = match.group()
-        # Remove commas (thousand separators) and convert to float
-        cleaned_number = number_str.replace(",", "")
-        try:
-            value = float(cleaned_number)
-            if max_value is not None and value > max_value:
-                return max_value
-            return value
-        except ValueError:
-            pass
+    if dataset_name == "iq":
+        # Extract first number found
+        match = re.search(r"\d+(?:\.\d+)?", text)
+        if match:
+            try:
+                return float(match.group())
+            except ValueError:
+                pass
+        return None
 
-    # Try to match numbers with dot thousand separators (European style): 10.000
-    # Only match if it looks like thousand separators (groups of 3 digits)
-    match = re.search(r"\d{1,3}(?:\.\d{3})+(?!\.\d)", text)
-    if match:
-        number_str = match.group()
-        # Remove dots (treating as thousand separators) and convert to float
-        cleaned_number = number_str.replace(".", "")
-        try:
-            value = float(cleaned_number)
-            if max_value is not None and value > max_value:
-                return max_value
-            return value
-        except ValueError:
-            pass
+    elif dataset_name == "age":
+        # Find all 4-digit numbers between 1900 and 2050
+        matches = re.findall(r"\b(19\d{2}|20[0-4]\d|2050)\b", text)
+        if matches:
+            try:
+                years = [int(match) for match in matches]
+                # Filter to ensure they're actually in the valid range
+                valid_years = [year for year in years if 1900 <= year <= 2050]
+                if valid_years:
+                    return int(sum(valid_years) / len(valid_years))
+            except ValueError:
+                pass
+        return None
 
-    # Fall back to original pattern for simple numbers: 123 or 123.45
-    match = re.search(r"\d+(?:\.\d+)?", text)
-    if match:
-        try:
-            value = float(match.group())
-            if max_value is not None and value > max_value:
-                return max_value
-            return value
-        except ValueError:
-            pass
-
-    return None
+    else:
+        raise ValueError(f"Unknown dataset: {dataset_name}")
 
 
 def get_data(dataset: str) -> tuple[list[dict], list]:

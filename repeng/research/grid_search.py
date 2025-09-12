@@ -365,8 +365,7 @@ def test_configuration(
             )
 
             # Extract score
-            max_value = 9999 if dataset == "age" else None
-            score = extract_first_number(output, max_value=max_value)
+            score = extract_first_number(output, dataset)
             if score is not None:
                 scores[strength] = score
                 logger.info(f"  Extracted score: {score}")
