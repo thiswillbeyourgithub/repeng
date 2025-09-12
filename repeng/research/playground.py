@@ -85,7 +85,7 @@ trained_vector = ControlVector.train(
     # datasets.dumb_genius_paragraph[:5],
     # datasets.young_old_paragraph[:5],
     datasets.dumb_genius_paragraph,
-    batch_size=5,
+    batch_size=1,
     method=method,
     cache_path="./model_cache",
 )
