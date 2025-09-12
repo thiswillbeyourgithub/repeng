@@ -604,7 +604,7 @@ def read_representations(
         avg_logprobs = []
         for i, input_str in enumerate(train_strs):
             # Get the actual length of this input (non-padding tokens)
-            tokens = tokenizer(input_str, return_tensors="pt")
+            tokens = tokenizer(input_str, return_tensors="pt", padding_side="left")
             actual_length = tokens["attention_mask"].sum().item()
             # Average log prob for this input, excluding padding
             avg_logprob = np.mean(
@@ -697,7 +697,7 @@ def batched_get_hiddens(
     with torch.no_grad():
         for batch in tqdm.tqdm(batched_inputs, desc="Computing activations"):
             # get the last token, handling right padding if present
-            encoded_batch = tokenizer(batch, padding=True, return_tensors="pt").to(
+            encoded_batch = tokenizer(batch, padding=True, return_tensors="pt", padding_side="left").to(
                 model.device
             )
             out = model(**encoded_batch, output_hidden_states=True)
@@ -792,7 +792,7 @@ def batched_get_hiddens_cached(
     # First, we need to get one batch to determine dimensions
     with torch.no_grad():
         sample_batch = inputs[: min(batch_size, len(inputs))]
-        encoded_sample = tokenizer(sample_batch, padding=True, return_tensors="pt").to(
+        encoded_sample = tokenizer(sample_batch, padding=True, return_tensors="pt", padding_side="left").to(
             model.device
         )
         sample_out = model(**encoded_sample, output_hidden_states=True)
@@ -848,7 +848,7 @@ def batched_get_hiddens_cached(
             batch_size_actual = len(batch)
 
             # get the last token, handling right padding if present
-            encoded_batch = tokenizer(batch, padding=True, return_tensors="pt").to(
+            encoded_batch = tokenizer(batch, padding=True, return_tensors="pt", padding_side="left").to(
                 model.device
             )
             out = model(**encoded_batch, output_hidden_states=True)
