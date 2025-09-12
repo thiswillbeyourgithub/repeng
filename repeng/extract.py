@@ -548,6 +548,10 @@ def read_representations(
 
         assert h.shape[0] == len(inputs) * 2
 
+        # check that there are no duplicates
+        unique_rows, counts = np.unique(h, axis=0, return_counts=True)
+        assert not np.any(counts > 1), f"Duplicates hidden layer activation found. Counts: {counts}"
+
         directions[layer] = compute_direction(h, method, rescaling)
 
         if method not in ["mean", "median"]:
