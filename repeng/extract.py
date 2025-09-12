@@ -468,6 +468,8 @@ def read_representations(
             model=model,
         )
 
+    assert len(train_strs) == len(set(train_strs)), "There are duplicates in the training dataset"
+
     if cache_path is None:
         # Original behavior - store all activation layers in memory
         logger.debug("No cache path provided, computing activations in memory")
