@@ -512,7 +512,12 @@ os.makedirs("./logs", exist_ok=True)
 grid_search_script_version = "1.0.0"
 
 
-def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int = 1, cuda_visible_devices: str | None = None):
+def main(
+    debug: bool = False,
+    taguchi_reduction: bool = False,
+    batch_size: int = 1,
+    cuda_visible_devices: str | None = None,
+):
     """
     Run comprehensive grid search over control vector configurations.
 
@@ -541,7 +546,7 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
     batch_size : int, default=1
         Batch size for training control vectors.
     cuda_visible_devices : str | None, default=None
-        If provided, sets CUDA_VISIBLE_DEVICES environment variable to control 
+        If provided, sets CUDA_VISIBLE_DEVICES environment variable to control
         which GPU(s) to use. For example: "0" for GPU 0, "0,1" for GPUs 0 and 1.
 
     Notes
