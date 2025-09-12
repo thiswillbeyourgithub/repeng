@@ -182,6 +182,9 @@ def autocorrect_chat_templates(
             to be corrected. Can be a single message, a list of messages, or a list of chats.
         tokenizer: The tokenizer associated with the model.
         model: The model for which the chat templates should be corrected.
+        enable_thinking (Optional[bool]): Whether to enable thinking mode in the chat template.
+            If provided, this parameter is passed to the tokenizer's apply_chat_template method
+            to control whether the model should include reasoning steps in its output.
         kwargs: Any additional kwargs are passed to the tokenizer.apply_chat_template call
 
     Returns:
