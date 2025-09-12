@@ -23,7 +23,8 @@ def extract_first_number(text: str, max_value: float | None = None) -> float | N
     Extract the first number from text using regex.
 
     This function handles various number formats including comma/dot thousand
-    separators and applies preprocessing to filter out common model metadata lines.
+    separators and applies preprocessing to filter out common model metadata lines
+    and thinking sections.
 
     Parameters
     ----------
@@ -37,6 +38,19 @@ def extract_first_number(text: str, max_value: float | None = None) -> float | N
     float | None
         First number found in text, or None if no valid number found
     """
+    # Remove thinking sections before processing
+    # Handle various thinking section formats: <thinking>...</thinking>, <|thinking|>...</|thinking|>, etc.
+    thinking_patterns = [
+        r"<thinking>.*?</thinking>",
+        r"<\|thinking\|>.*?<\|/thinking\|>",
+        r"<think>.*?</think>",
+        r"\[THINKING\].*?\[/THINKING\]",
+        r"\[thinking\].*?\[/thinking\]",
+    ]
+    
+    for pattern in thinking_patterns:
+        text = re.sub(pattern, "", text, flags=re.DOTALL | re.IGNORECASE)
+    
     lines = text.splitlines()
     lines = [
         li
