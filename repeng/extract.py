@@ -697,9 +697,9 @@ def batched_get_hiddens(
     with torch.no_grad():
         for batch in tqdm.tqdm(batched_inputs, desc="Computing activations"):
             # get the last token, handling right padding if present
-            encoded_batch = tokenizer(batch, padding=True, return_tensors="pt", padding_side="left").to(
-                model.device
-            )
+            encoded_batch = tokenizer(
+                batch, padding=True, return_tensors="pt", padding_side="left"
+            ).to(model.device)
             out = model(**encoded_batch, output_hidden_states=True)
             attention_mask = encoded_batch["attention_mask"]
 
@@ -792,9 +792,9 @@ def batched_get_hiddens_cached(
     # First, we need to get one batch to determine dimensions
     with torch.no_grad():
         sample_batch = inputs[: min(batch_size, len(inputs))]
-        encoded_sample = tokenizer(sample_batch, padding=True, return_tensors="pt", padding_side="left").to(
-            model.device
-        )
+        encoded_sample = tokenizer(
+            sample_batch, padding=True, return_tensors="pt", padding_side="left"
+        ).to(model.device)
         sample_out = model(**encoded_sample, output_hidden_states=True)
         hidden_dim = sample_out.hidden_states[0].shape[-1]
         del sample_out
@@ -804,7 +804,9 @@ def batched_get_hiddens_cached(
     all_lengths = []
     for i in range(0, len(inputs), batch_size):
         batch = inputs[i : i + batch_size]
-        encoded_batch = tokenizer(batch, padding=True, return_tensors="pt", padding_side="left")
+        encoded_batch = tokenizer(
+            batch, padding=True, return_tensors="pt", padding_side="left"
+        )
         all_lengths.append(encoded_batch["input_ids"].shape[1])
     max_seq_len = max(all_lengths) - 1  # -1 for log prob computation
 
@@ -856,9 +858,9 @@ def batched_get_hiddens_cached(
             batch_size_actual = len(batch)
 
             # get the last token, handling right padding if present
-            encoded_batch = tokenizer(batch, padding=True, return_tensors="pt", padding_side="left").to(
-                model.device
-            )
+            encoded_batch = tokenizer(
+                batch, padding=True, return_tensors="pt", padding_side="left"
+            ).to(model.device)
             out = model(**encoded_batch, output_hidden_states=True)
             attention_mask = encoded_batch["attention_mask"]
 
