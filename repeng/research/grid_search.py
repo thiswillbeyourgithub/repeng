@@ -387,6 +387,24 @@ def test_configuration(
             logger.info(f"  Plotting strengths: {strengths_list}")
             logger.info(f"  Plotting scores: {scores_list}")
 
+            # Calculate correlation between control strength and extracted value
+            correlation_coeff = 0.0
+            correlation_p_value = 1.0
+            try:
+                if len(strengths_list) > 1 and len(scores_list) > 1:
+                    correlation_coeff, correlation_p_value = pearsonr(
+                        strengths_list, scores_list
+                    )
+                    logger.info(
+                        f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})"
+                    )
+            except Exception as e:
+                logger.info(f"  Error calculating correlation: {e}")
+                if debug:
+                    raise
+                correlation_coeff = 0.0
+                correlation_p_value = 1.0
+
             # Create the figure
             fig, ax = plt.subplots(figsize=(12, 8))
 
@@ -396,7 +414,8 @@ def test_configuration(
             ax.set_title(
                 f"Extracted value vs Control Strength ({dataset} dataset)\n"
                 f"Method: {method}, Layer zones: {layer_zones}, Normalize: {normalize}, Rescaling: {rescaling}\n"
-                f"Model: {model_name}",
+                f"Model: {model_name}\n"
+                f"Correlation: r={correlation_coeff:.3f}, p={correlation_p_value:.3f}",
                 fontsize=14,
             )
             ax.grid(True, alpha=0.3)
@@ -686,23 +705,7 @@ def main(
                 min_score = min(scores_list)
                 score_range = max_score - min_score
 
-                # Calculate correlation between control strength and extracted value
-                correlation_coeff = 0.0
-                correlation_p_value = 1.0
-                try:
-                    if len(strengths_list) > 1 and len(scores_list) > 1:
-                        correlation_coeff, correlation_p_value = pearsonr(
-                            strengths_list, scores_list
-                        )
-                        logger.info(
-                            f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})"
-                        )
-                except Exception as e:
-                    logger.info(f"  Error calculating correlation: {e}")
-                    if debug:
-                        raise
-                    correlation_coeff = 0.0
-                    correlation_p_value = 1.0
+                # Correlation was already calculated during plot creation above
 
                 # Log hyperparameters and metrics for easy filtering
                 hparam_dict = {
