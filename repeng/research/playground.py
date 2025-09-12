@@ -8,7 +8,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from repeng import ControlVector, ControlModel
 from repeng.utils import autocorrect_chat_templates
-from repeng.research import datasets
+
+from repeng.research.shared import FINE_GRAINED_STRENGTHS, extract_first_number, get_data
 
 from sklearnex import patch_sklearn
 
@@ -79,77 +80,21 @@ method = "median"
 # method = "pca_center"
 # method="umap"
 # method="pacmap"
+scenario, train_dataset = get_data("age", tokenizer)
 trained_vector = ControlVector.train(
     model,
     tokenizer,
-    # datasets.dumb_genius_paragraph[:5],
-    # datasets.young_old_paragraph[:5],
-    datasets.dumb_genius_paragraph,
+    train_dataset,
     batch_size=1,
     method=method,
     cache_path="./model_cache",
 )
 
-# Now we must give the scenario for the generation we will engineer:
-# By turning chat messages into the format expected by the model [RECOMMENDED]
-# scenario: str = tokenizer.apply_chat_template(
-#     conversation=[
-#         {
-#             "role": "user",
-#             "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human?",
-#         },
-#         {
-#             "role": "assistant",
-#             "content": "Alright. I got it. The IQ of the human I pick is exactly ",
-#         },
-#     ],
-#     continue_final_message=True,
-#     tokenize=False,
-# )
-try:
-    scenario = tokenizer.apply_chat_template(
-        conversation=[
-            {
-                "role": "user",
-                "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, how old is this human?",
-            },
-            {
-                "role": "assistant",
-                "content": "Alright. I got it. The age of the human I pick is exactly ",
-            },
-        ],
-        continue_final_message=True,
-        tokenize=False,
-    )
-except Exception:
-
-    scenario: str = autocorrect_chat_templates(
-        messages=[
-            {
-                "role": "user",
-                "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, how old is this human?",
-            },
-            {
-                "role": "assistant",
-                "content": "Alright. I got it. The age of the human I pick is exactly ",
-            },
-        ],
-        tokenizer=tokenizer,
-        model=model,
-    )
-
-
-# Import shared strength configuration to ensure consistency across experiments
-from repeng.research.shared import DEFAULT_STRENGTHS, extract_first_number
-
-# set the control strength and let inference rip!
-strengths = DEFAULT_STRENGTHS
-
 scores = {}
 simple_scores = {}
 outputs = {}
 
-for strength in strengths:
+for strength in FINE_GRAINED_STRENGTHS:
     logger.debug(f"Memory footprint: {model.get_memory_footprint()}")
 
     print(f"strength={strength}")

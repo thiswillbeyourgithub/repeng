@@ -24,8 +24,7 @@ from repeng import (
     ControlModel,
     __VERSION__ as repeng_version,
 )
-from repeng.research import datasets
-from repeng.research.shared import extract_first_number
+from repeng.research.shared import extract_first_number, get_data
 
 from sklearnex import patch_sklearn
 from tqdm import tqdm
@@ -141,55 +140,6 @@ while True:
     else:
         strengths_multiplier_tensorboard *= 10
 
-
-def get_data(dataset: str, tokenizer) -> tuple[str, list]:
-    """
-    Get scenario and dataset based on dataset name.
-
-    Parameters
-    ----------
-    dataset : str
-        Dataset name ("age", etc.)
-
-    Returns
-    -------
-    tuple[str, list]
-        Tuple containing (scenario, dataset_entries)
-    """
-    if dataset == "age":
-        scenario = tokenizer.apply_chat_template(
-            conversation=[
-                {
-                    "role": "user",
-                    "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, how old is this human?",
-                },
-                {
-                    "role": "assistant",
-                    "content": "Alright. I got it. The age of the human I pick is exactly ",
-                },
-            ],
-            continue_final_message=True,
-            tokenize=False,
-        )
-        return scenario, datasets.young_old_paragraph
-    elif dataset == "iq":
-        scenario = tokenizer.apply_chat_template(
-            conversation=[
-                {
-                    "role": "user",
-                    "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human?",
-                },
-                {
-                    "role": "assistant",
-                    "content": "Alright. I got it. The IQ of the human I pick is exactly ",
-                },
-            ],
-            continue_final_message=True,
-            tokenize=False,
-        )
-        return scenario, datasets.dumb_genius_paragraph
-    else:
-        raise ValueError(f"Unknown dataset: {dataset}")
 
 
 def format_layer_zones_for_filename(layer_zones: list) -> str:
