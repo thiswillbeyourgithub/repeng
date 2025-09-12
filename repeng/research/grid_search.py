@@ -419,8 +419,9 @@ def test_configuration(
                 )
                 ax.set_ylim(0, 200)  # IQ range from 0 to 200
             elif dataset == "age":
-                ax.axhline(y=25, color="r", linestyle="--", alpha=0.5, label="Ref(25)")
-                ax.set_ylim(0, 300)  # Age range from 0 to 300 years
+                ax.axhline(y=1900, color="r", linestyle="--", alpha=0.5, label="Year 1900")
+                ax.axhline(y=2000, color="g", linestyle="--", alpha=0.5, label="Year 2000")
+                # No y-axis limits set to ensure all data points are visible
 
             ax.legend()
             plt.tight_layout()
