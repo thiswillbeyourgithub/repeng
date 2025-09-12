@@ -305,7 +305,7 @@ def test_configuration(
             )
 
             out = generation_output.sequences
-            scores = (
+            generation_scores = (
                 generation_output.scores
             )  # List of tensors, one per generated token
 
@@ -316,14 +316,14 @@ def test_configuration(
             logger.info(f"  Output: {output}")
 
             # Compute average log probability of generated tokens
-            if scores:
+            if generation_scores:
                 # Convert scores to log probabilities and compute average
                 log_probs = []
                 generated_token_ids = out[0][
                     input_tokens["input_ids"].shape[1] :
                 ]  # Get only newly generated tokens
 
-                for i, score_tensor in enumerate(scores):
+                for i, score_tensor in enumerate(generation_scores):
                     if i < len(generated_token_ids):
                         # Get log probabilities for this step
                         log_prob_dist = F.log_softmax(score_tensor[0], dim=-1)
