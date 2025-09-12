@@ -1,3 +1,4 @@
+import json
 import dataclasses
 import hashlib
 import os
@@ -462,6 +463,9 @@ def read_representations(
     # the order is [positive, negative, positive, negative, ...]
     train_list = []
     [train_list.extend([ex.positive, ex.negative]) for ex in inputs]
+    assert len(train_list) == len(
+        set([json.dumps(ex) for ex in train_list])
+    ), "There are duplicates in the training dataset"
     try:
         train_strs: list[str] = [
             tokenizer.apply_chat_template(
@@ -471,6 +475,11 @@ def read_representations(
             )
             for chat in train_list
         ]
+        # check that there are no duplicates, because some chat template silently
+        # drop the system prompt so we instead use the autocorrect function
+        assert len(train_strs) == len(
+            set(train_strs)
+        ), "There are duplicates in the training dataset"
     except Exception as e:
         warnings.warn(
             f"Error when applying chat template: '{e}'\nTrying to autocorrect the template anyway."
