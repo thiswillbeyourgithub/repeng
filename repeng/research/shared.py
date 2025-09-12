@@ -113,11 +113,11 @@ def get_data(dataset: str, tokenizer) -> tuple[str, list]:
             conversation=[
                 {
                     "role": "user",
-                    "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, how old is this human?",
+                    "content": "In what year do you think I was born? Take a guess.",
                 },
                 {
                     "role": "assistant",
-                    "content": "Alright. I got it. The age of the human I pick is exactly ",
+                    "content": "Alright. Let's see. I think you were born in the year ",
                 },
             ],
             continue_final_message=True,
