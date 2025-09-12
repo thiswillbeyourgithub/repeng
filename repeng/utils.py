@@ -254,8 +254,10 @@ def autocorrect_chat_templates(
 
     template_kwargs = dict(kwargs)
     if enable_thinking is not None:
-        template_kwargs['enable_thinking'] = enable_thinking
-    templated = tokenizer.apply_chat_template(messages, tokenize=False, **template_kwargs)
+        template_kwargs["enable_thinking"] = enable_thinking
+    templated = tokenizer.apply_chat_template(
+        messages, tokenize=False, **template_kwargs
+    )
 
     if not all(message["content"] in templated for message in messages):
 
@@ -270,7 +272,7 @@ def autocorrect_chat_templates(
         try:
             template_kwargs = dict(kwargs)
             if enable_thinking is not None:
-                template_kwargs['enable_thinking'] = enable_thinking
+                template_kwargs["enable_thinking"] = enable_thinking
             templated2 = tokenizer.apply_chat_template(
                 copied_mes, tokenize=False, **template_kwargs
             )
@@ -391,8 +393,10 @@ def autocorrect_chat_templates(
 
         template_kwargs = dict(kwargs)
         if enable_thinking is not None:
-            template_kwargs['enable_thinking'] = enable_thinking
-        templated = tokenizer.apply_chat_template(copied_mes, tokenize=False, **template_kwargs)
+            template_kwargs["enable_thinking"] = enable_thinking
+        templated = tokenizer.apply_chat_template(
+            copied_mes, tokenize=False, **template_kwargs
+        )
 
         if not all(message["content"] in templated for message in messages):
             for message in messages:
