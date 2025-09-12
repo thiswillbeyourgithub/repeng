@@ -4,6 +4,7 @@ import re
 import os
 import math
 import torch
+import torch.nn.functional as F
 import gc
 from loguru import logger
 
@@ -272,18 +273,46 @@ def test_configuration(
             logger.info(f"Testing strength: {strength}")
             control_model.set_control(trained_vector, strength, normalize=normalize)
 
-            out = control_model.generate(
-                **tokenizer(scenario, return_tensors="pt").to(control_model.device),
+            input_tokens = tokenizer(scenario, return_tensors="pt").to(control_model.device)
+            
+            # Generate with scores to compute log probabilities
+            generation_output = control_model.generate(
+                **input_tokens,
                 do_sample=False,
                 max_new_tokens=50,
                 repetition_penalty=1.1,
+                return_dict_in_generate=True,
+                output_scores=True,
             )
+            
+            out = generation_output.sequences
+            scores = generation_output.scores  # List of tensors, one per generated token
 
             output = tokenizer.decode(out.squeeze(), skip_special_tokens=True).strip()
             outputs[strength] = output
 
             # logger.info the actual LLM output to screen
             logger.info(f"  Output: {output}")
+            
+            # Compute average log probability of generated tokens
+            if scores:
+                # Convert scores to log probabilities and compute average
+                log_probs = []
+                generated_token_ids = out[0][input_tokens['input_ids'].shape[1]:]  # Get only newly generated tokens
+                
+                for i, score_tensor in enumerate(scores):
+                    if i < len(generated_token_ids):
+                        # Get log probabilities for this step
+                        log_prob_dist = F.log_softmax(score_tensor[0], dim=-1)
+                        # Get log prob of the actual generated token
+                        token_log_prob = log_prob_dist[generated_token_ids[i]].item()
+                        log_probs.append(token_log_prob)
+                
+                avg_log_prob = sum(log_probs) / len(log_probs) if log_probs else 0.0
+                logger.info(f"  Average log probability: {avg_log_prob:.4f}")
+            else:
+                avg_log_prob = 0.0
+                logger.info("  No scores returned, average log probability set to 0.0")
 
             # Log the output text to tensorboard
             zones_tag = format_layer_zones_for_filename(layer_zones)
@@ -292,7 +321,7 @@ def test_configuration(
             rescaling_tag = rescaling if rescaling else "norescale"
             writer.add_text(
                 f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}_{rescaling_tag}/outputs",
-                f"Strength {strength}: {output}",
+                f"Strength {strength}: {output} (avg_log_prob: {avg_log_prob:.4f})",
                 global_step=int(strength * strengths_multiplier_tensorboard),
             )
 
@@ -308,6 +337,13 @@ def test_configuration(
                 writer.add_scalar(
                     "extracted_value_vs_strength",
                     score,
+                    global_step=int(strength * strengths_multiplier_tensorboard),
+                )
+                
+                # Log average log probability to TensorBoard
+                writer.add_scalar(
+                    "avg_log_probability_vs_strength",
+                    avg_log_prob,
                     global_step=int(strength * strengths_multiplier_tensorboard),
                 )
             else:
