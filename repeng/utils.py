@@ -252,7 +252,10 @@ def autocorrect_chat_templates(
                     "Model does not support 'system' role but found it in dataset. Modifying the dataset for compatibility"
                 )
 
-    templated = tokenizer.apply_chat_template(messages, tokenize=False, **kwargs)
+    template_kwargs = dict(kwargs)
+    if enable_thinking is not None:
+        template_kwargs['enable_thinking'] = enable_thinking
+    templated = tokenizer.apply_chat_template(messages, tokenize=False, **template_kwargs)
 
     if not all(message["content"] in templated for message in messages):
 
@@ -265,8 +268,11 @@ def autocorrect_chat_templates(
         copied_mes.append(sys_message)
         templated2 = None
         try:
+            template_kwargs = dict(kwargs)
+            if enable_thinking is not None:
+                template_kwargs['enable_thinking'] = enable_thinking
             templated2 = tokenizer.apply_chat_template(
-                copied_mes, tokenize=False, **kwargs
+                copied_mes, tokenize=False, **template_kwargs
             )
         except Exception as e:
             if (
@@ -383,7 +389,10 @@ def autocorrect_chat_templates(
                 "content"
             ] = f"{sys_message['content'].rstrip()}\n\n{copied_mes[first_user_index]['content'].lstrip()}"
 
-        templated = tokenizer.apply_chat_template(copied_mes, tokenize=False, **kwargs)
+        template_kwargs = dict(kwargs)
+        if enable_thinking is not None:
+            template_kwargs['enable_thinking'] = enable_thinking
+        templated = tokenizer.apply_chat_template(copied_mes, tokenize=False, **template_kwargs)
 
         if not all(message["content"] in templated for message in messages):
             for message in messages:
