@@ -48,7 +48,7 @@ from transformers import BitsAndBytesConfig
 # Configure quantization for models that support it
 # source: https://huggingface.co/docs/transformers/quantization/bitsandbytes
 quant_config = BitsAndBytesConfig(
-    device_map="auto",
+    device_map="cuda",
     load_in_4bit=True,
     # load_in_8bit=True,
     llm_int8_enable_fp32_cpu_offload=True,  # allow offloading between gpu and cpu, only for 8bit
