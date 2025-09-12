@@ -9,7 +9,11 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from repeng import ControlVector, ControlModel
 from repeng.utils import autocorrect_chat_templates
 
-from repeng.research.shared import FINE_GRAINED_STRENGTHS, extract_first_number, get_data
+from repeng.research.shared import (
+    FINE_GRAINED_STRENGTHS,
+    extract_first_number,
+    get_data,
+)
 
 from sklearnex import patch_sklearn
 

@@ -94,6 +94,7 @@ def extract_first_number(text: str, max_value: float | None = None) -> float | N
 
     return None
 
+
 def get_data(dataset: str) -> tuple[list[dict], list]:
     """
     Get scenario conversation and dataset based on dataset name.
@@ -134,4 +135,3 @@ def get_data(dataset: str) -> tuple[list[dict], list]:
         return conversation, datasets.dumb_genius_paragraph
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
-
