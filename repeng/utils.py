@@ -149,6 +149,7 @@ def autocorrect_chat_templates(
     messages: typing.Union[list[list[dict]], list[dict], list[str], str],
     tokenizer,
     model,
+    enable_thinking: typing.Optional[bool] = None,
     **kwargs,
 ) -> typing.Union[list[str], str]:
     """
