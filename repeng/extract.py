@@ -797,8 +797,16 @@ def batched_get_hiddens_cached(
         )
         sample_out = model(**encoded_sample, output_hidden_states=True)
         hidden_dim = sample_out.hidden_states[0].shape[-1]
-        max_seq_len = sample_out.logits.shape[1] - 1  # -1 for log prob computation
         del sample_out
+
+    # Compute true maximum sequence length across all inputs to avoid size mismatches
+    # We need to tokenize all inputs to find the actual maximum length
+    all_lengths = []
+    for i in range(0, len(inputs), batch_size):
+        batch = inputs[i : i + batch_size]
+        encoded_batch = tokenizer(batch, padding=True, return_tensors="pt", padding_side="left")
+        all_lengths.append(encoded_batch["input_ids"].shape[1])
+    max_seq_len = max(all_lengths) - 1  # -1 for log prob computation
 
     # Initialize h5py datasets
     with h5py.File(cache_file, "a") as f:
