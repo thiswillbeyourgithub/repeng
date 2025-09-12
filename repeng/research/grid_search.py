@@ -512,7 +512,7 @@ os.makedirs("./logs", exist_ok=True)
 grid_search_script_version = "1.0.0"
 
 
-def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int = 1):
+def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int = 1, cuda_visible_devices: str | None = None):
     """
     Run comprehensive grid search over control vector configurations.
 
@@ -538,6 +538,11 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
         If True, uses Taguchi orthogonal arrays to reduce the parameter grid size
         while maintaining good coverage of the parameter space. This significantly
         reduces computational cost but may miss some parameter interactions.
+    batch_size : int, default=1
+        Batch size for training control vectors.
+    cuda_visible_devices : str | None, default=None
+        If provided, sets CUDA_VISIBLE_DEVICES environment variable to control 
+        which GPU(s) to use. For example: "0" for GPU 0, "0,1" for GPUs 0 and 1.
 
     Notes
     -----
@@ -552,6 +557,10 @@ def main(debug: bool = False, taguchi_reduction: bool = False, batch_size: int =
     Results include correlation analysis between control strength and extracted
     values, which helps identify effective control directions.
     """
+    # Set CUDA device visibility if specified
+    if cuda_visible_devices is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = cuda_visible_devices
+        logger.info(f"Set CUDA_VISIBLE_DEVICES to: {cuda_visible_devices}")
     # Create main writer for overall grid search logging
     main_writer = SummaryWriter("./tensorboard_logs/grid_search/main")
 
