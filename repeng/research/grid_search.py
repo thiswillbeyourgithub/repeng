@@ -224,6 +224,12 @@ def test_configuration(
     logger.info(f"Layer zones: {layer_zones}")
     logger.info(f"Normalize: {normalize}")
 
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+    gc.collect()
+
     # Load model and tokenizer for this configuration
     logger.info("Loading model and tokenizer...")
     base_model = AutoModelForCausalLM.from_pretrained(
@@ -430,6 +436,7 @@ def test_configuration(
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             torch.cuda.synchronize()
+        gc.collect()
 
         return {
             "model_name": model_name,
