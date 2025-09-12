@@ -75,8 +75,7 @@ param_grid = {
     ],
     # "dataset": ["age", "iq"],
     "dataset": ["age"],
-    # "normalize": [True, False],
-    "normalize": [False],
+    "normalize": [True, False],
     "layer_zones": [
         # by increments of 0.1
         [[0.0, 0.1]],
