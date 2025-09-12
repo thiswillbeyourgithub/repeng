@@ -232,11 +232,11 @@ def test_configuration(
 
     # Load model and tokenizer for this configuration
     logger.info("Loading model and tokenizer...")
-    
+
     # Retry logic for model loading with CUDA error handling
     max_retries = 10 if debug else 1
     base_model = None
-    
+
     for attempt in range(max_retries):
         try:
             base_model = AutoModelForCausalLM.from_pretrained(
@@ -248,7 +248,7 @@ def test_configuration(
             )
             logger.info(f"Model loaded successfully on attempt {attempt + 1}")
             break  # Success, exit retry loop
-            
+
         except (torch.cuda.OutOfMemoryError, RuntimeError) as e:
             if "CUDA" in str(e) or "out of memory" in str(e).lower():
                 logger.info(f"CUDA error on attempt {attempt + 1}/{max_retries}: {e}")
@@ -271,7 +271,7 @@ def test_configuration(
             # Any other error, re-raise immediately
             logger.info(f"Non-CUDA error during model loading: {e}")
             raise
-    
+
     if base_model is None:
         raise RuntimeError(f"Failed to load model after {max_retries} attempts")
 
