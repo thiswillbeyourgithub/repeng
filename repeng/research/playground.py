@@ -80,7 +80,12 @@ method = "median"
 # method = "pca_center"
 # method="umap"
 # method="pacmap"
-scenario, train_dataset = get_data("age", tokenizer)
+conversation, train_dataset = get_data("age")
+scenario = tokenizer.apply_chat_template(
+    conversation=conversation,
+    continue_final_message=True,
+    tokenize=False,
+)
 trained_vector = ControlVector.train(
     model,
     tokenizer,

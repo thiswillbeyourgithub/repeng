@@ -236,7 +236,12 @@ def test_configuration(
             tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
     # Get scenario and dataset for this configuration
-    scenario, train_dataset = get_data(dataset, tokenizer)
+    conversation, train_dataset = get_data(dataset)
+    scenario = tokenizer.apply_chat_template(
+        conversation=conversation,
+        continue_final_message=True,
+        tokenize=False,
+    )
 
     # Create unique writer for this combination
     zones_tag = format_layer_zones_for_filename(layer_zones)
@@ -269,6 +274,7 @@ def test_configuration(
             rescaling=rescaling,
             cache_path="./model_cache",
             output_training_avg_logprob=True,
+            enable_thinking=True,
         )
         trained_vector, avg_logprobs = result
 

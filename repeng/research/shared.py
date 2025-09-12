@@ -94,52 +94,44 @@ def extract_first_number(text: str, max_value: float | None = None) -> float | N
 
     return None
 
-def get_data(dataset: str, tokenizer) -> tuple[str, list]:
+def get_data(dataset: str) -> tuple[list[dict], list]:
     """
-    Get scenario and dataset based on dataset name.
+    Get scenario conversation and dataset based on dataset name.
 
     Parameters
     ----------
     dataset : str
-        Dataset name ("age", etc.)
+        Dataset name ("age", "iq", etc.)
 
     Returns
     -------
-    tuple[str, list]
-        Tuple containing (scenario, dataset_entries)
+    tuple[list[dict], list]
+        Tuple containing (conversation_as_list_of_dicts, dataset_entries)
     """
     if dataset == "age":
-        scenario = tokenizer.apply_chat_template(
-            conversation=[
-                {
-                    "role": "user",
-                    "content": "In what year do you think I was born? Take a guess.",
-                },
-                {
-                    "role": "assistant",
-                    "content": "Alright. Let's see. I think you were born in the year ",
-                },
-            ],
-            continue_final_message=True,
-            tokenize=False,
-        )
-        return scenario, datasets.young_old_paragraph
+        conversation = [
+            {
+                "role": "user",
+                "content": "In what year do you think I was born? Take a guess.",
+            },
+            {
+                "role": "assistant",
+                "content": "Alright. Let's see. I think you were born in the year ",
+            },
+        ]
+        return conversation, datasets.young_old_paragraph
     elif dataset == "iq":
-        scenario = tokenizer.apply_chat_template(
-            conversation=[
-                {
-                    "role": "user",
-                    "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human?",
-                },
-                {
-                    "role": "assistant",
-                    "content": "Alright. I got it. The IQ of the human I pick is exactly ",
-                },
-            ],
-            continue_final_message=True,
-            tokenize=False,
-        )
-        return scenario, datasets.dumb_genius_paragraph
+        conversation = [
+            {
+                "role": "user",
+                "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human?",
+            },
+            {
+                "role": "assistant",
+                "content": "Alright. I got it. The IQ of the human I pick is exactly ",
+            },
+        ]
+        return conversation, datasets.dumb_genius_paragraph
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
 
