@@ -29,6 +29,9 @@ from repeng.research.shared import extract_first_number, get_data
 
 from sklearnex import patch_sklearn
 from tqdm import tqdm
+# Import shared strength configuration to ensure consistency across experiments
+from repeng.research.shared import DEFAULT_STRENGTHS, FINE_GRAINED_STRENGTHS
+
 
 # Disable GPU
 # os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -66,13 +69,13 @@ param_grid = {
     # "method": ["mean", "median"],
     "method": [
         "median",
-        "mean",
-        "pca_diff",
-        "pca_center",
-        "ica_diff",
-        "ica_center",
-        "umap",
-        "umap_densmap",
+        # "mean",
+        # "pca_diff",
+        # "pca_center",
+        # "ica_diff",
+        # "ica_center",
+        # "umap",
+        # "umap_densmap",
     ],
     # "dataset": ["age", "iq"],
     "dataset": ["age"],
@@ -126,11 +129,9 @@ param_grid = {
     ],
 }
 
-# Import shared strength configuration to ensure consistency across experiments
-from repeng.research.shared import DEFAULT_STRENGTHS, FINE_GRAINED_STRENGTHS
-
 # Strengths to test (same as playground.py but using standard range)
 strengths = FINE_GRAINED_STRENGTHS
+# strengths = [-0.5, -0.25, -0.1, 0.0, 0.1, 0.25, 0.5]
 
 # check that with the way we turn strengths into global_step for tensorboard we don't have collisions, adjust the multiplier if needed
 assert len(strengths) == len(set(strengths)), "Found duplicate elements of strengths"
