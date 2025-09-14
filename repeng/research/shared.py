@@ -90,6 +90,68 @@ def extract_first_number(text: str, dataset_name: str) -> float | None:
         raise ValueError(f"Unknown dataset: {dataset_name}")
 
 
+def extract_token_logprobs(
+    model,
+    tokenizer,
+    input_text: str,
+    target_tokens: List[str],
+    normalize: bool = True,
+) -> dict[str, float]:
+    """
+    Extract log probabilities for specific target tokens at the next position.
+    
+    Parameters
+    ----------
+    model : ControlModel
+        The wrapped model to get predictions from
+    tokenizer : PreTrainedTokenizerBase
+        Tokenizer for the model
+    input_text : str
+        Input text to get next token predictions for
+    target_tokens : List[str]
+        List of target tokens to extract logprobs for
+    normalize : bool, default=True
+        Whether to apply softmax normalization to get proper probabilities
+        
+    Returns
+    -------
+    dict[str, float]
+        Dictionary mapping each target token to its log probability
+    """
+    import torch
+    import torch.nn.functional as F
+    
+    # Tokenize input
+    inputs = tokenizer(input_text, return_tensors="pt").to(model.device)
+    
+    # Get logits for next token
+    with torch.no_grad():
+        outputs = model(**inputs)
+        # Get logits for the last position (next token prediction)
+        next_token_logits = outputs.logits[0, -1, :]
+    
+    # Convert to log probabilities
+    if normalize:
+        log_probs = F.log_softmax(next_token_logits, dim=-1)
+    else:
+        log_probs = next_token_logits
+    
+    # Extract logprobs for target tokens
+    result = {}
+    for token in target_tokens:
+        # Tokenize the target token to get its ID
+        token_ids = tokenizer.encode(token, add_special_tokens=False)
+        if len(token_ids) == 1:
+            token_id = token_ids[0]
+            result[token] = log_probs[token_id].item()
+        else:
+            # Handle multi-token case by taking average (or you could modify this logic)
+            logprobs_sum = sum(log_probs[tid].item() for tid in token_ids)
+            result[token] = logprobs_sum / len(token_ids)
+    
+    return result
+
+
 def get_data(dataset: str) -> tuple[list[dict], list]:
     """
     Get scenario conversation and dataset based on dataset name.
@@ -108,11 +170,11 @@ def get_data(dataset: str) -> tuple[list[dict], list]:
         conversation = [
             {
                 "role": "user",
-                "content": "In what year do you think I was born? Take a guess.",
+                "content": "Based on how I write and express myself, what age group do you think I belong to? Please choose one: 20, 30, 40, or 50.",
             },
             {
-                "role": "assistant",
-                "content": "Alright. Let's see. I think you were born in the year ",
+                "role": "assistant", 
+                "content": "Based on your writing style, I think you are around ",
             },
         ]
         return conversation, datasets.young_old_paragraph

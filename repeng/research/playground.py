@@ -12,6 +12,7 @@ from repeng.utils import autocorrect_chat_templates
 from repeng.research.shared import (
     FINE_GRAINED_STRENGTHS,
     extract_first_number,
+    extract_token_logprobs,
     get_data,
 )
 
@@ -100,39 +101,32 @@ trained_vector = ControlVector.train(
 )
 
 scores = {}
-simple_scores = {}
-outputs = {}
+logprob_data = {}
 
 for strength in FINE_GRAINED_STRENGTHS:
     logger.debug(f"Memory footprint: {model.get_memory_footprint()}")
 
     print(f"strength={strength}")
     model.set_control(trained_vector, strength, normalize=False)
-    out = model.generate(
-        **tokenizer(scenario, return_tensors="pt").to(model.device),
-        do_sample=False,
-        # temperature=1.0,  # temperature can only be set if do_sample is True
-        max_new_tokens=50,
-        repetition_penalty=1.1,
+    
+    # Get logprobs instead of generating text
+    if conversation[0]["content"].find("age group") != -1:  # age dataset
+        target_tokens = ["20", "30", "40", "50"]
+        score_token = "20"  # Use logprob of "20" as the score (higher = more likely young)
+    else:  # iq dataset  
+        target_tokens = ["80", "100", "120", "140"]
+        score_token = "140"  # Use logprob of "140" as the score (higher = more likely genius)
+    
+    logprobs = extract_token_logprobs(
+        model, tokenizer, scenario, target_tokens, normalize=True
     )
-    output = tokenizer.decode(out.squeeze()).strip()
-    output = tokenizer.decode(out.squeeze(), skip_special_tokens=True).strip()
-    print(output)
-    outputs[strength] = output
-    # or if you want to display the special tokens:
-    # print(tokenizer.decode(out.squeeze(), skip_special_tokens=False).strip())
+    
+    scores[strength] = logprobs[score_token]
+    logprob_data[strength] = logprobs
+    
+    print(f"Logprobs: {logprobs}")
+    print(f"Score ({score_token}): {scores[strength]}")
     print("###" * 5)
-
-
-# Process outputs to extract scores
-scores = {}
-for strength, output in outputs.items():
-    score = extract_first_number(output)
-    if score is not None:
-        scores[strength] = score
-        print(f"Strength {strength}: Score {score}")
-    else:
-        print(f"Strength {strength}: No score found in output")
 
 # Create plots directory
 os.makedirs("./plots/first", exist_ok=True)
@@ -144,15 +138,14 @@ scores_list = [scores[s] for s in strengths_list]
 
 plt.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
 plt.xlabel("Control Strength", fontsize=12)
-plt.ylabel("Extracted IQ Score", fontsize=12)
+plt.ylabel("Log Probability", fontsize=12)
 plt.title(
-    f"IQ Score vs Control Strength\nModel: {model_name}\nDataset: dumb_genius_paragraph\nMethod: {method}",
+    f"Token Log Probability vs Control Strength\nModel: {model_name}\nDataset: age\nMethod: {method}",
     fontsize=14,
 )
 plt.grid(True, alpha=0.3)
 
 # Add some styling
-plt.axhline(y=100, color="r", linestyle="--", alpha=0.5, label="Average IQ (100)")
 plt.axvline(x=0, color="g", linestyle="--", alpha=0.5, label="No Control (0)")
 
 plt.legend()
@@ -160,12 +153,12 @@ plt.tight_layout()
 
 # Save the plot
 plot_filename = (
-    f"./plots/first/iq_score_vs_strength_{model_name.replace('/', '_')}_{method}.png"
+    f"./plots/first/logprob_vs_strength_{model_name.replace('/', '_')}_{method}.png"
 )
 plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
 print(f"Plot saved to: {plot_filename}")
 
 plt.show()
 
-pprint(outputs)
+pprint(logprob_data)
 pprint(scores)
