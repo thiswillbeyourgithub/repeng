@@ -117,7 +117,9 @@ for strength in strengths:
 
     # Use the absolute difference between score token and average of other tokens
     score_token_logprob = logprobs[score_token]
-    other_token_logprobs = [logprobs[token] for token in target_tokens if token != score_token]
+    other_token_logprobs = [
+        logprobs[token] for token in target_tokens if token != score_token
+    ]
     mean_other_logprobs = sum(other_token_logprobs) / len(other_token_logprobs)
     score = abs(score_token_logprob - mean_other_logprobs)
     scores[strength] = score
