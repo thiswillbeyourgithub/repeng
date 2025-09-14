@@ -319,8 +319,11 @@ def test_configuration(
                 control_model, tokenizer, scenario, target_tokens, normalize=True
             )
 
-            # Use the logprob of the score token as the score
-            score = logprobs[score_token]
+            # Use the absolute difference between score token and average of other tokens
+            score_token_logprob = logprobs[score_token]
+            other_token_logprobs = [logprobs[token] for token in target_tokens if token != score_token]
+            mean_other_logprobs = sum(other_token_logprobs) / len(other_token_logprobs)
+            score = abs(score_token_logprob - mean_other_logprobs)
             scores[strength] = score
             logprob_data[strength] = logprobs
 
@@ -391,7 +394,7 @@ def test_configuration(
 
         ax.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
         ax.set_xlabel("Control Strength", fontsize=12)
-        ax.set_ylabel(f"Log Probability of '{score_token}' Token", fontsize=12)
+        ax.set_ylabel(f"Abs Diff: '{score_token}' vs Other Tokens", fontsize=12)
         ax.set_title(
             f"Token Log Probability vs Control Strength ({dataset} dataset)\n"
             f"Method: {method}, Layer zones: {layer_zones}, Normalize: {normalize}, Rescaling: {rescaling}, Thinking: {enable_thinking}\n"

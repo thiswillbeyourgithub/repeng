@@ -115,11 +115,16 @@ for strength in strengths:
         model, tokenizer, scenario, target_tokens, normalize=True
     )
 
-    scores[strength] = logprobs[score_token]
+    # Use the absolute difference between score token and average of other tokens
+    score_token_logprob = logprobs[score_token]
+    other_token_logprobs = [logprobs[token] for token in target_tokens if token != score_token]
+    mean_other_logprobs = sum(other_token_logprobs) / len(other_token_logprobs)
+    score = abs(score_token_logprob - mean_other_logprobs)
+    scores[strength] = score
     logprob_data[strength] = logprobs
 
     print(f"Logprobs: {logprobs}")
-    print(f"Score ({score_token}): {scores[strength]}")
+    print(f"Score ({score_token} vs others): {scores[strength]}")
     print("###" * 5)
 
 # Create plots directory
@@ -132,7 +137,7 @@ scores_list = [scores[s] for s in strengths_list]
 
 plt.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
 plt.xlabel("Control Strength", fontsize=12)
-plt.ylabel("Log Probability", fontsize=12)
+plt.ylabel("Abs Diff: Score Token vs Others", fontsize=12)
 plt.title(
     f"Token Log Probability vs Control Strength\nModel: {model_name}\nDataset: age\nMethod: {method}",
     fontsize=14,
