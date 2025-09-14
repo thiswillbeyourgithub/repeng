@@ -102,11 +102,11 @@ def get_data(dataset: str) -> tuple[list[dict], list]:
         conversation = [
             {
                 "role": "user",
-                "content": "Based on how I write and express myself, what age group do you think I belong to? Please choose one: 20, 30, 40, or 50.",
+                "content": "You have to take a wild guess: what age group do you think I belong to? Please choose one: 20, 30, 40, or 50.",
             },
             {
                 "role": "assistant",
-                "content": "Based on your writing style, I think you are around ",
+                "content": "Tough one. I think you are most likely ",
             },
         ]
         return conversation, datasets.young_old_paragraph
@@ -114,11 +114,11 @@ def get_data(dataset: str) -> tuple[list[dict], list]:
         conversation = [
             {
                 "role": "user",
-                "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human?",
+                "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human? Please choose one: 100, 110, 120, or 130.",
             },
             {
                 "role": "assistant",
-                "content": "Alright. I got it. The IQ of the human I pick is exactly ",
+                "content": "Alright. I got it. The IQ of the human I pick is around ",
             },
         ]
         return conversation, datasets.dumb_genius_paragraph
