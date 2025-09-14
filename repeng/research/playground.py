@@ -12,7 +12,6 @@ from repeng.utils import autocorrect_chat_templates
 from repeng.research.shared import (
     SHORT_TEST_STRENGTHS,
     FINE_GRAINED_STRENGTHS,
-    extract_first_number,
     extract_token_logprobs,
     get_data,
 )

@@ -26,7 +26,6 @@ from repeng import (
     __VERSION__ as repeng_version,
 )
 from repeng.research.shared import (
-    extract_first_number,
     get_data,
     extract_token_logprobs,
 )
