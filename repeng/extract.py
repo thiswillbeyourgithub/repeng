@@ -39,7 +39,7 @@ class ControlVector:
         tokenizer: PreTrainedTokenizerBase,
         dataset: list[DatasetEntry],
         cache_path: os.PathLike[str] | str | None = None,
-        rescaling: str | None = "layer_magnitude",
+        rescaling: str | bool = "layer_magnitude",
         enable_thinking: bool = False,
         output_training_avg_logprob: bool = False,
         **kwargs,
@@ -54,7 +54,7 @@ class ControlVector:
             cache_path (os.PathLike[str] | str | None, optional): Path to directory for h5py caching.
                 If None, activations are computed and stored in memory. If provided, activations
                 are cached to disk to allow for better memory scaling. Defaults to None.
-            rescaling (str | None, optional): How to rescale the direction vectors. If None,
+            rescaling (str | bool, optional): How to rescale the direction vectors. If False or None,
                 uses original scaling. If "layer_magnitude", rescales to match typical activation
                 magnitude in each layer. Defaults to "layer_magnitude".
             output_training_avg_logprob (bool, optional): If True, also return average log
@@ -96,7 +96,7 @@ class ControlVector:
         sae: Sae,
         decode: bool = True,
         cache_path: os.PathLike[str] | str | None = None,
-        rescaling: str | None = "layer_magnitude",
+        rescaling: str | bool = "layer_magnitude",
         enable_thinking: bool = False,
         output_training_avg_logprob: bool = False,
         **kwargs,
@@ -116,7 +116,7 @@ class ControlVector:
             cache_path (os.PathLike[str] | str | None, optional): Path to directory for h5py caching.
                 If None, activations are computed and stored in memory. If provided, activations
                 are cached to disk to allow for better memory scaling. Defaults to None.
-            rescaling (str | None, optional): How to rescale the direction vectors. If None,
+            rescaling (str | bool, optional): How to rescale the direction vectors. If False or None,
                 uses original scaling. If "layer_magnitude", rescales to match typical activation
                 magnitude in each layer. Defaults to "layer_magnitude".
             output_training_avg_logprob (bool, optional): If True, also return average log
@@ -290,7 +290,7 @@ def compute_direction(
         ],
         typing.Callable[[np.ndarray], np.ndarray],
     ],
-    rescaling: str | None,
+    rescaling: str | bool,
 ) -> np.ndarray:
     """
     Compute a direction vector from hidden states using the specified method.
@@ -302,7 +302,7 @@ def compute_direction(
         method: The method to use for computing the direction. Can be "pca_diff",
             "pca_center", "mean", "median", "umap", "umap_densmap", "ica_diff", "ica_center", "dict_diff", "dict_center", or a callable that takes hidden states and returns
             a direction vector.
-        rescaling (str | None, optional): How to rescale the direction vector. If None,
+        rescaling (str | bool, optional): How to rescale the direction vector. If None or False,
             uses original scaling. If "layer_magnitude", rescales to match typical activation
             magnitude. If interesting in rescaling, you might want to look
             at the `normalize` argument of `control.py:ControlModel.set_control`.py`.
@@ -418,6 +418,8 @@ def compute_direction(
         direction_norm = np.linalg.norm(direction, ord=2)
         if direction_norm != 0:  # avoid the rare division by 0
             direction = (direction / direction_norm) * typical_magnitude
+    elif rescaling is False:
+        pass
     elif rescaling is not None:
         raise ValueError(f"unknown rescaling method {rescaling}")
 
