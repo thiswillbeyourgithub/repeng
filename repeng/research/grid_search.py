@@ -25,10 +25,15 @@ from repeng import (
     ControlModel,
     __VERSION__ as repeng_version,
 )
-from repeng.research.shared import extract_first_number, get_data, extract_token_logprobs
+from repeng.research.shared import (
+    extract_first_number,
+    get_data,
+    extract_token_logprobs,
+)
 
 from sklearnex import patch_sklearn
 from tqdm import tqdm
+
 # Import shared strength configuration to ensure consistency across experiments
 from repeng.research.shared import DEFAULT_STRENGTHS, FINE_GRAINED_STRENGTHS
 
@@ -305,10 +310,14 @@ def test_configuration(
         # Define target tokens and score token based on dataset
         if dataset == "age":
             target_tokens = ["20", "30", "40", "50"]
-            score_token = "20"  # Use logprob of "20" as the score (higher = more likely young)
+            score_token = (
+                "20"  # Use logprob of "20" as the score (higher = more likely young)
+            )
         elif dataset == "iq":
             target_tokens = ["80", "100", "120", "140"]
-            score_token = "140"  # Use logprob of "140" as the score (higher = more likely genius)
+            score_token = (
+                "140"  # Use logprob of "140" as the score (higher = more likely genius)
+            )
         else:
             raise ValueError(f"Unknown dataset: {dataset}")
 
@@ -335,9 +344,11 @@ def test_configuration(
             normalize_tag = "norm" if normalize else "nonorm"
             rescaling_tag = rescaling if rescaling else "norescale"
             thinking_tag = "thinking" if enable_thinking else "nothinking"
-            
+
             # Log all target token logprobs
-            logprobs_text = ", ".join([f"{token}: {logprob:.4f}" for token, logprob in logprobs.items()])
+            logprobs_text = ", ".join(
+                [f"{token}: {logprob:.4f}" for token, logprob in logprobs.items()]
+            )
             writer.add_text(
                 f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}/logprobs",
                 f"Strength {strength}: {logprobs_text}",
@@ -438,9 +449,7 @@ def test_configuration(
         thinking_tag = "thinking" if enable_thinking else "nothinking"
         plot_filename = f"./plots/grid_search/logprob_score_{model_tag}_{dataset}_{method}_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}.png"
         try:
-            fig.savefig(
-                plot_filename, dpi=300, bbox_inches="tight", facecolor="white"
-            )
+            fig.savefig(plot_filename, dpi=300, bbox_inches="tight", facecolor="white")
             logger.info(f"  Plot saved: {plot_filename}")
 
             # Check if file was actually created and has content
@@ -663,7 +672,7 @@ def main(
                 # Logprobs are always valid (no NaN values to filter)
                 strengths_list = sorted(scores.keys())
                 scores_list = [scores[s] for s in strengths_list]
-                
+
                 mean_score = sum(scores_list) / len(scores_list)
                 max_score = max(scores_list)
                 min_score = min(scores_list)
@@ -759,7 +768,9 @@ def main(
                     i,
                 )
                 main_writer.add_scalar(
-                    f"by_method/{model_tag}_{dataset}_{method}/max_logprob_score", max_score, i
+                    f"by_method/{model_tag}_{dataset}_{method}/max_logprob_score",
+                    max_score,
+                    i,
                 )
                 main_writer.add_scalar(
                     f"by_method/{model_tag}_{dataset}_{method}/logprob_score_range",
@@ -808,7 +819,9 @@ def main(
                     scores_list = list(scores.values())
                     strengths_list = list(scores.keys())
                     f.write(f"  Logprob scores found: {len(scores)}/{len(strengths)}\n")
-                    f.write(f"  Mean logprob score: {sum(scores_list)/len(scores_list):.4f}\n")
+                    f.write(
+                        f"  Mean logprob score: {sum(scores_list)/len(scores_list):.4f}\n"
+                    )
                     f.write(
                         f"  Logprob score range: {min(scores_list):.4f} - {max(scores_list):.4f}\n"
                     )
