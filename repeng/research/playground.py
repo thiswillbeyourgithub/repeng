@@ -108,22 +108,26 @@ for strength in FINE_GRAINED_STRENGTHS:
 
     print(f"strength={strength}")
     model.set_control(trained_vector, strength, normalize=False)
-    
+
     # Get logprobs instead of generating text
     if conversation[0]["content"].find("age group") != -1:  # age dataset
         target_tokens = ["20", "30", "40", "50"]
-        score_token = "20"  # Use logprob of "20" as the score (higher = more likely young)
-    else:  # iq dataset  
+        score_token = (
+            "20"  # Use logprob of "20" as the score (higher = more likely young)
+        )
+    else:  # iq dataset
         target_tokens = ["80", "100", "120", "140"]
-        score_token = "140"  # Use logprob of "140" as the score (higher = more likely genius)
-    
+        score_token = (
+            "140"  # Use logprob of "140" as the score (higher = more likely genius)
+        )
+
     logprobs = extract_token_logprobs(
         model, tokenizer, scenario, target_tokens, normalize=True
     )
-    
+
     scores[strength] = logprobs[score_token]
     logprob_data[strength] = logprobs
-    
+
     print(f"Logprobs: {logprobs}")
     print(f"Score ({score_token}): {scores[strength]}")
     print("###" * 5)

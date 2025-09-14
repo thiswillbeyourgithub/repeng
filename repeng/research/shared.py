@@ -99,7 +99,7 @@ def extract_token_logprobs(
 ) -> dict[str, float]:
     """
     Extract log probabilities for specific target tokens at the next position.
-    
+
     Parameters
     ----------
     model : ControlModel
@@ -112,7 +112,7 @@ def extract_token_logprobs(
         List of target tokens to extract logprobs for
     normalize : bool, default=True
         Whether to apply softmax normalization to get proper probabilities
-        
+
     Returns
     -------
     dict[str, float]
@@ -120,22 +120,22 @@ def extract_token_logprobs(
     """
     import torch
     import torch.nn.functional as F
-    
+
     # Tokenize input
     inputs = tokenizer(input_text, return_tensors="pt").to(model.device)
-    
+
     # Get logits for next token
     with torch.no_grad():
         outputs = model(**inputs)
         # Get logits for the last position (next token prediction)
         next_token_logits = outputs.logits[0, -1, :]
-    
+
     # Convert to log probabilities
     if normalize:
         log_probs = F.log_softmax(next_token_logits, dim=-1)
     else:
         log_probs = next_token_logits
-    
+
     # Extract logprobs for target tokens
     result = {}
     for token in target_tokens:
@@ -148,7 +148,7 @@ def extract_token_logprobs(
             # Handle multi-token case by taking average (or you could modify this logic)
             logprobs_sum = sum(log_probs[tid].item() for tid in token_ids)
             result[token] = logprobs_sum / len(token_ids)
-    
+
     return result
 
 
@@ -173,7 +173,7 @@ def get_data(dataset: str) -> tuple[list[dict], list]:
                 "content": "Based on how I write and express myself, what age group do you think I belong to? Please choose one: 20, 30, 40, or 50.",
             },
             {
-                "role": "assistant", 
+                "role": "assistant",
                 "content": "Based on your writing style, I think you are around ",
             },
         ]
