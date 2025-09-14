@@ -35,7 +35,7 @@ from sklearnex import patch_sklearn
 from tqdm import tqdm
 
 # Import shared strength configuration to ensure consistency across experiments
-from repeng.research.shared import DEFAULT_STRENGTHS, FINE_GRAINED_STRENGTHS
+from repeng.research.shared import DEFAULT_STRENGTHS, FINE_GRAINED_STRENGTHS, SHORT_TEST_STRENGTHS
 
 
 # Disable GPU
@@ -135,8 +135,8 @@ param_grid = {
 }
 
 # Strengths to test (same as playground.py but using standard range)
-strengths = FINE_GRAINED_STRENGTHS
-# strengths = [-0.5, -0.25, -0.1, 0.0, 0.1, 0.25, 0.5]
+# strengths = FINE_GRAINED_STRENGTHS
+strengths = SHORT_TEST_STRENGTHS
 
 # check that with the way we turn strengths into global_step for tensorboard we don't have collisions, adjust the multiplier if needed
 assert len(strengths) == len(set(strengths)), "Found duplicate elements of strengths"

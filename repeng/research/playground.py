@@ -10,6 +10,7 @@ from repeng import ControlVector, ControlModel
 from repeng.utils import autocorrect_chat_templates
 
 from repeng.research.shared import (
+    SHORT_TEST_STRENGTHS,
     FINE_GRAINED_STRENGTHS,
     extract_first_number,
     extract_token_logprobs,
@@ -102,8 +103,9 @@ trained_vector = ControlVector.train(
 
 scores = {}
 logprob_data = {}
+strengths = SHORT_TEST_STRENGTHS
 
-for strength in FINE_GRAINED_STRENGTHS:
+for strength in strengths:
     logger.debug(f"Memory footprint: {model.get_memory_footprint()}")
 
     print(f"strength={strength}")

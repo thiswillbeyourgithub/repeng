@@ -17,6 +17,9 @@ DEFAULT_STRENGTHS: List[float] = [x for x in range(-10, 11, 1)]
 # Alternative fine-grained strength values (increments of 0.05 from -0.5 to +0.5)
 FINE_GRAINED_STRENGTHS: List[float] = [x / 100 for x in range(-50, 55, 5)]
 
+# For quicker test
+SHORT_TEST_STRENGTHS; List[float] = [-0.5, -0.25, -0.1, 0.0, 0.1, 0.25, 0.5]
+
 
 def extract_first_number(text: str, dataset_name: str) -> float | None:
     """
