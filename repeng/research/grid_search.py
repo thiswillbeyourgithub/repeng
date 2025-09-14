@@ -34,7 +34,11 @@ from sklearnex import patch_sklearn
 from tqdm import tqdm
 
 # Import shared strength configuration to ensure consistency across experiments
-from repeng.research.shared import DEFAULT_STRENGTHS, FINE_GRAINED_STRENGTHS, SHORT_TEST_STRENGTHS
+from repeng.research.shared import (
+    DEFAULT_STRENGTHS,
+    FINE_GRAINED_STRENGTHS,
+    SHORT_TEST_STRENGTHS,
+)
 
 
 # Disable GPU
@@ -244,7 +248,7 @@ def test_configuration(
             tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
     # Get scenario and dataset for this configuration
-    conversation, train_dataset = get_data(dataset)
+    conversation, train_dataset, target_tokens, score_token = get_data(dataset)
     scenario = tokenizer.apply_chat_template(
         conversation=conversation,
         continue_final_message=True,
@@ -305,20 +309,6 @@ def test_configuration(
         # Test all strengths
         scores = {}
         logprob_data = {}
-
-        # Define target tokens and score token based on dataset
-        if dataset == "age":
-            target_tokens = ["20", "30", "40", "50"]
-            score_token = (
-                "20"  # Use logprob of "20" as the score (higher = more likely young)
-            )
-        elif dataset == "iq":
-            target_tokens = ["80", "100", "120", "140"]
-            score_token = (
-                "140"  # Use logprob of "140" as the score (higher = more likely genius)
-            )
-        else:
-            raise ValueError(f"Unknown dataset: {dataset}")
 
         for strength in strengths:
             logger.info(f"Testing strength: {strength}")

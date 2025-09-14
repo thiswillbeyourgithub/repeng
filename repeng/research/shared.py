@@ -21,7 +21,6 @@ FINE_GRAINED_STRENGTHS: List[float] = [x / 100 for x in range(-50, 55, 5)]
 SHORT_TEST_STRENGTHS: List[float] = [-0.5, -0.25, -0.1, 0.0, 0.1, 0.25, 0.5]
 
 
-
 def extract_token_logprobs(
     model,
     tokenizer,
@@ -84,9 +83,9 @@ def extract_token_logprobs(
     return result
 
 
-def get_data(dataset: str) -> tuple[list[dict], list]:
+def get_data(dataset: str) -> tuple[list[dict], list, list[str], str]:
     """
-    Get scenario conversation and dataset based on dataset name.
+    Get scenario conversation, dataset, target tokens, and score token based on dataset name.
 
     Parameters
     ----------
@@ -95,8 +94,8 @@ def get_data(dataset: str) -> tuple[list[dict], list]:
 
     Returns
     -------
-    tuple[list[dict], list]
-        Tuple containing (conversation_as_list_of_dicts, dataset_entries)
+    tuple[list[dict], list, list[str], str]
+        Tuple containing (conversation_as_list_of_dicts, dataset_entries, target_tokens, score_token)
     """
     if dataset == "age":
         conversation = [
@@ -109,7 +108,11 @@ def get_data(dataset: str) -> tuple[list[dict], list]:
                 "content": "Tough one. I think you are most likely ",
             },
         ]
-        return conversation, datasets.young_old_paragraph
+        target_tokens = ["20", "30", "40", "50"]
+        score_token = (
+            "20"  # Use logprob of "20" as the score (higher = more likely young)
+        )
+        return conversation, datasets.young_old_paragraph, target_tokens, score_token
     elif dataset == "iq":
         conversation = [
             {
@@ -121,6 +124,10 @@ def get_data(dataset: str) -> tuple[list[dict], list]:
                 "content": "Alright. I got it. The IQ of the human I pick is around ",
             },
         ]
-        return conversation, datasets.dumb_genius_paragraph
+        target_tokens = ["100", "110", "120", "130"]
+        score_token = (
+            "130"  # Use logprob of "130" as the score (higher = more likely genius)
+        )
+        return conversation, datasets.dumb_genius_paragraph, target_tokens, score_token
     else:
         raise ValueError(f"Unknown dataset: {dataset}")

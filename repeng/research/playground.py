@@ -85,7 +85,7 @@ method = "median"
 # method = "pca_center"
 # method="umap"
 # method="pacmap"
-conversation, train_dataset = get_data("age")
+conversation, train_dataset, target_tokens, score_token = get_data("age")
 scenario = tokenizer.apply_chat_template(
     conversation=conversation,
     continue_final_message=True,
@@ -111,17 +111,6 @@ for strength in strengths:
     model.set_control(trained_vector, strength, normalize=False)
 
     # Get logprobs instead of generating text
-    if conversation[0]["content"].find("age group") != -1:  # age dataset
-        target_tokens = ["20", "30", "40", "50"]
-        score_token = (
-            "20"  # Use logprob of "20" as the score (higher = more likely young)
-        )
-    else:  # iq dataset
-        target_tokens = ["80", "100", "120", "140"]
-        score_token = (
-            "140"  # Use logprob of "140" as the score (higher = more likely genius)
-        )
-
     logprobs = extract_token_logprobs(
         model, tokenizer, scenario, target_tokens, normalize=True
     )
