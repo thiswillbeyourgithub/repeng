@@ -25,7 +25,7 @@ from repeng import (
     ControlModel,
     __VERSION__ as repeng_version,
 )
-from repeng.research.shared import extract_first_number, get_data
+from repeng.research.shared import extract_first_number, get_data, extract_token_logprobs
 
 from sklearnex import patch_sklearn
 from tqdm import tqdm
@@ -300,214 +300,161 @@ def test_configuration(
 
         # Test all strengths
         scores = {}
-        outputs = {}
+        logprob_data = {}
+
+        # Define target tokens and score token based on dataset
+        if dataset == "age":
+            target_tokens = ["20", "30", "40", "50"]
+            score_token = "20"  # Use logprob of "20" as the score (higher = more likely young)
+        elif dataset == "iq":
+            target_tokens = ["80", "100", "120", "140"]
+            score_token = "140"  # Use logprob of "140" as the score (higher = more likely genius)
+        else:
+            raise ValueError(f"Unknown dataset: {dataset}")
 
         for strength in strengths:
             logger.info(f"Testing strength: {strength}")
             control_model.set_control(trained_vector, strength, normalize=normalize)
 
-            input_tokens = tokenizer(scenario, return_tensors="pt").to(
-                control_model.device
+            # Extract logprobs for target tokens instead of generating text
+            logprobs = extract_token_logprobs(
+                control_model, tokenizer, scenario, target_tokens, normalize=True
             )
 
-            # Generate with scores to compute log probabilities
-            generation_output = control_model.generate(
-                **input_tokens,
-                do_sample=False,
-                max_new_tokens=256,
-                repetition_penalty=1.1,
-                return_dict_in_generate=True,
-                output_scores=True,
-            )
+            # Use the logprob of the score token as the score
+            score = logprobs[score_token]
+            scores[strength] = score
+            logprob_data[strength] = logprobs
 
-            out = generation_output.sequences
-            generation_scores = (
-                generation_output.scores
-            )  # List of tensors, one per generated token
+            logger.info(f"  Logprobs: {logprobs}")
+            logger.info(f"  Score ({score_token}): {score}")
 
-            output = tokenizer.decode(out.squeeze(), skip_special_tokens=True).strip()
-            outputs[strength] = output
-
-            # logger.info the actual LLM output to screen
-            logger.info(f"  Output: {output}")
-
-            # Compute average log probability of generated tokens
-            if generation_scores:
-                # Convert scores to log probabilities and compute average
-                log_probs = []
-                generated_token_ids = out[0][
-                    input_tokens["input_ids"].shape[1] :
-                ]  # Get only newly generated tokens
-
-                for i, score_tensor in enumerate(generation_scores):
-                    if i < len(generated_token_ids):
-                        # Get log probabilities for this step
-                        log_prob_dist = F.log_softmax(score_tensor[0], dim=-1)
-                        # Get log prob of the actual generated token
-                        token_log_prob = log_prob_dist[generated_token_ids[i]].item()
-                        log_probs.append(token_log_prob)
-
-                avg_log_prob = sum(log_probs) / len(log_probs) if log_probs else 0.0
-                logger.info(f"  Average log probability: {avg_log_prob:.4f}")
-            else:
-                avg_log_prob = 0.0
-                logger.info("  No scores returned, average log probability set to 0.0")
-
-            # Log the output text to tensorboard
+            # Log the logprobs to tensorboard
             zones_tag = format_layer_zones_for_filename(layer_zones)
             model_tag = model_name.replace("/", "_").replace("-", "_")
             normalize_tag = "norm" if normalize else "nonorm"
             rescaling_tag = rescaling if rescaling else "norescale"
             thinking_tag = "thinking" if enable_thinking else "nothinking"
+            
+            # Log all target token logprobs
+            logprobs_text = ", ".join([f"{token}: {logprob:.4f}" for token, logprob in logprobs.items()])
             writer.add_text(
-                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}/outputs",
-                f"Strength {strength}: {output} (avg_log_prob: {avg_log_prob:.4f})",
+                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}/logprobs",
+                f"Strength {strength}: {logprobs_text}",
                 global_step=int(strength * strengths_multiplier_tensorboard),
             )
 
-            # Extract score
-            score = extract_first_number(output, dataset)
-            if score is not None:
-                scores[strength] = score
-                logger.info(f"  Extracted score: {score}")
+            # Log individual data point to TensorBoard for native plotting
+            # This creates an interactive plot for this specific configuration
+            writer.add_scalar(
+                "logprob_score_vs_strength",
+                score,
+                global_step=int(strength * strengths_multiplier_tensorboard),
+            )
 
-                # Log individual data point to TensorBoard for native plotting
-                # This creates an interactive plot for this specific configuration
+            # Log individual target token logprobs
+            for token, logprob in logprobs.items():
                 writer.add_scalar(
-                    "extracted_value_vs_strength",
-                    score,
+                    f"individual_logprobs/{token}",
+                    logprob,
                     global_step=int(strength * strengths_multiplier_tensorboard),
                 )
 
-                # Log average log probability to TensorBoard
-                writer.add_scalar(
-                    "avg_log_probability_vs_strength",
-                    avg_log_prob,
-                    global_step=int(strength * strengths_multiplier_tensorboard),
+        # Create plot for this combination - logprobs are always valid (no NaN values)
+        strengths_list = sorted(scores.keys())
+        scores_list = [scores[s] for s in strengths_list]
+
+        logger.info(f"  Creating plot with {len(scores_list)} logprob data points")
+
+        # Debug: logger.info the data being plotted
+        logger.info(f"  Plotting strengths: {strengths_list}")
+        logger.info(f"  Plotting logprob scores: {scores_list}")
+
+        # Calculate correlation between control strength and logprob score
+        try:
+            if len(strengths_list) > 1 and len(scores_list) > 1:
+                correlation_coeff, correlation_p_value = pearsonr(
+                    strengths_list, scores_list
                 )
+                logger.info(
+                    f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})"
+                )
+        except Exception as e:
+            logger.info(f"  Error calculating correlation: {e}")
+            if debug:
+                raise
+            correlation_coeff = 0.0
+            correlation_p_value = 1.0
+
+        # Create the figure
+        fig, ax = plt.subplots(figsize=(12, 8))
+
+        ax.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
+        ax.set_xlabel("Control Strength", fontsize=12)
+        ax.set_ylabel(f"Log Probability of '{score_token}' Token", fontsize=12)
+        ax.set_title(
+            f"Token Log Probability vs Control Strength ({dataset} dataset)\n"
+            f"Method: {method}, Layer zones: {layer_zones}, Normalize: {normalize}, Rescaling: {rescaling}, Thinking: {enable_thinking}\n"
+            f"Model: {model_name}\n"
+            f"Correlation: r={correlation_coeff:.3f}, p={correlation_p_value:.3f}",
+            fontsize=14,
+        )
+        ax.grid(True, alpha=0.3)
+
+        # Fix x-axis to show full range of possible strength values
+        ax.set_xlim(min(strengths), max(strengths))
+        # Set x-axis ticks to show key strength values for better readability
+        ax.set_xticks(
+            [s for s in strengths if s % 0.5 == 0]
+        )  # Show every 0.5 increment
+
+        # Add reference line for no control
+        ax.axvline(x=0, color="g", linestyle="--", alpha=0.5, label="No Control (0)")
+
+        ax.legend()
+        plt.tight_layout()
+
+        # Explicitly draw the figure to ensure it's rendered
+        fig.canvas.draw()
+
+        # Log plot to tensorboard
+        try:
+            writer.add_figure(
+                "logprob_score_plot",
+                fig,
+                global_step=0,
+            )
+            logger.info("  Plot successfully logged to TensorBoard")
+        except Exception as e:
+            logger.info(f"  Error logging plot to TensorBoard: {e}")
+            if debug:
+                raise
+
+        # Save plot
+        zones_tag = format_layer_zones_for_filename(layer_zones)
+        model_tag = model_name.replace("/", "_").replace("-", "_")
+        normalize_tag = "norm" if normalize else "nonorm"
+        rescaling_tag = rescaling if rescaling else "norescale"
+        thinking_tag = "thinking" if enable_thinking else "nothinking"
+        plot_filename = f"./plots/grid_search/logprob_score_{model_tag}_{dataset}_{method}_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}.png"
+        try:
+            fig.savefig(
+                plot_filename, dpi=300, bbox_inches="tight", facecolor="white"
+            )
+            logger.info(f"  Plot saved: {plot_filename}")
+
+            # Check if file was actually created and has content
+            if os.path.exists(plot_filename):
+                file_size = os.path.getsize(plot_filename)
+                logger.info(f"  Plot file size: {file_size} bytes")
             else:
-                scores[strength] = float("nan")
-                logger.info("  No score found in output, treating as NA")
+                logger.info("  Warning: Plot file was not created!")
+        except Exception as e:
+            logger.info(f"  Error saving plot: {e}")
+            if debug:
+                raise
 
-        # Create plot for this combination if we have valid scores
-        # Filter out NaN values for plotting
-        valid_data = [
-            (s, scores[s]) for s in sorted(scores.keys()) if not math.isnan(scores[s])
-        ]
-
-        if valid_data:
-            logger.info(f"  Creating plot with {len(valid_data)} valid data points")
-            strengths_list, scores_list = zip(*valid_data)
-
-            # Debug: logger.info the data being plotted
-            logger.info(f"  Plotting strengths: {strengths_list}")
-            logger.info(f"  Plotting scores: {scores_list}")
-
-            # Calculate correlation between control strength and extracted value
-            try:
-                if len(strengths_list) > 1 and len(scores_list) > 1:
-                    correlation_coeff, correlation_p_value = pearsonr(
-                        strengths_list, scores_list
-                    )
-                    logger.info(
-                        f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})"
-                    )
-            except Exception as e:
-                logger.info(f"  Error calculating correlation: {e}")
-                if debug:
-                    raise
-                correlation_coeff = 0.0
-                correlation_p_value = 1.0
-
-            # Create the figure
-            fig, ax = plt.subplots(figsize=(12, 8))
-
-            ax.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
-            ax.set_xlabel("Control Strength", fontsize=12)
-            ax.set_ylabel("Extracted Value", fontsize=12)
-            ax.set_title(
-                f"Extracted value vs Control Strength ({dataset} dataset)\n"
-                f"Method: {method}, Layer zones: {layer_zones}, Normalize: {normalize}, Rescaling: {rescaling}, Thinking: {enable_thinking}\n"
-                f"Model: {model_name}\n"
-                f"Correlation: r={correlation_coeff:.3f}, p={correlation_p_value:.3f}",
-                fontsize=14,
-            )
-            ax.grid(True, alpha=0.3)
-
-            # Fix x-axis to show full range of possible strength values
-            ax.set_xlim(min(strengths), max(strengths))
-            # Set x-axis ticks to show key strength values for better readability
-            ax.set_xticks(
-                [s for s in strengths if s % 0.5 == 0]
-            )  # Show every 0.5 increment
-
-            # Add dataset-specific reference lines and y-axis limits
-            if dataset == "iq":
-                ax.axhline(
-                    y=100,
-                    color="r",
-                    linestyle="--",
-                    alpha=0.5,
-                    label="Average IQ (100)",
-                )
-                ax.set_ylim(0, 200)  # IQ range from 0 to 200
-            elif dataset == "age":
-                ax.axhline(
-                    y=1990, color="r", linestyle="--", alpha=0.5, label="Year 1990"
-                )
-                ax.axhline(
-                    y=2000, color="g", linestyle="--", alpha=0.5, label="Year 2000"
-                )
-                # No y-axis limits set to ensure all data points are visible
-
-            ax.legend()
-            plt.tight_layout()
-
-            # Explicitly draw the figure to ensure it's rendered
-            fig.canvas.draw()
-
-            # Log plot to tensorboard
-            try:
-                writer.add_figure(
-                    "extracted_value_score_plot",
-                    fig,
-                    global_step=0,
-                )
-                logger.info("  Plot successfully logged to TensorBoard")
-            except Exception as e:
-                logger.info(f"  Error logging plot to TensorBoard: {e}")
-                if debug:
-                    raise
-
-            # Save plot
-            zones_tag = format_layer_zones_for_filename(layer_zones)
-            model_tag = model_name.replace("/", "_").replace("-", "_")
-            normalize_tag = "norm" if normalize else "nonorm"
-            rescaling_tag = rescaling if rescaling else "norescale"
-            thinking_tag = "thinking" if enable_thinking else "nothinking"
-            plot_filename = f"./plots/grid_search/extracted_value_{model_tag}_{dataset}_{method}_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}.png"
-            try:
-                fig.savefig(
-                    plot_filename, dpi=300, bbox_inches="tight", facecolor="white"
-                )
-                logger.info(f"  Plot saved: {plot_filename}")
-
-                # Check if file was actually created and has content
-                if os.path.exists(plot_filename):
-                    file_size = os.path.getsize(plot_filename)
-                    logger.info(f"  Plot file size: {file_size} bytes")
-                else:
-                    logger.info("  Warning: Plot file was not created!")
-            except Exception as e:
-                logger.info(f"  Error saving plot: {e}")
-                if debug:
-                    raise
-
-            plt.close(fig)  # Close the specific figure to save memory
-        else:
-            logger.info(
-                "  No valid scores to plot for this combination - all values are NaN"
-            )
+        plt.close(fig)  # Close the specific figure to save memory
 
         # Reset model control and unwrap to restore original state
         control_model.reset()
@@ -535,7 +482,7 @@ def test_configuration(
             "rescaling": rescaling,
             "enable_thinking": enable_thinking,
             "scores": scores,
-            "outputs": outputs,
+            "logprob_data": logprob_data,
             "correlation_coeff": correlation_coeff,
             "correlation_p_value": correlation_p_value,
             "success": True,
@@ -556,7 +503,7 @@ def test_configuration(
             "rescaling": rescaling,
             "enable_thinking": enable_thinking,
             "scores": {},
-            "outputs": {},
+            "logprob_data": {},
             "correlation_coeff": 0.0,
             "correlation_p_value": 1.0,
             "success": False,
@@ -700,29 +647,23 @@ def main(
         if result["success"] and result["scores"]:
             scores = result["scores"]
 
-            # Log individual points to tensorboard (only valid scores, no NaN values)
+            # Log individual points to tensorboard (logprobs are always valid)
             zones_tag = format_layer_zones_for_filename(layer_zones)
             model_tag = model_name.replace("/", "_").replace("-", "_")
             for strength, score in scores.items():
-                if not math.isnan(score):
-                    main_writer.add_scalar(
-                        f"{model_tag}_{dataset}_{method}/zones_{zones_tag}/extracted_value",
-                        score,
-                        strength,
-                    )
+                main_writer.add_scalar(
+                    f"{model_tag}_{dataset}_{method}/zones_{zones_tag}/logprob_score",
+                    score,
+                    strength,
+                )
 
             # Log summary statistics to tensorboard
             if result["success"] and result["scores"]:
                 scores = result["scores"]
-                # Filter out NaN values for statistics
-                valid_data = [
-                    (s, scores[s])
-                    for s in sorted(scores.keys())
-                    if not math.isnan(scores[s])
-                ]
-
-                if valid_data:
-                    strengths_list, scores_list = zip(*valid_data)
+                # Logprobs are always valid (no NaN values to filter)
+                strengths_list = sorted(scores.keys())
+                scores_list = [scores[s] for s in strengths_list]
+                
                 mean_score = sum(scores_list) / len(scores_list)
                 max_score = max(scores_list)
                 min_score = min(scores_list)
@@ -756,13 +697,13 @@ def main(
                     hparam_dict[f"zone_{zone_idx}_width"] = zone[1] - zone[0]
 
                 metric_dict = {
-                    "hparam/mean_score": mean_score,
-                    "hparam/max_score": max_score,
-                    "hparam/min_score": min_score,
-                    "hparam/score_range": score_range,
+                    "hparam/mean_logprob_score": mean_score,
+                    "hparam/max_logprob_score": max_score,
+                    "hparam/min_logprob_score": min_score,
+                    "hparam/logprob_score_range": score_range,
                     "hparam/correlation_coeff": correlation_coeff,
                     "hparam/correlation_p_value": correlation_p_value,
-                    "hparam/num_valid_scores": len(scores_list),
+                    "hparam/num_logprob_scores": len(scores_list),
                 }
 
                 # Log hyperparameters with metrics - this allows filtering in TensorBoard
@@ -781,22 +722,22 @@ def main(
                 # Use combination index as the x-axis for summary stats
                 model_tag = model_name.replace("/", "_").replace("-", "_")
                 main_writer.add_scalar(
-                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/mean_score",
+                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/mean_logprob_score",
                     mean_score,
                     i,
                 )
                 main_writer.add_scalar(
-                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/max_score",
+                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/max_logprob_score",
                     max_score,
                     i,
                 )
                 main_writer.add_scalar(
-                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/min_score",
+                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/min_logprob_score",
                     min_score,
                     i,
                 )
                 main_writer.add_scalar(
-                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/score_range",
+                    f"summary/{model_tag}_{dataset}_{method}_zones_{zones_tag}/logprob_score_range",
                     score_range,
                     i,
                 )
@@ -813,15 +754,15 @@ def main(
 
                 # Also log by method for comparison across layer zones
                 main_writer.add_scalar(
-                    f"by_method/{model_tag}_{dataset}_{method}/mean_score",
+                    f"by_method/{model_tag}_{dataset}_{method}/mean_logprob_score",
                     mean_score,
                     i,
                 )
                 main_writer.add_scalar(
-                    f"by_method/{model_tag}_{dataset}_{method}/max_score", max_score, i
+                    f"by_method/{model_tag}_{dataset}_{method}/max_logprob_score", max_score, i
                 )
                 main_writer.add_scalar(
-                    f"by_method/{model_tag}_{dataset}_{method}/score_range",
+                    f"by_method/{model_tag}_{dataset}_{method}/logprob_score_range",
                     score_range,
                     i,
                 )
@@ -866,10 +807,10 @@ def main(
                 if scores:
                     scores_list = list(scores.values())
                     strengths_list = list(scores.keys())
-                    f.write(f"  Scores found: {len(scores)}/{len(strengths)}\n")
-                    f.write(f"  Mean score: {sum(scores_list)/len(scores_list):.2f}\n")
+                    f.write(f"  Logprob scores found: {len(scores)}/{len(strengths)}\n")
+                    f.write(f"  Mean logprob score: {sum(scores_list)/len(scores_list):.4f}\n")
                     f.write(
-                        f"  Score range: {min(scores_list):.2f} - {max(scores_list):.2f}\n"
+                        f"  Logprob score range: {min(scores_list):.4f} - {max(scores_list):.4f}\n"
                     )
 
                     # Calculate and report correlation
@@ -890,7 +831,7 @@ def main(
                         if debug:
                             raise
                 else:
-                    f.write("  No valid scores extracted\n")
+                    f.write("  No logprob scores found\n")
             else:
                 f.write(f"  Error: {result.get('error', 'Unknown error')}\n")
 
