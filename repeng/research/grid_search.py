@@ -138,8 +138,8 @@ param_grid = {
 }
 
 # Strengths to test (same as playground.py but using standard range)
-# strengths = FINE_GRAINED_STRENGTHS
-strengths = SHORT_TEST_STRENGTHS
+strengths = FINE_GRAINED_STRENGTHS
+# strengths = SHORT_TEST_STRENGTHS
 
 # check that with the way we turn strengths into global_step for tensorboard we don't have collisions, adjust the multiplier if needed
 assert len(strengths) == len(set(strengths)), "Found duplicate elements of strengths"
