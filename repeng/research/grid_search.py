@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch.utils.tensorboard import SummaryWriter
 from sklearn.model_selection import ParameterGrid
-from TaguchiGridSearchConverter import TaguchiGridSearchConverter
+from GridSearchReductor import GridSearchReductor
 from scipy.stats import pearsonr
 
 from repeng import (
@@ -525,7 +525,7 @@ grid_search_script_version = "1.0.0"
 
 def main(
     debug: bool = False,
-    taguchi_reduction: bool = False,
+    grid_reduction: bool = False,
     batch_size: int = 1,
     cuda_visible_devices: str | None = None,
 ):
@@ -550,8 +550,8 @@ def main(
     debug : bool, default=False
         If True, raises exceptions instead of logging them and continuing.
         Useful for debugging specific configuration failures.
-    taguchi_reduction : bool, default=False
-        If True, uses Taguchi orthogonal arrays to reduce the parameter grid size
+    grid_reduction : bool, default=False
+        If True, uses GridSearchReductor to reduce the parameter grid size
         while maintaining good coverage of the parameter space. This significantly
         reduces computational cost but may miss some parameter interactions.
     batch_size : int, default=1
@@ -593,21 +593,21 @@ def main(
     # Grid search
     grid = ParameterGrid(param_grid)
 
-    if taguchi_reduction:
-        # Use taguchi arrays to reduce the size of the grid
-        converter = TaguchiGridSearchConverter()
+    if grid_reduction:
+        # Use GridSearchReductor to reduce the size of the grid
+        converter = GridSearchReductor()
         old_grid = grid
-        grid: List[Dict] = converter.fit_transform(old_grid)
+        grid: List[Dict] = converter.fit_transform(param_grid)
         assert len(grid) <= len(old_grid)
         total_combinations = len(grid)
 
         logger.info(
-            f"Starting grid search with {total_combinations} combinations (before taguchi: {len(old_grid)})"
+            f"Starting grid search with {total_combinations} combinations (before reduction: {len(old_grid)})"
         )
     else:
         total_combinations = len(grid)
         logger.info(
-            f"Starting grid search with {total_combinations} combinations (no taguchi reduction)"
+            f"Starting grid search with {total_combinations} combinations (no grid reduction)"
         )
 
     # sort the grid to make sure that we switch model as little as possible
