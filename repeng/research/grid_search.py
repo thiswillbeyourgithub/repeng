@@ -528,6 +528,7 @@ def main(
     grid_reduction: bool = False,
     batch_size: int = 1,
     cuda_visible_devices: str | None = None,
+    reduction_factor: float = 0.5,
 ):
     """
     Run comprehensive grid search over control vector configurations.
@@ -559,6 +560,10 @@ def main(
     cuda_visible_devices : str | None, default=None
         If provided, sets CUDA_VISIBLE_DEVICES environment variable to control
         which GPU(s) to use. For example: "0" for GPU 0, "0,1" for GPUs 0 and 1.
+    reduction_factor : float, default=0.5
+        When grid_reduction is True, the factor by which to reduce the parameter
+        grid size. Must be between 0 and 1, where smaller values result in
+        smaller reduced grids.
 
     Notes
     -----
@@ -597,7 +602,7 @@ def main(
         # Use GridSearchReductor to reduce the size of the grid
         converter = GridSearchReductor()
         old_grid = grid
-        grid: List[Dict] = converter.fit_transform(param_grid, reduction_factor=0.5)
+        grid: List[Dict] = converter.fit_transform(param_grid, reduction_factor=reduction_factor)
         assert len(grid) <= len(old_grid)
         total_combinations = len(grid)
 
