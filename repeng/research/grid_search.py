@@ -602,7 +602,9 @@ def main(
         # Use GridSearchReductor to reduce the size of the grid
         converter = GridSearchReductor()
         old_grid = grid
-        grid: List[Dict] = converter.fit_transform(param_grid, reduction_factor=reduction_factor)
+        grid: List[Dict] = converter.fit_transform(
+            param_grid, reduction_factor=reduction_factor
+        )
         assert len(grid) <= len(old_grid)
         total_combinations = len(grid)
 
