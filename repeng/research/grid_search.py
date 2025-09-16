@@ -381,15 +381,18 @@ def test_configuration(
                 correlation_coeff, correlation_p_value = pearsonr(
                     strengths_list, scores_list
                 )
+                correlation_coeff_squared = correlation_coeff**2
                 logger.info(
                     f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})"
                 )
+                logger.info(f"  R-squared: {correlation_coeff_squared:.4f}")
         except Exception as e:
             logger.info(f"  Error calculating correlation: {e}")
             if debug:
                 raise
             correlation_coeff = 0.0
             correlation_p_value = 1.0
+            correlation_coeff_squared = 0.0
 
         # Create the figure
         fig, ax = plt.subplots(figsize=(12, 8))
@@ -428,6 +431,11 @@ def test_configuration(
             writer.add_scalar(
                 f"correlation/correlation_coeff",
                 correlation_coeff,
+                global_step=0,
+            )
+            writer.add_scalar(
+                f"correlation/correlation_coeff_squared",
+                correlation_coeff_squared,
                 global_step=0,
             )
             writer.add_scalar(
@@ -570,6 +578,7 @@ def test_configuration(
             "scores": scores,
             "logprob_data": logprob_data,
             "correlation_coeff": correlation_coeff,
+            "correlation_coeff_squared": correlation_coeff_squared,
             "correlation_p_value": correlation_p_value,
             "success": True,
         }
@@ -591,6 +600,7 @@ def test_configuration(
             "scores": {},
             "logprob_data": {},
             "correlation_coeff": 0.0,
+            "correlation_coeff_squared": 0.0,
             "correlation_p_value": 1.0,
             "success": False,
             "error": str(e),
@@ -771,6 +781,7 @@ def main(
 
                 # Get correlation values from the result
                 correlation_coeff = result.get("correlation_coeff", 0.0)
+                correlation_coeff_squared = result.get("correlation_coeff_squared", 0.0)
                 correlation_p_value = result.get("correlation_p_value", 1.0)
 
                 # Log hyperparameters and metrics for easy filtering
@@ -802,6 +813,7 @@ def main(
                     "hparam/min_logprob_score": min_score,
                     "hparam/logprob_score_range": score_range,
                     "hparam/correlation_coeff": correlation_coeff,
+                    "hparam/correlation_coeff_squared": correlation_coeff_squared,
                     "hparam/correlation_p_value": correlation_p_value,
                     "hparam/num_logprob_scores": len(scores_list),
                 }
@@ -855,6 +867,11 @@ def main(
                     i,
                 )
                 main_writer.add_scalar(
+                    f"summary/{full_config_tag}/correlation_coeff_squared",
+                    correlation_coeff_squared,
+                    i,
+                )
+                main_writer.add_scalar(
                     f"summary/{full_config_tag}/correlation_p_value",
                     correlation_p_value,
                     i,
@@ -867,12 +884,22 @@ def main(
                 main_writer.add_scalar(
                     f"by_model/{model_tag}/correlation_coeff", correlation_coeff, i
                 )
+                main_writer.add_scalar(
+                    f"by_model/{model_tag}/correlation_coeff_squared",
+                    correlation_coeff_squared,
+                    i,
+                )
 
                 main_writer.add_scalar(
                     f"by_method/{method}/mean_logprob_score", mean_score, i
                 )
                 main_writer.add_scalar(
                     f"by_method/{method}/correlation_coeff", correlation_coeff, i
+                )
+                main_writer.add_scalar(
+                    f"by_method/{method}/correlation_coeff_squared",
+                    correlation_coeff_squared,
+                    i,
                 )
 
                 main_writer.add_scalar(
@@ -881,6 +908,11 @@ def main(
                 main_writer.add_scalar(
                     f"by_dataset/{dataset}/correlation_coeff", correlation_coeff, i
                 )
+                main_writer.add_scalar(
+                    f"by_dataset/{dataset}/correlation_coeff_squared",
+                    correlation_coeff_squared,
+                    i,
+                )
 
                 main_writer.add_scalar(
                     f"by_normalize/{normalize_tag}/mean_logprob_score", mean_score, i
@@ -888,6 +920,11 @@ def main(
                 main_writer.add_scalar(
                     f"by_normalize/{normalize_tag}/correlation_coeff",
                     correlation_coeff,
+                    i,
+                )
+                main_writer.add_scalar(
+                    f"by_normalize/{normalize_tag}/correlation_coeff_squared",
+                    correlation_coeff_squared,
                     i,
                 )
 
@@ -899,6 +936,11 @@ def main(
                     correlation_coeff,
                     i,
                 )
+                main_writer.add_scalar(
+                    f"by_rescaling/{rescaling_tag}/correlation_coeff_squared",
+                    correlation_coeff_squared,
+                    i,
+                )
 
                 main_writer.add_scalar(
                     f"by_thinking/{thinking_tag}/mean_logprob_score", mean_score, i
@@ -906,6 +948,11 @@ def main(
                 main_writer.add_scalar(
                     f"by_thinking/{thinking_tag}/correlation_coeff",
                     correlation_coeff,
+                    i,
+                )
+                main_writer.add_scalar(
+                    f"by_thinking/{thinking_tag}/correlation_coeff_squared",
+                    correlation_coeff_squared,
                     i,
                 )
 
@@ -928,6 +975,11 @@ def main(
                 main_writer.add_scalar(
                     f"by_model_dataset_method/{model_tag}_{dataset}_{method}/correlation_coeff",
                     correlation_coeff,
+                    i,
+                )
+                main_writer.add_scalar(
+                    f"by_model_dataset_method/{model_tag}_{dataset}_{method}/correlation_coeff_squared",
+                    correlation_coeff_squared,
                     i,
                 )
 
@@ -980,9 +1032,11 @@ def main(
                             correlation_coeff, correlation_p_value = pearsonr(
                                 strengths_list, scores_list
                             )
+                            correlation_coeff_squared = correlation_coeff**2
                             f.write(
                                 f"  Correlation coefficient: {correlation_coeff:.4f} (p-value: {correlation_p_value:.4f})\n"
                             )
+                            f.write(f"  R-squared: {correlation_coeff_squared:.4f}\n")
                         else:
                             f.write(
                                 "  Correlation coefficient: N/A (insufficient data)\n"
