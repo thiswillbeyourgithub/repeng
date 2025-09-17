@@ -409,59 +409,59 @@ def compute_direction(
         # Return the first (and only) dictionary atom, shape (n_features,)
         direction = dict_model.components_.astype(np.float32).squeeze(axis=0)
     elif method == "pcaw_svd":
-        # Experimental: Importance Sampling, weight by completion likelihood to get online hidden states 
-        # (rather than offline policy rollouts that are less relevant to the model). 
-        # See for example https://arxiv.org/abs/2410.04350 or 
+        # Experimental: Importance Sampling, weight by completion likelihood to get online hidden states
+        # (rather than offline policy rollouts that are less relevant to the model).
+        # See for example https://arxiv.org/abs/2410.04350 or
         # https://www.research.ed.ac.uk/files/216243626/Importance_sampling_HANNA_DOA21122021_VOR_CC_BY.pdf
         if completion_log_probs is None:
             raise ValueError("completion_log_probs required for pcaw_svd method")
-        
+
         train = hidden_states[::2] - hidden_states[1::2]
         logps = completion_log_probs
         weights = (logps[::2] + logps[1::2]) / 2
         # Normalize to [0, 2] range with mean ≈ 1
         weights = (weights - weights.min()) / (weights.max() - weights.min()) * 2.0
-        
+
         # Weighted PCA using SVD
         weights_flat = weights.flatten()
         weights_norm = weights_flat / weights_flat.sum()
-        
+
         # Weighted mean and centering
         weighted_mean = np.average(train, axis=0, weights=weights_flat)
         train_centered = train - weighted_mean
-        
+
         # Apply sqrt of weights to data (for weighted SVD)
         train_weighted = train_centered * np.sqrt(weights_norm).reshape(-1, 1)
-        
+
         # Use SVD instead of covariance + eigh
         # This avoids forming the 4096×4096 covariance matrix
         U, S, Vt = np.linalg.svd(train_weighted, full_matrices=False)
         direction = Vt[0].astype(np.float32)  # first PC
     elif method == "pcaw_eigen":
-        # Experimental: Importance Sampling, weight by completion likelihood to get online hidden states 
-        # (rather than offline policy rollouts that are less relevant to the model). 
-        # See for example https://arxiv.org/abs/2410.04350 or 
+        # Experimental: Importance Sampling, weight by completion likelihood to get online hidden states
+        # (rather than offline policy rollouts that are less relevant to the model).
+        # See for example https://arxiv.org/abs/2410.04350 or
         # https://www.research.ed.ac.uk/files/216243626/Importance_sampling_HANNA_DOA21122021_VOR_CC_BY.pdf
         if completion_log_probs is None:
             raise ValueError("completion_log_probs required for pcaw_eigen method")
-        
+
         train = hidden_states[::2] - hidden_states[1::2]
         logps = completion_log_probs
         weights = (logps[::2] + logps[1::2]) / 2
         # Normalize to [0, 2] range with mean ≈ 1
         weights = (weights - weights.min()) / (weights.max() - weights.min()) * 2.0
-        
+
         # Weighted PCA using eigendecomposition
         weights_flat = weights.flatten()
         weights_norm = weights_flat / weights_flat.sum()
-        
+
         # Weighted mean and centering
         weighted_mean = np.average(train, axis=0, weights=weights_flat)
         train_centered = train - weighted_mean
-        
+
         # Weighted covariance
         cov_matrix = (train_centered.T * weights_norm) @ train_centered
-        
+
         # Get first PC via eigendecomposition
         eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
         direction = eigenvectors[:, -1].astype(np.float32)
@@ -473,7 +473,9 @@ def compute_direction(
         # Calculate typical magnitude of activations in this layer
         positive_states = hidden_states[::2]
         negative_states = hidden_states[1::2]
-        reference_magnitude = np.linalg.norm(np.mean(positive_states, axis=0) - np.mean(negative_states, axis=0))
+        reference_magnitude = np.linalg.norm(
+            np.mean(positive_states, axis=0) - np.mean(negative_states, axis=0)
+        )
 
         # Normalize direction to unit length, then scale by typical magnitude
         direction_norm = np.linalg.norm(direction, ord=2)
@@ -704,7 +706,12 @@ def read_representations(
             counts > 1
         ), f"Duplicates hidden layer activation found. Counts: {counts}"
 
-        directions[layer] = compute_direction(h, method, rescaling, completion_log_probs if method in ["pcaw_svd", "pcaw_eigen"] else None)
+        directions[layer] = compute_direction(
+            h,
+            method,
+            rescaling,
+            completion_log_probs if method in ["pcaw_svd", "pcaw_eigen"] else None,
+        )
 
         if method not in ["mean", "median"]:
             # calculate sign as pca can return a direction vector that points
@@ -781,6 +788,7 @@ def batched_get_hiddens(
 
             # Get log prob for each actual token (excluding padding)
             batch_log_probs = []
+            batch_completion_log_probs = []
             for i in range(len(batch)):
                 # Get log probs for this sequence's actual tokens
                 seq_len = attention_mask[i].sum().item()
@@ -799,6 +807,23 @@ def batched_get_hiddens(
                 padded_log_probs[: len(token_log_probs)] = token_log_probs
                 batch_log_probs.append(padded_log_probs.cpu().float().numpy())
 
+                # Compute completion log probabilities (for weighted PCA methods)
+                lprobs = log_probs[i]
+                label_mask = attention_mask[i, 1:seq_len]
+                labels = input_ids[i, 1:seq_len]
+                lprobs_for_inputs = (
+                    lprobs[: seq_len - 1, :]
+                    .gather(dim=-1, index=labels.unsqueeze(-1))
+                    .squeeze(-1)
+                )
+                # adjust for length IPO style
+                avg_logp_completion = (
+                    lprobs_for_inputs * label_mask.float()
+                ).sum() / label_mask.sum()
+                batch_completion_log_probs.append(
+                    avg_logp_completion.cpu().float().numpy()
+                )
+
                 # Get hidden states for last non-padding token
                 last_non_padding_index = (
                     attention_mask[i].nonzero(as_tuple=True)[0][-1].item()
@@ -814,9 +839,14 @@ def batched_get_hiddens(
                     hidden_states[layer].append(hidden_state)
 
             all_log_probs.extend(batch_log_probs)
+            completion_log_probs.extend(batch_completion_log_probs)
             del out
 
-    return {k: np.vstack(v) for k, v in hidden_states.items()}, np.vstack(all_log_probs), np.array(completion_log_probs)
+    return (
+        {k: np.vstack(v) for k, v in hidden_states.items()},
+        np.vstack(all_log_probs),
+        np.array(completion_log_probs),
+    )
 
 
 def batched_get_hiddens_cached(
@@ -992,10 +1022,18 @@ def batched_get_hiddens_cached(
                 lprobs = log_probs[i]
                 label_mask = attention_mask[i, 1:seq_len]
                 labels = input_ids[i, 1:seq_len]
-                lprobs_for_inputs = lprobs[:seq_len-1, :].gather(dim=-1, index=labels.unsqueeze(-1)).squeeze(-1)
+                lprobs_for_inputs = (
+                    lprobs[: seq_len - 1, :]
+                    .gather(dim=-1, index=labels.unsqueeze(-1))
+                    .squeeze(-1)
+                )
                 # adjust for length IPO style
-                avg_logp_completion = (lprobs_for_inputs * label_mask.float()).sum() / label_mask.sum()
-                batch_completion_log_probs.append(avg_logp_completion.cpu().float().numpy())
+                avg_logp_completion = (
+                    lprobs_for_inputs * label_mask.float()
+                ).sum() / label_mask.sum()
+                batch_completion_log_probs.append(
+                    avg_logp_completion.cpu().float().numpy()
+                )
 
             del out
 
