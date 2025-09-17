@@ -287,10 +287,13 @@ def compute_direction(
             "ica_center",
             "dict_diff",
             "dict_center",
+            "pcaw_svd",
+            "pcaw_eigen",
         ],
         typing.Callable[[np.ndarray], np.ndarray],
     ],
     rescaling: str | bool,
+    completion_log_probs: np.ndarray | None = None,
 ) -> np.ndarray:
     """
     Compute a direction vector from hidden states using the specified method.
@@ -405,6 +408,63 @@ def compute_direction(
         dict_model.fit(train)
         # Return the first (and only) dictionary atom, shape (n_features,)
         direction = dict_model.components_.astype(np.float32).squeeze(axis=0)
+    elif method == "pcaw_svd":
+        # Experimental: Importance Sampling, weight by completion likelihood to get online hidden states 
+        # (rather than offline policy rollouts that are less relevant to the model). 
+        # See for example https://arxiv.org/abs/2410.04350 or 
+        # https://www.research.ed.ac.uk/files/216243626/Importance_sampling_HANNA_DOA21122021_VOR_CC_BY.pdf
+        if completion_log_probs is None:
+            raise ValueError("completion_log_probs required for pcaw_svd method")
+        
+        train = hidden_states[::2] - hidden_states[1::2]
+        logps = completion_log_probs
+        weights = (logps[::2] + logps[1::2]) / 2
+        # Normalize to [0, 2] range with mean ≈ 1
+        weights = (weights - weights.min()) / (weights.max() - weights.min()) * 2.0
+        
+        # Weighted PCA using SVD
+        weights_flat = weights.flatten()
+        weights_norm = weights_flat / weights_flat.sum()
+        
+        # Weighted mean and centering
+        weighted_mean = np.average(train, axis=0, weights=weights_flat)
+        train_centered = train - weighted_mean
+        
+        # Apply sqrt of weights to data (for weighted SVD)
+        train_weighted = train_centered * np.sqrt(weights_norm).reshape(-1, 1)
+        
+        # Use SVD instead of covariance + eigh
+        # This avoids forming the 4096×4096 covariance matrix
+        U, S, Vt = np.linalg.svd(train_weighted, full_matrices=False)
+        direction = Vt[0].astype(np.float32)  # first PC
+    elif method == "pcaw_eigen":
+        # Experimental: Importance Sampling, weight by completion likelihood to get online hidden states 
+        # (rather than offline policy rollouts that are less relevant to the model). 
+        # See for example https://arxiv.org/abs/2410.04350 or 
+        # https://www.research.ed.ac.uk/files/216243626/Importance_sampling_HANNA_DOA21122021_VOR_CC_BY.pdf
+        if completion_log_probs is None:
+            raise ValueError("completion_log_probs required for pcaw_eigen method")
+        
+        train = hidden_states[::2] - hidden_states[1::2]
+        logps = completion_log_probs
+        weights = (logps[::2] + logps[1::2]) / 2
+        # Normalize to [0, 2] range with mean ≈ 1
+        weights = (weights - weights.min()) / (weights.max() - weights.min()) * 2.0
+        
+        # Weighted PCA using eigendecomposition
+        weights_flat = weights.flatten()
+        weights_norm = weights_flat / weights_flat.sum()
+        
+        # Weighted mean and centering
+        weighted_mean = np.average(train, axis=0, weights=weights_flat)
+        train_centered = train - weighted_mean
+        
+        # Weighted covariance
+        cov_matrix = (train_centered.T * weights_norm) @ train_centered
+        
+        # Get first PC via eigendecomposition
+        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
+        direction = eigenvectors[:, -1].astype(np.float32)
     else:
         raise ValueError(f"unknown method {method}")
 
@@ -445,6 +505,8 @@ def read_representations(
             "ica_center",
             "dict_diff",
             "dict_center",
+            "pcaw_svd",
+            "pcaw_eigen",
         ],
         typing.Callable[[np.ndarray], np.ndarray],
     ] = "pca_diff",
@@ -467,7 +529,7 @@ def read_representations(
         batch_size (int, optional): The maximum batch size for training.
             Defaults to 32. Try reducing this if you're running out of memory.
         method (str | Callable, optional): The training method to use. Can be either
-            "pca_diff", "pca_center", "mean", "median", "umap", "umap_densmap", "ica_diff", "ica_center", "dict_diff", "dict_center", or a callable that takes hidden states
+            "pca_diff", "pca_center", "mean", "median", "umap", "umap_densmap", "ica_diff", "ica_center", "dict_diff", "dict_center", "pcaw_svd", "pcaw_eigen", or a callable that takes hidden states
             array of shape (n_samples, hidden_dim) and returns a direction vector
             of shape (hidden_dim,). Defaults to "pca_diff".
         sae (Sae | None, optional): Optional SAE to use for transforming hidden states
@@ -533,7 +595,7 @@ def read_representations(
     if cache_path is None:
         # Original behavior - store all activation layers in memory
         logger.debug("No cache path provided, computing activations in memory")
-        layer_hiddens, log_probs = batched_get_hiddens(
+        layer_hiddens, log_probs, completion_log_probs = batched_get_hiddens(
             model=model,
             tokenizer=tokenizer,
             inputs=train_strs,
@@ -566,6 +628,11 @@ def read_representations(
         if output_training_avg_logprob:
             with h5py.File(cache_file, "r") as f:
                 log_probs = f[group_path]["log_probs"][:]
+
+        # Load completion log probabilities from cache if needed
+        if method in ["pcaw_svd", "pcaw_eigen"]:
+            with h5py.File(cache_file, "r") as f:
+                completion_log_probs = f[group_path]["completion_log_probs"][:]
 
         # SAE transformation with caching
         if sae is not None:
@@ -637,7 +704,7 @@ def read_representations(
             counts > 1
         ), f"Duplicates hidden layer activation found. Counts: {counts}"
 
-        directions[layer] = compute_direction(h, method, rescaling)
+        directions[layer] = compute_direction(h, method, rescaling, completion_log_probs if method in ["pcaw_svd", "pcaw_eigen"] else None)
 
         if method not in ["mean", "median"]:
             # calculate sign as pca can return a direction vector that points
@@ -682,7 +749,7 @@ def batched_get_hiddens(
     inputs: list[str],
     hidden_layers: list[int],
     batch_size: int,
-) -> tuple[dict[int, np.ndarray], np.ndarray]:
+) -> tuple[dict[int, np.ndarray], np.ndarray, np.ndarray]:
     """
     Using the given model and tokenizer, pass the inputs through the model and get the hidden
     states for each layer in `hidden_layers` for the last token, plus log probabilities for all tokens.
@@ -696,6 +763,7 @@ def batched_get_hiddens(
     ]
     hidden_states = {layer: [] for layer in hidden_layers}
     all_log_probs = []
+    completion_log_probs = []
 
     with torch.no_grad():
         for batch in tqdm.tqdm(batched_inputs, desc="Computing activations"):
@@ -748,7 +816,7 @@ def batched_get_hiddens(
             all_log_probs.extend(batch_log_probs)
             del out
 
-    return {k: np.vstack(v) for k, v in hidden_states.items()}, np.vstack(all_log_probs)
+    return {k: np.vstack(v) for k, v in hidden_states.items()}, np.vstack(all_log_probs), np.array(completion_log_probs)
 
 
 def batched_get_hiddens_cached(
@@ -847,6 +915,17 @@ def batched_get_hiddens_cached(
                 fillvalue=0.0,
             )
 
+            # Initialize completion log probabilities dataset
+            f.create_dataset(
+                f"{group_path}/completion_log_probs",
+                shape=(len(inputs),),
+                dtype=np.float32,
+                compression="lzf",
+                shuffle=True,
+                chunks=True,
+                fillvalue=0.0,
+            )
+
             # Initialize done flag as False
             f.create_dataset(f"{group_path}/done", data=False)
 
@@ -875,6 +954,7 @@ def batched_get_hiddens_cached(
             # Collect batch results by layer and log probs
             batch_hiddens = {layer: [] for layer in hidden_layers}
             batch_log_probs = []
+            batch_completion_log_probs = []
 
             for i in range(batch_size_actual):
                 last_non_padding_index = (
@@ -908,6 +988,15 @@ def batched_get_hiddens_cached(
                 padded_log_probs[: len(token_log_probs)] = token_log_probs
                 batch_log_probs.append(padded_log_probs.cpu().float().numpy())
 
+                # Collect completion log probabilities
+                lprobs = log_probs[i]
+                label_mask = attention_mask[i, 1:seq_len]
+                labels = input_ids[i, 1:seq_len]
+                lprobs_for_inputs = lprobs[:seq_len-1, :].gather(dim=-1, index=labels.unsqueeze(-1)).squeeze(-1)
+                # adjust for length IPO style
+                avg_logp_completion = (lprobs_for_inputs * label_mask.float()).sum() / label_mask.sum()
+                batch_completion_log_probs.append(avg_logp_completion.cpu().float().numpy())
+
             del out
 
             # Write batch results to h5py
@@ -924,6 +1013,12 @@ def batched_get_hiddens_cached(
                 f[f"{group_path}/log_probs"][
                     batch_start_idx : batch_start_idx + batch_size_actual
                 ] = log_prob_data
+
+                # Store completion log probabilities
+                completion_log_prob_data = np.array(batch_completion_log_probs)
+                f[f"{group_path}/completion_log_probs"][
+                    batch_start_idx : batch_start_idx + batch_size_actual
+                ] = completion_log_prob_data
 
             batch_start_idx += batch_size_actual
 
