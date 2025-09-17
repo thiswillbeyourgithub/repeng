@@ -724,7 +724,9 @@ def main(
 
     all_results = []
 
-    for i, params in enumerate(tqdm(grid, desc="Grid Search Progress", colour="green")):
+    for i, params in enumerate(
+        tqdm(grid, desc="Grid Search Progress", colour="magenta")
+    ):
         model_name = params["model_name"]
         method = params["method"]
         dataset = params["dataset"]
