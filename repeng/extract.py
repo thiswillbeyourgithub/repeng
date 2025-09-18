@@ -471,11 +471,7 @@ def compute_direction(
     # Apply rescaling if requested
     if rescaling == "layer_magnitude":
         # Calculate typical magnitude of activations in this layer
-        positive_states = hidden_states[::2]
-        negative_states = hidden_states[1::2]
-        reference_magnitude = np.linalg.norm(
-            np.mean(positive_states, axis=0) - np.mean(negative_states, axis=0)
-        )
+        reference_magnitude = np.median([np.linalg.norm(activation) for activation in hidden_states])
 
         # Normalize direction to unit length, then scale by typical magnitude
         direction_norm = np.linalg.norm(direction, ord=2)
