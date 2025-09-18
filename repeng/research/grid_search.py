@@ -320,7 +320,25 @@ def test_configuration(
             logger.info(f"Testing strength: {strength}")
             control_model.set_control(trained_vector, strength, normalize=normalize)
 
-            # Extract logprobs for target tokens instead of generating text
+            # Generate actual text response to capture full model behavior
+            input_ids = tokenizer.encode(scenario, return_tensors="pt")
+            if hasattr(control_model, "device"):
+                input_ids = input_ids.to(control_model.device)
+
+            # Generate text with the controlled model
+            with torch.no_grad():
+                generated_ids = control_model.generate(
+                    input_ids,
+                    max_new_tokens=50,
+                    do_sample=False,  # Use deterministic generation for consistency
+                    pad_token_id=tokenizer.eos_token_id,
+                )
+
+            # Extract only the newly generated tokens (remove the input prompt)
+            new_tokens = generated_ids[0][len(input_ids[0]) :]
+            generated_text = tokenizer.decode(new_tokens, skip_special_tokens=True)
+
+            # Extract logprobs for target tokens as before
             logprobs = extract_token_logprobs(
                 control_model, tokenizer, scenario, target_tokens, normalize=True
             )
@@ -335,15 +353,23 @@ def test_configuration(
             scores[strength] = score
             logprob_data[strength] = logprobs
 
+            logger.info(f"  Generated text: {generated_text}")
             logger.info(f"  Logprobs: {logprobs}")
             logger.info(f"  Score ({score_token}): {score}")
 
-            # Log the logprobs to tensorboard
+            # Log the generated text and logprobs to tensorboard
             zones_tag = format_layer_zones_for_filename(layer_zones)
             model_tag = model_name.replace("/", "_").replace("-", "_")
             normalize_tag = "norm" if normalize else "nonorm"
             rescaling_tag = rescaling if rescaling else "norescale"
             thinking_tag = "thinking" if enable_thinking else "nothinking"
+
+            # Log the generated text to tensorboard
+            writer.add_text(
+                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}/generated_text",
+                f"Strength {strength}: {generated_text}",
+                global_step=int(strength * strengths_multiplier_tensorboard),
+            )
 
             # Log all target token logprobs
             logprobs_text = ", ".join(
