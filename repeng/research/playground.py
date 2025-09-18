@@ -81,6 +81,7 @@ if not tokenizer.pad_token:
 # train the vector—takes less than a minute!
 # method="mean"
 method = "median"
+method = "pcaw_svd"
 # method="pca_diff"
 # method = "pca_center"
 # method="umap"

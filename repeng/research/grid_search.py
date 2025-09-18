@@ -84,6 +84,8 @@ param_grid = {
         "ica_center",
         "umap",
         "umap_densmap",
+        "pcaw_svd",
+        "pcaw_eigen",
     ],
     # "dataset": ["age", "iq"],
     "dataset": ["age"],
