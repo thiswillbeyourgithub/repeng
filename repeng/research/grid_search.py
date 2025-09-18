@@ -3,6 +3,7 @@ from fire import Fire
 import re
 import os
 import math
+import shutil
 import torch
 import torch.nn.functional as F
 import gc
@@ -621,6 +622,47 @@ os.makedirs("./logs", exist_ok=True)
 grid_search_script_version = "1.0.0"
 
 
+def should_skip_run(run_name: str) -> bool:
+    """
+    Check if a run should be skipped based on existing folders and done files.
+
+    Returns True if the run should be skipped (already completed).
+    If an incomplete run is found (folder exists without done file),
+    it cleans up the folder and returns False to allow re-running.
+    """
+    run_dir = f"./tensorboard_logs/grid_search/{run_name}"
+    done_file = os.path.join(run_dir, "done")
+
+    if not os.path.exists(run_dir):
+        # No folder exists, should run
+        return False
+
+    if os.path.exists(done_file):
+        # Done file exists, should skip
+        logger.info(f"Skipping completed run: {run_name}")
+        return True
+
+    # Folder exists but no done file - incomplete run, clean up
+    logger.info(f"Cleaning up incomplete run: {run_name}")
+    shutil.rmtree(run_dir)
+    return False
+
+
+def mark_run_complete(run_name: str) -> None:
+    """Mark a run as complete by creating a done file in its tensorboard directory."""
+    run_dir = f"./tensorboard_logs/grid_search/{run_name}"
+    done_file = os.path.join(run_dir, "done")
+
+    # Ensure the directory exists (it should, but just in case)
+    os.makedirs(run_dir, exist_ok=True)
+
+    # Create the done file
+    with open(done_file, "w") as f:
+        f.write("completed\n")
+
+    logger.info(f"Marked run as complete: {run_name}")
+
+
 def main(
     debug: bool = False,
     grid_reduction: bool = False,
@@ -737,6 +779,39 @@ def main(
         rescaling = params["rescaling"]
         enable_thinking = params["enable_thinking"]
 
+        # Generate run name for resume functionality (same logic as in test_configuration)
+        zones_tag = format_layer_zones_for_filename(layer_zones)
+        model_tag = model_name.replace("/", "_").replace("-", "_")
+        normalize_tag = "norm" if normalize else "nonorm"
+        rescaling_tag = rescaling if rescaling else "norescale"
+        thinking_tag = "thinking" if enable_thinking else "nothinking"
+        run_name = f"{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}"
+
+        # Check if this run should be skipped (already completed)
+        if should_skip_run(run_name):
+            # Create a placeholder result for skipped runs
+            result = {
+                "model_name": model_name,
+                "method": method,
+                "dataset": dataset,
+                "layer_zones": layer_zones,
+                "normalize": normalize,
+                "rescaling": rescaling,
+                "enable_thinking": enable_thinking,
+                "scores": {},
+                "logprob_data": {},
+                "correlation_coeff": 0.0,
+                "correlation_coeff_squared": 0.0,
+                "correlation_p_value": 1.0,
+                "success": True,  # Mark as success since it was previously completed
+                "skipped": True,
+            }
+            all_results.append(result)
+            logger.info(
+                f"Skipped combination {i+1}/{total_combinations} (already completed)"
+            )
+            continue
+
         # Test this configuration
         result = test_configuration(
             model_name,
@@ -754,91 +829,17 @@ def main(
         )
         all_results.append(result)
 
-        if result["success"] and result["scores"]:
-            scores = result["scores"]
+        # Mark run as complete if successful
+        if result["success"]:
+            mark_run_complete(run_name)
 
-            # Log individual points to tensorboard with full configuration context
-            zones_tag = format_layer_zones_for_filename(layer_zones)
-            model_tag = model_name.replace("/", "_").replace("-", "_")
-            normalize_tag = "norm" if normalize else "nonorm"
-            rescaling_tag = rescaling if rescaling else "norescale"
-            thinking_tag = "thinking" if enable_thinking else "nothinking"
-
-            # Create comprehensive tag for this configuration
-            full_config_tag = f"{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}"
-
-            for strength, score in scores.items():
-                main_writer.add_scalar(
-                    f"individual_scores/{full_config_tag}/logprob_score",
-                    score,
-                    global_step=int(strength * strengths_multiplier_tensorboard),
-                )
-
-            # Log summary statistics to tensorboard
+        # Only do tensorboard logging for runs that were actually executed (not skipped)
+        if not result.get("skipped", False):
             if result["success"] and result["scores"]:
                 scores = result["scores"]
-                # Logprobs are always valid (no NaN values to filter)
-                strengths_list = sorted(scores.keys())
-                scores_list = [scores[s] for s in strengths_list]
 
-                mean_score = sum(scores_list) / len(scores_list)
-                max_score = max(scores_list)
-                min_score = min(scores_list)
-                score_range = max_score - min_score
-
-                # Get correlation values from the result
-                correlation_coeff = result.get("correlation_coeff", 0.0)
-                correlation_coeff_squared = result.get("correlation_coeff_squared", 0.0)
-                correlation_p_value = result.get("correlation_p_value", 1.0)
-
-                # Log hyperparameters and metrics for easy filtering
-                hparam_dict = {
-                    "model_name": model_name,
-                    "method": method,
-                    "dataset": dataset,
-                    "normalize": normalize,
-                    "rescaling": rescaling if rescaling else "none",
-                    "enable_thinking": enable_thinking,
-                    "layer_zones_str": str(
-                        layer_zones
-                    ),  # String representation for filtering
-                    "num_layer_zones": len(layer_zones),  # Number of zone pairs
-                    "combo_idx": i,  # Unique identifier for this combination
-                    "grid_search_script_version": grid_search_script_version,
-                    "repeng_version": repeng_version,
-                }
-
-                # Add individual zone boundaries as separate hyperparameters for easier filtering
-                for zone_idx, zone in enumerate(layer_zones):
-                    hparam_dict[f"zone_{zone_idx}_start"] = zone[0]
-                    hparam_dict[f"zone_{zone_idx}_end"] = zone[1]
-                    hparam_dict[f"zone_{zone_idx}_width"] = zone[1] - zone[0]
-
-                metric_dict = {
-                    "hparam/mean_logprob_score": mean_score,
-                    "hparam/max_logprob_score": max_score,
-                    "hparam/min_logprob_score": min_score,
-                    "hparam/logprob_score_range": score_range,
-                    "hparam/correlation_coeff": correlation_coeff,
-                    "hparam/correlation_coeff_squared": correlation_coeff_squared,
-                    "hparam/correlation_p_value": correlation_p_value,
-                    "hparam/num_logprob_scores": len(scores_list),
-                }
-
-                # Log hyperparameters with metrics - this allows filtering in TensorBoard
-                main_writer.add_hparams(hparam_dict, metric_dict)
-
-                # Also log individual parameters as scalars for time-series analysis
-                main_writer.add_scalar("params/combo_idx", i, i)
-                main_writer.add_scalar("params/num_layer_zones", len(layer_zones), i)
-                for zone_idx, zone in enumerate(layer_zones):
-                    main_writer.add_scalar(f"params/zone_{zone_idx}_start", zone[0], i)
-                    main_writer.add_scalar(f"params/zone_{zone_idx}_end", zone[1], i)
-                    main_writer.add_scalar(
-                        f"params/zone_{zone_idx}_width", zone[1] - zone[0], i
-                    )
-
-                # Use combination index as the x-axis for summary stats with full configuration context
+                # Log individual points to tensorboard with full configuration context
+                zones_tag = format_layer_zones_for_filename(layer_zones)
                 model_tag = model_name.replace("/", "_").replace("-", "_")
                 normalize_tag = "norm" if normalize else "nonorm"
                 rescaling_tag = rescaling if rescaling else "norescale"
@@ -847,150 +848,242 @@ def main(
                 # Create comprehensive tag for this configuration
                 full_config_tag = f"{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}"
 
-                # Log all summary metrics with full configuration context
-                main_writer.add_scalar(
-                    f"summary/{full_config_tag}/mean_logprob_score",
-                    mean_score,
-                    i,
-                )
-                main_writer.add_scalar(
-                    f"summary/{full_config_tag}/max_logprob_score",
-                    max_score,
-                    i,
-                )
-                main_writer.add_scalar(
-                    f"summary/{full_config_tag}/min_logprob_score",
-                    min_score,
-                    i,
-                )
-                main_writer.add_scalar(
-                    f"summary/{full_config_tag}/logprob_score_range",
-                    score_range,
-                    i,
-                )
-                main_writer.add_scalar(
-                    f"summary/{full_config_tag}/correlation_coeff",
-                    correlation_coeff,
-                    i,
-                )
-                main_writer.add_scalar(
-                    f"summary/{full_config_tag}/correlation_coeff_squared",
-                    correlation_coeff_squared,
-                    i,
-                )
-                main_writer.add_scalar(
-                    f"summary/{full_config_tag}/correlation_p_value",
-                    correlation_p_value,
-                    i,
-                )
+                for strength, score in scores.items():
+                    main_writer.add_scalar(
+                        f"individual_scores/{full_config_tag}/logprob_score",
+                        score,
+                        global_step=int(strength * strengths_multiplier_tensorboard),
+                    )
 
-                # Log by individual configuration components for easy filtering
-                main_writer.add_scalar(
-                    f"by_model/{model_tag}/mean_logprob_score", mean_score, i
-                )
-                main_writer.add_scalar(
-                    f"by_model/{model_tag}/correlation_coeff", correlation_coeff, i
-                )
-                main_writer.add_scalar(
-                    f"by_model/{model_tag}/correlation_coeff_squared",
-                    correlation_coeff_squared,
-                    i,
-                )
+                # Log summary statistics to tensorboard
+                if result["success"] and result["scores"]:
+                    scores = result["scores"]
+                    # Logprobs are always valid (no NaN values to filter)
+                    strengths_list = sorted(scores.keys())
+                    scores_list = [scores[s] for s in strengths_list]
 
-                main_writer.add_scalar(
-                    f"by_method/{method}/mean_logprob_score", mean_score, i
-                )
-                main_writer.add_scalar(
-                    f"by_method/{method}/correlation_coeff", correlation_coeff, i
-                )
-                main_writer.add_scalar(
-                    f"by_method/{method}/correlation_coeff_squared",
-                    correlation_coeff_squared,
-                    i,
-                )
+                    mean_score = sum(scores_list) / len(scores_list)
+                    max_score = max(scores_list)
+                    min_score = min(scores_list)
+                    score_range = max_score - min_score
 
-                main_writer.add_scalar(
-                    f"by_dataset/{dataset}/mean_logprob_score", mean_score, i
-                )
-                main_writer.add_scalar(
-                    f"by_dataset/{dataset}/correlation_coeff", correlation_coeff, i
-                )
-                main_writer.add_scalar(
-                    f"by_dataset/{dataset}/correlation_coeff_squared",
-                    correlation_coeff_squared,
-                    i,
-                )
+                    # Get correlation values from the result
+                    correlation_coeff = result.get("correlation_coeff", 0.0)
+                    correlation_coeff_squared = result.get(
+                        "correlation_coeff_squared", 0.0
+                    )
+                    correlation_p_value = result.get("correlation_p_value", 1.0)
 
-                main_writer.add_scalar(
-                    f"by_normalize/{normalize_tag}/mean_logprob_score", mean_score, i
-                )
-                main_writer.add_scalar(
-                    f"by_normalize/{normalize_tag}/correlation_coeff",
-                    correlation_coeff,
-                    i,
-                )
-                main_writer.add_scalar(
-                    f"by_normalize/{normalize_tag}/correlation_coeff_squared",
-                    correlation_coeff_squared,
-                    i,
-                )
+                    # Log hyperparameters and metrics for easy filtering
+                    hparam_dict = {
+                        "model_name": model_name,
+                        "method": method,
+                        "dataset": dataset,
+                        "normalize": normalize,
+                        "rescaling": rescaling if rescaling else "none",
+                        "enable_thinking": enable_thinking,
+                        "layer_zones_str": str(
+                            layer_zones
+                        ),  # String representation for filtering
+                        "num_layer_zones": len(layer_zones),  # Number of zone pairs
+                        "combo_idx": i,  # Unique identifier for this combination
+                        "grid_search_script_version": grid_search_script_version,
+                        "repeng_version": repeng_version,
+                    }
 
-                main_writer.add_scalar(
-                    f"by_rescaling/{rescaling_tag}/mean_logprob_score", mean_score, i
-                )
-                main_writer.add_scalar(
-                    f"by_rescaling/{rescaling_tag}/correlation_coeff",
-                    correlation_coeff,
-                    i,
-                )
-                main_writer.add_scalar(
-                    f"by_rescaling/{rescaling_tag}/correlation_coeff_squared",
-                    correlation_coeff_squared,
-                    i,
-                )
+                    # Add individual zone boundaries as separate hyperparameters for easier filtering
+                    for zone_idx, zone in enumerate(layer_zones):
+                        hparam_dict[f"zone_{zone_idx}_start"] = zone[0]
+                        hparam_dict[f"zone_{zone_idx}_end"] = zone[1]
+                        hparam_dict[f"zone_{zone_idx}_width"] = zone[1] - zone[0]
 
-                main_writer.add_scalar(
-                    f"by_thinking/{thinking_tag}/mean_logprob_score", mean_score, i
-                )
-                main_writer.add_scalar(
-                    f"by_thinking/{thinking_tag}/correlation_coeff",
-                    correlation_coeff,
-                    i,
-                )
-                main_writer.add_scalar(
-                    f"by_thinking/{thinking_tag}/correlation_coeff_squared",
-                    correlation_coeff_squared,
-                    i,
-                )
+                    metric_dict = {
+                        "hparam/mean_logprob_score": mean_score,
+                        "hparam/max_logprob_score": max_score,
+                        "hparam/min_logprob_score": min_score,
+                        "hparam/logprob_score_range": score_range,
+                        "hparam/correlation_coeff": correlation_coeff,
+                        "hparam/correlation_coeff_squared": correlation_coeff_squared,
+                        "hparam/correlation_p_value": correlation_p_value,
+                        "hparam/num_logprob_scores": len(scores_list),
+                    }
 
-                # Also log combined model+dataset+method for comparison across layer zones
-                main_writer.add_scalar(
-                    f"by_model_dataset_method/{model_tag}_{dataset}_{method}/mean_logprob_score",
-                    mean_score,
-                    i,
-                )
-                main_writer.add_scalar(
-                    f"by_model_dataset_method/{model_tag}_{dataset}_{method}/max_logprob_score",
-                    max_score,
-                    i,
-                )
-                main_writer.add_scalar(
-                    f"by_model_dataset_method/{model_tag}_{dataset}_{method}/logprob_score_range",
-                    score_range,
-                    i,
-                )
-                main_writer.add_scalar(
-                    f"by_model_dataset_method/{model_tag}_{dataset}_{method}/correlation_coeff",
-                    correlation_coeff,
-                    i,
-                )
-                main_writer.add_scalar(
-                    f"by_model_dataset_method/{model_tag}_{dataset}_{method}/correlation_coeff_squared",
-                    correlation_coeff_squared,
-                    i,
-                )
+                    # Log hyperparameters with metrics - this allows filtering in TensorBoard
+                    main_writer.add_hparams(hparam_dict, metric_dict)
 
-        logger.info(f"Completed combination {i+1}/{total_combinations}")
+                    # Also log individual parameters as scalars for time-series analysis
+                    main_writer.add_scalar("params/combo_idx", i, i)
+                    main_writer.add_scalar(
+                        "params/num_layer_zones", len(layer_zones), i
+                    )
+                    for zone_idx, zone in enumerate(layer_zones):
+                        main_writer.add_scalar(
+                            f"params/zone_{zone_idx}_start", zone[0], i
+                        )
+                        main_writer.add_scalar(
+                            f"params/zone_{zone_idx}_end", zone[1], i
+                        )
+                        main_writer.add_scalar(
+                            f"params/zone_{zone_idx}_width", zone[1] - zone[0], i
+                        )
+
+                    # Use combination index as the x-axis for summary stats with full configuration context
+                    model_tag = model_name.replace("/", "_").replace("-", "_")
+                    normalize_tag = "norm" if normalize else "nonorm"
+                    rescaling_tag = rescaling if rescaling else "norescale"
+                    thinking_tag = "thinking" if enable_thinking else "nothinking"
+
+                    # Create comprehensive tag for this configuration
+                    full_config_tag = f"{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}"
+
+                    # Log all summary metrics with full configuration context
+                    main_writer.add_scalar(
+                        f"summary/{full_config_tag}/mean_logprob_score",
+                        mean_score,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"summary/{full_config_tag}/max_logprob_score",
+                        max_score,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"summary/{full_config_tag}/min_logprob_score",
+                        min_score,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"summary/{full_config_tag}/logprob_score_range",
+                        score_range,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"summary/{full_config_tag}/correlation_coeff",
+                        correlation_coeff,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"summary/{full_config_tag}/correlation_coeff_squared",
+                        correlation_coeff_squared,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"summary/{full_config_tag}/correlation_p_value",
+                        correlation_p_value,
+                        i,
+                    )
+
+                    # Log by individual configuration components for easy filtering
+                    main_writer.add_scalar(
+                        f"by_model/{model_tag}/mean_logprob_score", mean_score, i
+                    )
+                    main_writer.add_scalar(
+                        f"by_model/{model_tag}/correlation_coeff", correlation_coeff, i
+                    )
+                    main_writer.add_scalar(
+                        f"by_model/{model_tag}/correlation_coeff_squared",
+                        correlation_coeff_squared,
+                        i,
+                    )
+
+                    main_writer.add_scalar(
+                        f"by_method/{method}/mean_logprob_score", mean_score, i
+                    )
+                    main_writer.add_scalar(
+                        f"by_method/{method}/correlation_coeff", correlation_coeff, i
+                    )
+                    main_writer.add_scalar(
+                        f"by_method/{method}/correlation_coeff_squared",
+                        correlation_coeff_squared,
+                        i,
+                    )
+
+                    main_writer.add_scalar(
+                        f"by_dataset/{dataset}/mean_logprob_score", mean_score, i
+                    )
+                    main_writer.add_scalar(
+                        f"by_dataset/{dataset}/correlation_coeff", correlation_coeff, i
+                    )
+                    main_writer.add_scalar(
+                        f"by_dataset/{dataset}/correlation_coeff_squared",
+                        correlation_coeff_squared,
+                        i,
+                    )
+
+                    main_writer.add_scalar(
+                        f"by_normalize/{normalize_tag}/mean_logprob_score",
+                        mean_score,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"by_normalize/{normalize_tag}/correlation_coeff",
+                        correlation_coeff,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"by_normalize/{normalize_tag}/correlation_coeff_squared",
+                        correlation_coeff_squared,
+                        i,
+                    )
+
+                    main_writer.add_scalar(
+                        f"by_rescaling/{rescaling_tag}/mean_logprob_score",
+                        mean_score,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"by_rescaling/{rescaling_tag}/correlation_coeff",
+                        correlation_coeff,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"by_rescaling/{rescaling_tag}/correlation_coeff_squared",
+                        correlation_coeff_squared,
+                        i,
+                    )
+
+                    main_writer.add_scalar(
+                        f"by_thinking/{thinking_tag}/mean_logprob_score", mean_score, i
+                    )
+                    main_writer.add_scalar(
+                        f"by_thinking/{thinking_tag}/correlation_coeff",
+                        correlation_coeff,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"by_thinking/{thinking_tag}/correlation_coeff_squared",
+                        correlation_coeff_squared,
+                        i,
+                    )
+
+                    # Also log combined model+dataset+method for comparison across layer zones
+                    main_writer.add_scalar(
+                        f"by_model_dataset_method/{model_tag}_{dataset}_{method}/mean_logprob_score",
+                        mean_score,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"by_model_dataset_method/{model_tag}_{dataset}_{method}/max_logprob_score",
+                        max_score,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"by_model_dataset_method/{model_tag}_{dataset}_{method}/logprob_score_range",
+                        score_range,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"by_model_dataset_method/{model_tag}_{dataset}_{method}/correlation_coeff",
+                        correlation_coeff,
+                        i,
+                    )
+                    main_writer.add_scalar(
+                        f"by_model_dataset_method/{model_tag}_{dataset}_{method}/correlation_coeff_squared",
+                        correlation_coeff_squared,
+                        i,
+                    )
+
+            logger.info(f"Completed combination {i+1}/{total_combinations}")
 
     # Log final summary
     successful_runs = [r for r in all_results if r["success"]]
