@@ -7,6 +7,7 @@ import shutil
 import torch
 import torch.nn.functional as F
 import gc
+import pdb
 from loguru import logger
 
 # Set matplotlib backend before importing pyplot to ensure non-interactive plotting
@@ -238,9 +239,9 @@ def test_configuration(
             if "CUDA" in str(e) or "out of memory" in str(e).lower():
                 logger.info(f"CUDA error on attempt {attempt + 1}/{max_retries}: {e}")
                 if debug:
-                    logger.info("Entering breakpoint to allow freeing GPU memory...")
-                    breakpoint()  # Allow user to free GPU memory and continue
-                    # After resuming from breakpoint, force cleanup before retry
+                    logger.info("Entering post-mortem debugging for CUDA error...")
+                    pdb.post_mortem()  # Allow user to examine the exception state
+                    # After resuming from post-mortem, force cleanup before retry
                     gc.collect()
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
@@ -252,7 +253,7 @@ def test_configuration(
             else:
                 # Non-CUDA error
                 if debug:
-                    breakpoint()
+                    pdb.post_mortem()
                 else:
                     raise
         except Exception as e:
