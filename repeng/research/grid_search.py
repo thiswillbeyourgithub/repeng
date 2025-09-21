@@ -379,35 +379,19 @@ def test_configuration(
             )
 
             # Extract logprobs from the final generation tokens only
-            logprobs = {}
             if len(final_new_tokens) > 0:
-                # Get logits for the final generation
-                with torch.no_grad():
-                    outputs = control_model(final_input_ids)
-                    final_logits = outputs.logits[0, -len(final_new_tokens) :, :]
-                    final_log_probs = torch.nn.functional.log_softmax(
-                        final_logits, dim=-1
-                    )
-
-                # Find token IDs for each target token
-                from repeng.research.shared import find_matching_token_ids
-
-                token_id_mapping = find_matching_token_ids(tokenizer, target_tokens)
-
-                # Sum logprobs for each target token across all final generation positions
-                for target, matching_ids in token_id_mapping.items():
-                    if matching_ids:
-                        total_logprob = 0.0
-                        for pos in range(len(final_new_tokens)):
-                            for token_id in matching_ids:
-                                total_logprob += final_log_probs[pos, token_id].item()
-                        logprobs[target] = total_logprob
-                    else:
-                        logprobs[target] = float("-inf")
+                logprobs = extract_token_logprobs(
+                    control_model,
+                    tokenizer,
+                    target_tokens,
+                    input_ids=final_input_ids,
+                    num_generated_tokens=len(final_new_tokens),
+                    normalize=True,
+                    sum_across_positions=True,
+                )
             else:
                 # No final tokens generated
-                for target in target_tokens:
-                    logprobs[target] = float("-inf")
+                logprobs = {target: float("-inf") for target in target_tokens}
 
             # Extract answer using regex
             extracted_answer = None

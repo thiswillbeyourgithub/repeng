@@ -80,15 +80,20 @@ def find_matching_token_ids(
 def extract_token_logprobs(
     model,
     tokenizer,
-    input_text: str,
     target_tokens: List[str],
+    input_text: str = None,
+    input_ids=None,
+    num_generated_tokens: int = 0,
     normalize: bool = True,
+    sum_across_positions: bool = False,
 ) -> dict[str, float]:
     """
-    Extract log probabilities for specific target tokens at the next position.
+    Extract log probabilities for specific target tokens.
 
     This function finds all vocabulary tokens that match each target token
-    (containing the target string and no other digits) and sums their probabilities.
+    (containing the target string and no other digits) and computes their probabilities.
+    Can handle both single-position (next token prediction) and multi-position
+    (across generated tokens) scenarios.
 
     Parameters
     ----------
@@ -96,12 +101,21 @@ def extract_token_logprobs(
         The wrapped model to get predictions from
     tokenizer : PreTrainedTokenizerBase
         Tokenizer for the model
-    input_text : str
-        Input text to get next token predictions for
     target_tokens : List[str]
         List of target tokens to extract logprobs for
+    input_text : str, optional
+        Input text to get predictions for. Either this or input_ids must be provided.
+    input_ids : torch.Tensor, optional
+        Pre-tokenized input. Either this or input_text must be provided.
+    num_generated_tokens : int, default=0
+        Number of generated token positions to consider from the end.
+        If 0, uses next token prediction (last position only).
+        If > 0, uses the last N positions where tokens were generated.
     normalize : bool, default=True
         Whether to apply softmax normalization to get proper probabilities
+    sum_across_positions : bool, default=False
+        If True and num_generated_tokens > 0, sums logprobs across all positions.
+        If False, uses only the last position.
 
     Returns
     -------
@@ -111,32 +125,59 @@ def extract_token_logprobs(
     import torch
     import torch.nn.functional as F
 
-    # Tokenize input
-    inputs = tokenizer(input_text, return_tensors="pt").to(model.device)
-
-    # Get logits for next token
-    with torch.no_grad():
-        outputs = model(**inputs)
-        # Get logits for the last position (next token prediction)
-        next_token_logits = outputs.logits[0, -1, :]
-
-    # Convert to probabilities for summing, then back to log probabilities
-    if normalize:
-        probs = F.softmax(next_token_logits, dim=-1)
+    # Prepare input
+    if input_ids is None:
+        if input_text is None:
+            raise ValueError("Either input_text or input_ids must be provided")
+        inputs = tokenizer(input_text, return_tensors="pt").to(model.device)
+        input_ids = inputs.input_ids
     else:
-        probs = torch.exp(next_token_logits)  # Assume logits are log probabilities
+        if hasattr(model, "device"):
+            input_ids = input_ids.to(model.device)
+
+    # Get model outputs
+    with torch.no_grad():
+        outputs = model(input_ids)
+
+        if num_generated_tokens > 0:
+            # Multi-position case: get logits for the last N generated positions
+            if num_generated_tokens > outputs.logits.shape[1]:
+                raise ValueError(
+                    f"num_generated_tokens ({num_generated_tokens}) cannot be larger than sequence length ({outputs.logits.shape[1]})"
+                )
+            logits = outputs.logits[0, -num_generated_tokens:, :]
+        else:
+            # Single position case: get logits for the last position (next token prediction)
+            logits = outputs.logits[0, -1:, :]  # Keep dimension for consistency
+
+    # Apply normalization
+    if normalize:
+        log_probs = F.log_softmax(logits, dim=-1)
+    else:
+        log_probs = logits  # Assume logits are already log probabilities
 
     # Find all matching token IDs for each target
     token_id_mapping = find_matching_token_ids(tokenizer, target_tokens)
 
-    # Extract and sum probabilities for matching tokens
+    # Extract and compute probabilities for matching tokens
     result = {}
     for target, matching_ids in token_id_mapping.items():
         if matching_ids:
-            # Sum probabilities of all matching tokens
-            total_prob = sum(probs[token_id].item() for token_id in matching_ids)
-            # Convert back to log probability
-            result[target] = torch.log(torch.tensor(total_prob)).item()
+            if sum_across_positions and num_generated_tokens > 0:
+                # Sum logprobs across all positions and all matching token IDs
+                total_logprob = 0.0
+                for pos in range(log_probs.shape[0]):
+                    for token_id in matching_ids:
+                        total_logprob += log_probs[pos, token_id].item()
+                result[target] = total_logprob
+            else:
+                # Use only the last position, sum across matching token IDs
+                last_pos_log_probs = log_probs[-1, :]  # Last position
+                total_logprob = 0.0
+                for token_id in matching_ids:
+                    total_logprob += torch.exp(last_pos_log_probs[token_id]).item()
+                # Convert back to log probability
+                result[target] = torch.log(torch.tensor(total_logprob)).item()
         else:
             # If no matching tokens found, assign very low probability
             result[target] = float("-inf")
