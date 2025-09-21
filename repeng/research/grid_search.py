@@ -315,47 +315,141 @@ def test_configuration(
         # Test all strengths
         scores = {}
         logprob_data = {}
+        extracted_answers = {}
 
         for strength in strengths:
             logger.info(f"Testing strength: {strength}")
             control_model.set_control(trained_vector, strength, normalize=normalize)
 
-            # Generate actual text response to capture full model behavior
+            # Stage 1: Let model generate freely first
             input_ids = tokenizer.encode(scenario, return_tensors="pt")
             if hasattr(control_model, "device"):
                 input_ids = input_ids.to(control_model.device)
 
-            # Generate text with the controlled model
+            # Generate initial response
             with torch.no_grad():
-                generated_ids = control_model.generate(
+                initial_generated_ids = control_model.generate(
                     input_ids,
-                    max_new_tokens=50,
-                    do_sample=False,  # Use deterministic generation for consistency
+                    max_new_tokens=100,  # Allow longer initial generation
+                    do_sample=False,
                     pad_token_id=tokenizer.eos_token_id,
                 )
 
-            # Extract only the newly generated tokens (remove the input prompt)
-            new_tokens = generated_ids[0][len(input_ids[0]) :]
-            generated_text = tokenizer.decode(new_tokens, skip_special_tokens=True)
-
-            # Extract logprobs for target tokens as before
-            logprobs = extract_token_logprobs(
-                control_model, tokenizer, scenario, target_tokens, normalize=True
+            # Extract the initial generated text
+            initial_new_tokens = initial_generated_ids[0][len(input_ids[0]) :]
+            initial_generated_text = tokenizer.decode(
+                initial_new_tokens, skip_special_tokens=True
             )
 
-            # Use the absolute difference between score token and average of other tokens
-            score_token_logprob = logprobs[score_token]
-            other_token_logprobs = [
-                logprobs[token] for token in target_tokens if token != score_token
-            ]
-            mean_other_logprobs = sum(other_token_logprobs) / len(other_token_logprobs)
-            score = abs(score_token_logprob - mean_other_logprobs)
+            # Stage 2: Add conclusion prompt and generate final answer
+            conclusion_prompt = "\nIn conclusion, the answer I picked is "
+            extended_conversation = conversation.copy()
+            extended_conversation[-1]["content"] += (
+                initial_generated_text + conclusion_prompt
+            )
+
+            # Apply chat template with continue_final_message=True
+            final_scenario = tokenizer.apply_chat_template(
+                conversation=extended_conversation,
+                continue_final_message=True,
+                tokenize=False,
+                enable_thinking=enable_thinking,
+            )
+
+            # Generate final answer tokens
+            final_input_ids = tokenizer.encode(final_scenario, return_tensors="pt")
+            if hasattr(control_model, "device"):
+                final_input_ids = final_input_ids.to(control_model.device)
+
+            with torch.no_grad():
+                final_generated_ids = control_model.generate(
+                    final_input_ids,
+                    max_new_tokens=10,  # Just a few tokens for the final answer
+                    do_sample=False,
+                    pad_token_id=tokenizer.eos_token_id,
+                )
+
+            # Extract final answer tokens and text
+            final_new_tokens = final_generated_ids[0][len(final_input_ids[0]) :]
+            final_answer_text = tokenizer.decode(
+                final_new_tokens, skip_special_tokens=True
+            )
+            generated_text = (
+                initial_generated_text + conclusion_prompt + final_answer_text
+            )
+
+            # Extract logprobs from the final generation tokens only
+            logprobs = {}
+            if len(final_new_tokens) > 0:
+                # Get logits for the final generation
+                with torch.no_grad():
+                    outputs = control_model(final_input_ids)
+                    final_logits = outputs.logits[0, -len(final_new_tokens) :, :]
+                    final_log_probs = torch.nn.functional.log_softmax(
+                        final_logits, dim=-1
+                    )
+
+                # Find token IDs for each target token
+                from repeng.research.shared import find_matching_token_ids
+
+                token_id_mapping = find_matching_token_ids(tokenizer, target_tokens)
+
+                # Sum logprobs for each target token across all final generation positions
+                for target, matching_ids in token_id_mapping.items():
+                    if matching_ids:
+                        total_logprob = 0.0
+                        for pos in range(len(final_new_tokens)):
+                            for token_id in matching_ids:
+                                total_logprob += final_log_probs[pos, token_id].item()
+                        logprobs[target] = total_logprob
+                    else:
+                        logprobs[target] = float("-inf")
+            else:
+                # No final tokens generated
+                for target in target_tokens:
+                    logprobs[target] = float("-inf")
+
+            # Extract answer using regex
+            extracted_answer = None
+            for target in target_tokens:
+                if re.search(
+                    rf"\b{re.escape(target)}\b", final_answer_text, re.IGNORECASE
+                ):
+                    extracted_answer = target
+                    break
+
+            # Convert to int if possible, otherwise keep as string, or use -1/"None" if not found
+            if extracted_answer is not None:
+                try:
+                    extracted_answer_value = int(extracted_answer)
+                except ValueError:
+                    extracted_answer_value = extracted_answer
+            else:
+                # Determine if targets are numeric to decide between -1 and "None"
+                try:
+                    int(target_tokens[0])  # Test if first target is numeric
+                    extracted_answer_value = -1
+                except ValueError:
+                    extracted_answer_value = "None"
+
+            # Compute score as difference between target token logprobs
+            # Assume first target token is "lower" value, second is "higher" value
+            if len(target_tokens) >= 2:
+                higher_token = target_tokens[1]  # e.g., "25" or "135"
+                lower_token = target_tokens[0]  # e.g., "20" or "125"
+                score = logprobs[higher_token] - logprobs[lower_token]
+            else:
+                score = logprobs[target_tokens[0]]
+
             scores[strength] = score
             logprob_data[strength] = logprobs
+            extracted_answers[strength] = extracted_answer_value
 
-            logger.info(f"  Generated text: {generated_text}")
+            logger.info(f"  Initial generated text: {initial_generated_text}")
+            logger.info(f"  Final answer text: {final_answer_text}")
+            logger.info(f"  Extracted answer: {extracted_answer_value}")
             logger.info(f"  Logprobs: {logprobs}")
-            logger.info(f"  Score ({score_token}): {score}")
+            logger.info(f"  Score (difference): {score}")
 
             # Log the generated text and logprobs to tensorboard
             zones_tag = format_layer_zones_for_filename(layer_zones)
@@ -368,6 +462,13 @@ def test_configuration(
             writer.add_text(
                 f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}/generated_text",
                 f"Strength {strength}: {generated_text}",
+                global_step=int(strength * strengths_multiplier_tensorboard),
+            )
+
+            # Log extracted answer to tensorboard
+            writer.add_scalar(
+                f"extracted_answers/{extracted_answer_value}",
+                1.0,  # Just to mark that this answer was extracted
                 global_step=int(strength * strengths_multiplier_tensorboard),
             )
 
@@ -400,12 +501,14 @@ def test_configuration(
         # Create plot for this combination - logprobs are always valid (no NaN values)
         strengths_list = sorted(scores.keys())
         scores_list = [scores[s] for s in strengths_list]
+        extracted_answers_list = [extracted_answers[s] for s in strengths_list]
 
         logger.info(f"  Creating plot with {len(scores_list)} logprob data points")
 
         # Debug: logger.info the data being plotted
         logger.info(f"  Plotting strengths: {strengths_list}")
         logger.info(f"  Plotting logprob scores: {scores_list}")
+        logger.info(f"  Plotting extracted answers: {extracted_answers_list}")
 
         # Calculate correlation between control strength and logprob score
         try:
@@ -430,8 +533,24 @@ def test_configuration(
         fig, ax = plt.subplots(figsize=(12, 8))
 
         ax.plot(strengths_list, scores_list, "bo-", linewidth=2, markersize=6)
+
+        # Add extracted answer annotations next to each point
+        for i, (x, y, answer) in enumerate(
+            zip(strengths_list, scores_list, extracted_answers_list)
+        ):
+            ax.annotate(
+                str(answer),
+                (x, y),
+                xytext=(5, 5),
+                textcoords="offset points",
+                fontsize=8,
+                alpha=0.7,
+            )
+
         ax.set_xlabel("Control Strength", fontsize=12)
-        ax.set_ylabel(f"Abs Diff: '{score_token}' vs Other Tokens", fontsize=12)
+        ax.set_ylabel(
+            f"Logprob Diff: '{target_tokens[1]}' - '{target_tokens[0]}'", fontsize=12
+        )
         ax.set_title(
             f"Token Log Probability vs Control Strength ({dataset} dataset)\n"
             f"Method: {method}, Layer zones: {layer_zones}, Normalize: {normalize}, Rescaling: {rescaling}, Thinking: {enable_thinking}\n"
