@@ -375,6 +375,7 @@ def test_configuration(
                 input_ids = input_ids.to(control_model.device)
 
             # Generate initial response
+            logger.info(f"  Starting Stage 1: Free generation for strength {strength}...")
             with torch.no_grad():
                 initial_generated_ids = control_model.generate(
                     input_ids,
@@ -414,6 +415,7 @@ def test_configuration(
             if hasattr(control_model, "device"):
                 final_input_ids = final_input_ids.to(control_model.device)
 
+            logger.info(f"  Starting Stage 2: Constrained answer generation for strength {strength}...")
             with torch.no_grad():
                 final_generated_ids = control_model.generate(
                     final_input_ids,
