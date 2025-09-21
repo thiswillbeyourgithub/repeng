@@ -415,7 +415,9 @@ def test_configuration(
                     last_token_probs = torch.nn.functional.softmax(
                         last_token_logits, dim=-1
                     )
-                    stage1_probability_mass = last_token_probs.topk(10).values.sum().item()
+                    stage1_probability_mass = (
+                        last_token_probs.topk(10).values.sum().item()
+                    )
             logger.info(f"  Stage 1 probability mass: {stage1_probability_mass:.6f}")
 
             # ====================================================================
@@ -477,7 +479,9 @@ def test_configuration(
                     last_token_probs = torch.nn.functional.softmax(
                         last_token_logits, dim=-1
                     )
-                    stage2_probability_mass = last_token_probs.topk(10).values.sum().item()
+                    stage2_probability_mass = (
+                        last_token_probs.topk(10).values.sum().item()
+                    )
             logger.info(f"  Stage 2 probability mass: {stage2_probability_mass:.6f}")
 
             # Combine both generation stages for complete logging
