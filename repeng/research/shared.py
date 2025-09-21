@@ -21,6 +21,62 @@ FINE_GRAINED_STRENGTHS: List[float] = [x / 100 for x in range(-50, 55, 5)]
 SHORT_TEST_STRENGTHS: List[float] = [-0.5, -0.25, -0.1, 0.0, 0.1, 0.25, 0.5]
 
 
+def find_matching_token_ids(
+    tokenizer, target_tokens: List[str]
+) -> dict[str, List[int]]:
+    """
+    Find all token IDs in the vocabulary that match each target token.
+
+    For each target token, finds all vocabulary tokens that:
+    - When converted to string and lowercased, contain the target string
+    - Don't contain any digits other than those in the target
+    - Are at most len(target_string) + 2 characters long
+
+    Parameters
+    ----------
+    tokenizer : PreTrainedTokenizerBase
+        Tokenizer to search vocabulary of
+    target_tokens : List[str]
+        List of target tokens to find matches for
+
+    Returns
+    -------
+    dict[str, List[int]]
+        Dictionary mapping each target token to list of matching token IDs
+    """
+
+    result = {}
+
+    for target in target_tokens:
+        target_lower = str(target).lower()
+        target_digits = set(re.findall(r"\d", target_lower))
+        max_length = len(target_lower) + 2
+
+        matching_ids = []
+
+        # Iterate through vocabulary
+        for token_id in range(len(tokenizer)):
+            try:
+                # Get token string representation
+                token_str = str(tokenizer.decode([token_id])).lower()
+
+                # Check if token contains target and meets criteria
+                if target_lower in token_str and len(token_str) <= max_length:
+
+                    # Check that no other digits are present
+                    token_digits = set(re.findall(r"\d", token_str))
+                    if token_digits.issubset(target_digits):
+                        matching_ids.append(token_id)
+
+            except Exception:
+                # Skip tokens that can't be decoded
+                continue
+
+        result[target] = matching_ids
+
+    return result
+
+
 def extract_token_logprobs(
     model,
     tokenizer,
@@ -30,6 +86,9 @@ def extract_token_logprobs(
 ) -> dict[str, float]:
     """
     Extract log probabilities for specific target tokens at the next position.
+
+    This function finds all vocabulary tokens that match each target token
+    (containing the target string and no other digits) and sums their probabilities.
 
     Parameters
     ----------
@@ -61,24 +120,26 @@ def extract_token_logprobs(
         # Get logits for the last position (next token prediction)
         next_token_logits = outputs.logits[0, -1, :]
 
-    # Convert to log probabilities
+    # Convert to probabilities for summing, then back to log probabilities
     if normalize:
-        log_probs = F.log_softmax(next_token_logits, dim=-1)
+        probs = F.softmax(next_token_logits, dim=-1)
     else:
-        log_probs = next_token_logits
+        probs = torch.exp(next_token_logits)  # Assume logits are log probabilities
 
-    # Extract logprobs for target tokens
+    # Find all matching token IDs for each target
+    token_id_mapping = find_matching_token_ids(tokenizer, target_tokens)
+
+    # Extract and sum probabilities for matching tokens
     result = {}
-    for token in target_tokens:
-        # Tokenize the target token to get its ID
-        token_ids = tokenizer.encode(token, add_special_tokens=False)
-        if len(token_ids) == 1:
-            token_id = token_ids[0]
-            result[token] = log_probs[token_id].item()
+    for target, matching_ids in token_id_mapping.items():
+        if matching_ids:
+            # Sum probabilities of all matching tokens
+            total_prob = sum(probs[token_id].item() for token_id in matching_ids)
+            # Convert back to log probability
+            result[target] = torch.log(torch.tensor(total_prob)).item()
         else:
-            # Handle multi-token case by taking average (or you could modify this logic)
-            logprobs_sum = sum(log_probs[tid].item() for tid in token_ids)
-            result[token] = logprobs_sum / len(token_ids)
+            # If no matching tokens found, assign very low probability
+            result[target] = float("-inf")
 
     return result
 
