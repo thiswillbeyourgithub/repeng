@@ -72,7 +72,35 @@ def find_matching_token_ids(
                 # Skip tokens that can't be decoded
                 continue
 
+        # If no matches found, try to find exact target token as fallback
+        if not matching_ids:
+            try:
+                # Try to encode the target and see if it results in a single token
+                encoded = tokenizer.encode(target, add_special_tokens=False)
+                if len(encoded) == 1:
+                    matching_ids.append(encoded[0])
+                elif len(encoded) > 1:
+                    # If target encodes to multiple tokens, use the first one
+                    matching_ids.append(encoded[0])
+            except Exception:
+                pass
+
+        # If still no matches, find any token that contains the target (without restrictions)
+        if not matching_ids:
+            for token_id in range(len(tokenizer)):
+                try:
+                    token_str = str(tokenizer.decode([token_id])).lower()
+                    if target_lower in token_str:
+                        matching_ids.append(token_id)
+                        break  # Just need one fallback
+                except Exception:
+                    continue
+
         result[target] = matching_ids
+
+    # Assert that no lists are empty
+    for target, token_ids in result.items():
+        assert token_ids, f"No matching token IDs found for target '{target}'"
 
     return result
 
