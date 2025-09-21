@@ -406,7 +406,7 @@ def test_configuration(
                 conversation=extended_conversation,
                 continue_final_message=True,
                 tokenize=False,
-                enable_thinking=enable_thinking,
+                enable_thinking=False,
             )
 
             # Generate final answer tokens
