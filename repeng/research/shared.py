@@ -101,32 +101,32 @@ def get_data(dataset: str) -> tuple[list[dict], list, list[str], str]:
         conversation = [
             {
                 "role": "user",
-                "content": "You have to take a wild guess: what age group do you think I belong to? Please choose one: 20, 30, 40, or 50.",
+                "content": "You have to take a wild guess: what age group do you think I belong to? Please choose either 20 or 25.",
             },
             {
                 "role": "assistant",
                 "content": "Tough one. I think you are most likely ",
             },
         ]
-        target_tokens = ["20", "30", "40", "50"]
+        target_tokens = ["20", "25"]
         score_token = (
-            "20"  # Use logprob of "20" as the score (higher = more likely young)
+            "25"  # Use logprob of "25" as the score (higher = more likely old)
         )
         return conversation, datasets.young_old_paragraph, target_tokens, score_token
     elif dataset == "iq":
         conversation = [
             {
                 "role": "user",
-                "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human? Please choose one: 100, 110, 120, or 130.",
+                "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human? Please choose either 125 or 135.",
             },
             {
                 "role": "assistant",
-                "content": "Alright. I got it. The IQ of the human I pick is around ",
+                "content": "Alright. I got it. The IQ of the human I pick is ",
             },
         ]
-        target_tokens = ["100", "110", "120", "130"]
+        target_tokens = ["125", "135"]
         score_token = (
-            "130"  # Use logprob of "130" as the score (higher = more likely genius)
+            "135"  # Use logprob of "135" as the score (higher = more likely genius)
         )
         return conversation, datasets.dumb_genius_paragraph, target_tokens, score_token
     else:
