@@ -457,7 +457,7 @@ def test_configuration(
                     )
 
                 # Initialize logprobs dict
-                logprobs = {target: float("-inf") for target in target_tokens}
+                logprobs = {target: generated_log_probs[0, tokenizer.encode(target)[0]].item() for target in target_tokens}
 
                 # Check each generated token against our targets
                 for i, token_id in enumerate(final_new_tokens):
@@ -475,10 +475,7 @@ def test_configuration(
                             # Get the logprob of this specific token at this position
                             token_logprob = generated_log_probs[i, token_id].item()
                             # Use the maximum logprob if we find multiple matches
-                            if (
-                                logprobs[target] == float("-inf")
-                                or token_logprob > logprobs[target]
-                            ):
+                            if token_logprob > logprobs[target]:
                                 logprobs[target] = token_logprob
                                 logger.info(
                                     f"  Found target '{target}' in generated token '{token_text}' with logprob {token_logprob:.4f}"
