@@ -383,25 +383,25 @@ def test_configuration(
                 # Get model outputs for the final scenario to extract logprobs
                 with torch.no_grad():
                     outputs = control_model(final_input_ids)
-                    # Get logits for the generated token positions
-                    generated_logits = outputs.logits[0, -len(final_new_tokens) :, :]
+                    # Get logits for the position just before generation (where we predict next token)
+                    prediction_logits = outputs.logits[0, -1, :]  # Last input position
                     # Apply log softmax to get log probabilities
-                    generated_log_probs = F.log_softmax(generated_logits, dim=-1)
+                    prediction_log_probs = F.log_softmax(prediction_logits, dim=-1)
 
                 # Find matching token IDs for each target token
                 token_id_mapping = find_matching_token_ids(tokenizer, target_tokens)
 
-                # Sum logprobs for each target token across all generated positions
+                # Get logprobs for each target token at the prediction position
                 logprobs = {}
                 for target, matching_ids in token_id_mapping.items():
                     if matching_ids:
-                        total_logprob = 0.0
-                        for pos in range(generated_log_probs.shape[0]):
-                            for token_id in matching_ids:
-                                total_logprob += generated_log_probs[
-                                    pos, token_id
-                                ].item()
-                        logprobs[target] = total_logprob
+                        # Convert log probs to probs, sum them, then back to log prob
+                        total_prob = 0.0
+                        for token_id in matching_ids:
+                            total_prob += torch.exp(
+                                prediction_log_probs[token_id]
+                            ).item()
+                        logprobs[target] = torch.log(torch.tensor(total_prob)).item()
                     else:
                         logprobs[target] = float("-inf")
             else:
