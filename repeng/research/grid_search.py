@@ -391,6 +391,7 @@ def test_configuration(
                     do_sample=False,
                     num_beams=1,
                     pad_token_id=tokenizer.eos_token_id,
+                    cache_implementation="offloaded",
                 )
 
             # Extract the freely generated text (excluding the input prompt)
@@ -437,6 +438,7 @@ def test_configuration(
                     tokenizer=tokenizer,
                     num_beams=1,
                     pad_token_id=tokenizer.eos_token_id,
+                    cache_implementation="offloaded",
                 )
 
             # Extract the final answer portion (excluding the extended prompt)
