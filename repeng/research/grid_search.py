@@ -381,7 +381,7 @@ def test_configuration(
             with torch.no_grad():
                 initial_generated_ids = control_model.generate(
                     input_ids,
-                    max_new_tokens=1000,  # Allow longer initial generation
+                    max_new_tokens=512,  # Allow longer initial generation
                     do_sample=False,
                     pad_token_id=tokenizer.eos_token_id,
                 )
