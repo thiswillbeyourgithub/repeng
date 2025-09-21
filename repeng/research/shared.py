@@ -233,11 +233,11 @@ def get_data(dataset: str) -> tuple[list[dict], list, list[str], str]:
         conversation = [
             {
                 "role": "system",
-                "content": "You imagine then take a wild guess and answer either A or B.",
+                "content": "You take a wild guess about the user with very little prior. Your final answer must be either A or B.",
             },
             {
                 "role": "user",
-                "content": "Guess my age. Please answer A for 20 or B for 25.",
+                "content": "Guess my age. Please answer A if 20 years old or B for 25 years old.",
             },
         ]
         return conversation, datasets.young_old_paragraph, target_tokens
@@ -245,7 +245,7 @@ def get_data(dataset: str) -> tuple[list[dict], list, list[str], str]:
         conversation = [
             {
                 "role": "system",
-                "content": "You imagine then take a wild guess and answer either A or B.",
+                "content": "You take a wild guess about the user with very little prior. Your final answer must be either A or B.",
             },
             {
                 "role": "user",
