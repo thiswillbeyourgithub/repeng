@@ -464,6 +464,8 @@ def test_configuration(
                     token_text = tokenizer.decode(
                         [token_id], skip_special_tokens=True
                     ).strip()
+                    if not token_text:
+                        continue
                     # Check if this token matches any of our targets
                     for target in target_tokens:
                         if (
