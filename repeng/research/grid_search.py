@@ -344,7 +344,7 @@ def test_configuration(
             )
 
             # Stage 2: Add conclusion prompt and generate final answer
-            conclusion_prompt = "\nANSWER: "
+            conclusion_prompt = "\nHence, my answer is: "
             extended_conversation = conversation.copy()
             extended_conversation[-1]["content"] += (
                 initial_generated_text + conclusion_prompt
