@@ -411,11 +411,11 @@ def test_configuration(
                     stage1_outputs = control_model(initial_generated_ids)
                     # Get logits for the last position (which corresponds to the last generated token)
                     last_token_logits = stage1_outputs.logits[0, -1, :]
-                    # Convert to probabilities and sum across vocabulary
+                    # Convert to probabilities and get top-10 probability mass
                     last_token_probs = torch.nn.functional.softmax(
                         last_token_logits, dim=-1
                     )
-                    stage1_probability_mass = last_token_probs.sum().item()
+                    stage1_probability_mass = last_token_probs.topk(10).values.sum().item()
             logger.info(f"  Stage 1 probability mass: {stage1_probability_mass:.6f}")
 
             # ====================================================================
@@ -473,11 +473,11 @@ def test_configuration(
                     stage2_outputs = control_model(final_generated_ids)
                     # Get logits for the last position (which corresponds to the last generated token)
                     last_token_logits = stage2_outputs.logits[0, -1, :]
-                    # Convert to probabilities and sum across vocabulary
+                    # Convert to probabilities and get top-10 probability mass
                     last_token_probs = torch.nn.functional.softmax(
                         last_token_logits, dim=-1
                     )
-                    stage2_probability_mass = last_token_probs.sum().item()
+                    stage2_probability_mass = last_token_probs.topk(10).values.sum().item()
             logger.info(f"  Stage 2 probability mass: {stage2_probability_mass:.6f}")
 
             # Combine both generation stages for complete logging
