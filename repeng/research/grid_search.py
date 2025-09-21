@@ -376,9 +376,11 @@ def test_configuration(
             final_answer_text = tokenizer.decode(
                 final_new_tokens, skip_special_tokens=True
             )
-            generated_text = (
+            # Combine both generations into complete text for logging
+            complete_generated_text = (
                 initial_generated_text + conclusion_prompt + final_answer_text
             )
+            generated_text = complete_generated_text  # For backward compatibility
 
             # Extract logprobs of the actually generated tokens
             if len(final_new_tokens) > 0:
@@ -466,6 +468,7 @@ def test_configuration(
 
             logger.info(f"  Initial generated text: {initial_generated_text}")
             logger.info(f"  Final answer text: {final_answer_text}")
+            logger.info(f"  Complete generated text: {complete_generated_text}")
             logger.info(f"  Extracted answer: {extracted_answer_value}")
             logger.info(f"  Logprobs: {logprobs}")
             logger.info(f"  Score (difference): {score}")
@@ -477,10 +480,22 @@ def test_configuration(
             rescaling_tag = rescaling if rescaling else "norescale"
             thinking_tag = "thinking" if enable_thinking else "nothinking"
 
-            # Log the generated text to tensorboard
+            # Log the complete generated text (both generations) to tensorboard
             writer.add_text(
-                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}/generated_text",
-                f"Strength {strength}: {generated_text}",
+                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}/complete_generated_text",
+                f"Strength {strength}: {complete_generated_text}",
+                global_step=int(strength * strengths_multiplier_tensorboard),
+            )
+
+            # Also log individual components for debugging
+            writer.add_text(
+                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}/initial_generation",
+                f"Strength {strength}: {initial_generated_text}",
+                global_step=int(strength * strengths_multiplier_tensorboard),
+            )
+            writer.add_text(
+                f"{model_tag}_{dataset}_{method}/zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}/final_answer",
+                f"Strength {strength}: {final_answer_text}",
                 global_step=int(strength * strengths_multiplier_tensorboard),
             )
 
