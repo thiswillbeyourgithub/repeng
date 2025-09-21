@@ -790,7 +790,9 @@ def test_configuration(
             )
             # Explicitly flush the writer to ensure data is written
             writer.flush()
-            logger.info(f"  Plot successfully logged to TensorBoard with tag: {plot_tag}")
+            logger.info(
+                f"  Plot successfully logged to TensorBoard with tag: {plot_tag}"
+            )
         except Exception as e:
             logger.info(f"  Error logging plot to TensorBoard: {e}")
             if debug:
