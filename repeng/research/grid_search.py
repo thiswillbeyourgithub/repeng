@@ -257,7 +257,9 @@ def test_configuration(
     conversation, train_dataset, target_tokens, score_token = get_data(dataset)
     scenario = tokenizer.apply_chat_template(
         conversation=conversation,
-        continue_final_message=True if conversation[-1]["role"] == "assistant" else False,
+        continue_final_message=(
+            True if conversation[-1]["role"] == "assistant" else False
+        ),
         tokenize=False,
         enable_thinking=enable_thinking,
     )
@@ -378,36 +380,24 @@ def test_configuration(
                 initial_generated_text + conclusion_prompt + final_answer_text
             )
 
-            # Extract logprobs from the final generation tokens directly
+            # Extract logprobs using the proper shared function
             if len(final_new_tokens) > 0:
-                # Get model outputs for the final scenario to extract logprobs
-                with torch.no_grad():
-                    outputs = control_model(final_input_ids)
-                    # Get logits for the position just before generation (where we predict next token)
-                    prediction_logits = outputs.logits[0, -1, :]  # Last input position
-                    # Apply log softmax to get log probabilities
-                    prediction_log_probs = F.log_softmax(prediction_logits, dim=-1)
+                # Use the shared function to extract logprobs properly
+                from repeng.research.shared import extract_token_logprobs
 
-                # Find matching token IDs for each target token
-                token_id_mapping = find_matching_token_ids(tokenizer, target_tokens)
-
-                # Get logprobs for each target token at the prediction position
-                logprobs = {}
-                for target, matching_ids in token_id_mapping.items():
-                    if matching_ids:
-                        # Convert log probs to probs, sum them, then back to log prob
-                        total_prob = 0.0
-                        for token_id in matching_ids:
-                            total_prob += torch.exp(
-                                prediction_log_probs[token_id]
-                            ).item()
-                        logprobs[target] = torch.log(torch.tensor(total_prob)).item()
-                    else:
-                        logprobs[target] = float("-inf")
+                logprobs = extract_token_logprobs(
+                    model=control_model,
+                    tokenizer=tokenizer,
+                    target_tokens=target_tokens,
+                    input_ids=final_input_ids,
+                    num_generated_tokens=0,  # Use next token prediction
+                    normalize=True,
+                    sum_across_positions=False,
+                )
             else:
                 # No final tokens generated
                 logprobs = {target: float("-inf") for target in target_tokens}
-                breakpoint()
+                logger.info("Warning: No final tokens generated for logprob extraction")
 
             # Extract answer using regex
             extracted_answer = None
