@@ -388,6 +388,7 @@ def test_configuration(
                     input_ids,
                     max_new_tokens=512,  # Allow longer initial generation
                     do_sample=False,
+                    num_breams=1,
                     pad_token_id=tokenizer.eos_token_id,
                 )
 
@@ -430,6 +431,7 @@ def test_configuration(
                     final_input_ids,
                     max_new_tokens=5,  # Just a few tokens for the final answer
                     do_sample=False,
+                    num_breams=1,
                     pad_token_id=tokenizer.eos_token_id,
                 )
 
