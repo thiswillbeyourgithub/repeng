@@ -380,20 +380,49 @@ def test_configuration(
                 initial_generated_text + conclusion_prompt + final_answer_text
             )
 
-            # Extract logprobs using the proper shared function
+            # Extract logprobs of the actually generated tokens
             if len(final_new_tokens) > 0:
-                # Use the shared function to extract logprobs properly
-                from repeng.research.shared import extract_token_logprobs
+                # Run model on full sequence to get logits for generated positions
+                with torch.no_grad():
+                    outputs = control_model(final_generated_ids)
+                    # Get logits for the generated token positions
+                    generated_logits = outputs.logits[
+                        0,
+                        len(final_input_ids[0])
+                        - 1 : len(final_input_ids[0])
+                        - 1
+                        + len(final_new_tokens),
+                        :,
+                    ]
+                    generated_log_probs = torch.nn.functional.log_softmax(
+                        generated_logits, dim=-1
+                    )
 
-                logprobs = extract_token_logprobs(
-                    model=control_model,
-                    tokenizer=tokenizer,
-                    target_tokens=target_tokens,
-                    input_ids=final_input_ids,
-                    num_generated_tokens=0,  # Use next token prediction
-                    normalize=True,
-                    sum_across_positions=False,
-                )
+                # Initialize logprobs dict
+                logprobs = {target: float("-inf") for target in target_tokens}
+
+                # Check each generated token against our targets
+                for i, token_id in enumerate(final_new_tokens):
+                    token_text = tokenizer.decode(
+                        [token_id], skip_special_tokens=True
+                    ).strip()
+                    # Check if this token matches any of our targets
+                    for target in target_tokens:
+                        if (
+                            target.lower() in token_text.lower()
+                            or token_text.lower() in target.lower()
+                        ):
+                            # Get the logprob of this specific token at this position
+                            token_logprob = generated_log_probs[i, token_id].item()
+                            # Use the maximum logprob if we find multiple matches
+                            if (
+                                logprobs[target] == float("-inf")
+                                or token_logprob > logprobs[target]
+                            ):
+                                logprobs[target] = token_logprob
+                                logger.info(
+                                    f"  Found target '{target}' in generated token '{token_text}' with logprob {token_logprob:.4f}"
+                                )
             else:
                 # No final tokens generated
                 logprobs = {target: float("-inf") for target in target_tokens}
