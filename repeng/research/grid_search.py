@@ -434,6 +434,7 @@ def test_configuration(
                     do_sample=False,
                     min_new_tokens=1,
                     stop_strings=["A", "B"],
+                    tokenizer=tokenizer,
                     num_beams=1,
                     pad_token_id=tokenizer.eos_token_id,
                 )
