@@ -71,8 +71,8 @@ quant_config = BitsAndBytesConfig(
 param_grid = {
     "model_name": [
         # "qwen/qwen3-4b",
-        "mistralai/Mistral-7B-Instruct-v0.3",
-        # "meta-llama/Llama-3.2-3B-Instruct",
+        # "mistralai/Mistral-7B-Instruct-v0.3",
+        "meta-llama/Llama-3.2-3B-Instruct",
         # "google/gemma-7b-it",
     ],
     # "method": ["mean", "median"],
@@ -781,12 +781,16 @@ def test_configuration(
 
         # Log plot to tensorboard
         try:
+            # Use configuration-specific tag and unique global step
+            plot_tag = f"plots/{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}"
             writer.add_figure(
-                "logprob_score_plot",
+                plot_tag,
                 fig,
-                global_step=0,
+                global_step=combo_idx,  # Use combo_idx for unique global step
             )
-            logger.info("  Plot successfully logged to TensorBoard")
+            # Explicitly flush the writer to ensure data is written
+            writer.flush()
+            logger.info(f"  Plot successfully logged to TensorBoard with tag: {plot_tag}")
         except Exception as e:
             logger.info(f"  Error logging plot to TensorBoard: {e}")
             if debug:
@@ -846,7 +850,8 @@ def test_configuration(
         control_model.reset()
         unwrapped_model = control_model.unwrap()
 
-        # Close the TensorBoard writer for this combination
+        # Flush and close the TensorBoard writer for this combination
+        writer.flush()
         writer.close()
 
         # Explicitly delete all model references to free GPU memory
@@ -1434,7 +1439,8 @@ def main(
             else:
                 f.write(f"  Error: {result.get('error', 'Unknown error')}\n")
 
-    # Close the main writer
+    # Flush and close the main writer
+    main_writer.flush()
     main_writer.close()
 
     logger.info(f"Summary report saved to: {summary_file}")
