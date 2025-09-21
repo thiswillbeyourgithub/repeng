@@ -412,7 +412,9 @@ def test_configuration(
                     # Get logits for the last position (which corresponds to the last generated token)
                     last_token_logits = stage1_outputs.logits[0, -1, :]
                     # Convert to probabilities and sum across vocabulary
-                    last_token_probs = torch.nn.functional.softmax(last_token_logits, dim=-1)
+                    last_token_probs = torch.nn.functional.softmax(
+                        last_token_logits, dim=-1
+                    )
                     stage1_probability_mass = last_token_probs.sum().item()
             logger.info(f"  Stage 1 probability mass: {stage1_probability_mass:.6f}")
 
@@ -462,7 +464,7 @@ def test_configuration(
             final_answer_text = tokenizer.decode(
                 final_new_tokens, skip_special_tokens=True
             )
-            
+
             # Compute probability mass at the end of Stage 2 generation
             stage2_probability_mass = 0.0
             if len(final_new_tokens) > 0:
@@ -472,10 +474,12 @@ def test_configuration(
                     # Get logits for the last position (which corresponds to the last generated token)
                     last_token_logits = stage2_outputs.logits[0, -1, :]
                     # Convert to probabilities and sum across vocabulary
-                    last_token_probs = torch.nn.functional.softmax(last_token_logits, dim=-1)
+                    last_token_probs = torch.nn.functional.softmax(
+                        last_token_logits, dim=-1
+                    )
                     stage2_probability_mass = last_token_probs.sum().item()
             logger.info(f"  Stage 2 probability mass: {stage2_probability_mass:.6f}")
-            
+
             # Combine both generation stages for complete logging
             complete_generated_text = (
                 initial_generated_text + conclusion_prompt + final_answer_text
@@ -661,7 +665,7 @@ def test_configuration(
                 global_step=int(strength * strengths_multiplier_tensorboard),
             )
             writer.add_scalar(
-                "probability_mass/stage2", 
+                "probability_mass/stage2",
                 stage2_probability_mass,
                 global_step=int(strength * strengths_multiplier_tensorboard),
             )
