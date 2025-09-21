@@ -186,6 +186,13 @@ def test_configuration(
     logged_training_logprobs: set | None = None,
 ) -> dict:
     """Test a single configuration and return results."""
+    
+    # ============================================================================
+    # PHASE 1: INITIAL SETUP AND LOGGING
+    # ============================================================================
+    # Log the current configuration parameters for debugging and tracking.
+    # This helps identify which specific combination is being tested when
+    # reviewing logs or debugging failures.
     logger.info(f"\n=== Combination {combo_idx+1}/{total_combos} ===")
     logger.info(f"Model: {model_name}")
     logger.info(f"Method: {method}")
@@ -195,13 +202,19 @@ def test_configuration(
     logger.info(f"Rescaling: {rescaling}")
     logger.info(f"Enable thinking: {enable_thinking}")
 
+    # Clear GPU memory before starting to prevent OOM errors from previous runs.
+    # This is crucial when testing many configurations sequentially.
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
         torch.cuda.synchronize()
     gc.collect()
 
-    # Load model and tokenizer for this configuration
+    # ============================================================================
+    # PHASE 2: MODEL AND TOKENIZER LOADING
+    # ============================================================================
+    # Load the base language model and tokenizer. This includes retry logic
+    # to handle CUDA memory issues that may occur during loading.
     logger.info("Loading model and tokenizer...")
 
     # Retry logic for model loading with CUDA error handling
@@ -246,6 +259,12 @@ def test_configuration(
     if base_model is None:
         raise RuntimeError(f"Failed to load model after {max_retries} attempts")
 
+    # ============================================================================
+    # PHASE 3: TOKENIZER SETUP AND DATASET PREPARATION
+    # ============================================================================
+    # Configure the tokenizer and prepare the dataset for this specific test.
+    # The tokenizer needs a pad_token for batched operations, and we need to
+    # extract the conversation template and target tokens for evaluation.
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     if not tokenizer.pad_token:
         if tokenizer.eos_token:
@@ -253,8 +272,11 @@ def test_configuration(
         else:
             tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
-    # Get scenario and dataset for this configuration
+    # Extract dataset-specific conversation template, training data, and evaluation targets.
+    # This determines what the model will be asked to do and how we'll measure success.
     conversation, train_dataset, target_tokens, score_token = get_data(dataset)
+    # Create the base scenario prompt from the conversation template.
+    # This will be used for testing the control vector at different strengths.
     scenario = tokenizer.apply_chat_template(
         conversation=conversation,
         continue_final_message=(
@@ -264,7 +286,11 @@ def test_configuration(
         enable_thinking=enable_thinking,
     )
 
-    # Create unique writer for this combination
+    # ============================================================================
+    # PHASE 4: TENSORBOARD WRITER SETUP
+    # ============================================================================
+    # Create a unique TensorBoard writer for this specific configuration.
+    # This allows us to track and visualize results for each parameter combination.
     zones_tag = format_layer_zones_for_filename(layer_zones)
     model_tag = model_name.replace("/", "_").replace("-", "_")
     normalize_tag = "norm" if normalize else "nonorm"
@@ -273,19 +299,24 @@ def test_configuration(
     run_name = f"{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}"
     writer = SummaryWriter(f"./tensorboard_logs/grid_search/{run_name}")
 
-    # Initialize correlation variables at function start to ensure they're always defined
+    # Initialize correlation variables to ensure they're always defined for return dict
     correlation_coeff = 0.0
     correlation_p_value = 1.0
 
     try:
-        # Create fresh control model for this configuration
+        # ========================================================================
+        # PHASE 5: CONTROL MODEL CREATION AND VECTOR TRAINING
+        # ========================================================================
+        # Wrap the base model with ControlModel to enable control vector injection.
+        # Then train a control vector using the specified method and dataset.
         # Note: ControlModel mutates the base model, so we work with the same instance
         control_model = ControlModel(
             base_model,
             layer_zones=layer_zones,
         )
 
-        # Train control vector
+        # Train the control vector using the specified method (mean, median, PCA, etc.)
+        # This learns the direction in activation space that corresponds to the target concept.
         logger.info("Training control vector...")
         result = ControlVector.train(
             control_model,
@@ -300,7 +331,8 @@ def test_configuration(
         )
         trained_vector, avg_logprobs = result
 
-        # Log training average log probabilities to TensorBoard (once per model+dataset combination)
+        # Log training statistics to TensorBoard (only once per model+dataset combination
+        # to avoid duplicate logging across different methods/layer_zones)
         if logged_training_logprobs is not None:
             model_dataset_key = f"{model_name}_{dataset}"
             if model_dataset_key not in logged_training_logprobs:
@@ -314,16 +346,30 @@ def test_configuration(
                     )
                 logged_training_logprobs.add(model_dataset_key)
 
-        # Test all strengths
+        # ========================================================================
+        # PHASE 6: CONTROL VECTOR EVALUATION AT DIFFERENT STRENGTHS
+        # ========================================================================
+        # Test the trained control vector at various strength coefficients to see
+        # how it affects model behavior. We use a two-stage generation process:
+        # Stage 1: Free generation to let the model elaborate on the topic
+        # Stage 2: Constrained generation to extract a specific numerical answer
         scores = {}
         logprob_data = {}
         extracted_answers = {}
 
         for strength in strengths:
             logger.info(f"Testing strength: {strength}")
+            # Apply the control vector at the specified strength coefficient.
+            # Higher absolute values = stronger control effect.
             control_model.set_control(trained_vector, strength, normalize=normalize)
 
-            # Stage 1: Let model generate freely first
+            # ====================================================================
+            # STAGE 1: FREE GENERATION
+            # ====================================================================
+            # Let the model generate freely in response to the base scenario.
+            # This allows it to elaborate on the topic before we ask for a
+            # specific numerical answer, which often produces more natural
+            # and consistent responses.
             input_ids = tokenizer.encode(scenario, return_tensors="pt")
             if hasattr(control_model, "device"):
                 input_ids = input_ids.to(control_model.device)
@@ -337,13 +383,18 @@ def test_configuration(
                     pad_token_id=tokenizer.eos_token_id,
                 )
 
-            # Extract the initial generated text
+            # Extract the freely generated text (excluding the input prompt)
             initial_new_tokens = initial_generated_ids[0][len(input_ids[0]) :]
             initial_generated_text = tokenizer.decode(
                 initial_new_tokens, skip_special_tokens=True
             )
 
-            # Stage 2: Add conclusion prompt and generate final answer
+            # ====================================================================
+            # STAGE 2: CONSTRAINED ANSWER GENERATION
+            # ====================================================================
+            # Add a conclusion prompt to elicit a specific numerical answer.
+            # This two-stage approach helps ensure we get both natural elaboration
+            # and a clear extractable answer for evaluation.
             conclusion_prompt = "\nHence, my answer is: "
             extended_conversation = conversation.copy()
             extended_conversation[-1]["content"] += (
@@ -371,18 +422,23 @@ def test_configuration(
                     pad_token_id=tokenizer.eos_token_id,
                 )
 
-            # Extract final answer tokens and text
+            # Extract the final answer portion (excluding the extended prompt)
             final_new_tokens = final_generated_ids[0][len(final_input_ids[0]) :]
             final_answer_text = tokenizer.decode(
                 final_new_tokens, skip_special_tokens=True
             )
-            # Combine both generations into complete text for logging
+            # Combine both generation stages for complete logging
             complete_generated_text = (
                 initial_generated_text + conclusion_prompt + final_answer_text
             )
             generated_text = complete_generated_text  # For backward compatibility
 
-            # Extract logprobs of the actually generated tokens
+            # ====================================================================
+            # LOGPROB EXTRACTION AND SCORING
+            # ====================================================================
+            # Extract log probabilities for target tokens from the final answer.
+            # This measures how likely the model was to generate our target
+            # tokens (e.g., "25" vs "20" for age questions) under the control.
             if len(final_new_tokens) > 0:
                 # Run model on full sequence to get logits for generated positions
                 with torch.no_grad():
@@ -453,8 +509,12 @@ def test_configuration(
                 except ValueError:
                     extracted_answer_value = "None"
 
-            # Compute score as difference between target token logprobs
-            # Assume first target token is "lower" value, second is "higher" value
+            # ====================================================================
+            # SCORE CALCULATION
+            # ====================================================================
+            # Compute the final score as the difference between target token logprobs.
+            # For binary tasks: score = P(high_value) - P(low_value)
+            # Positive scores indicate the model prefers the "higher" value.
             if len(target_tokens) >= 2:
                 higher_token = target_tokens[1]  # e.g., "25" or "135"
                 lower_token = target_tokens[0]  # e.g., "20" or "125"
@@ -462,6 +522,7 @@ def test_configuration(
             else:
                 score = logprobs[target_tokens[0]]
 
+            # Store results for this strength coefficient
             scores[strength] = score
             logprob_data[strength] = logprobs
             extracted_answers[strength] = extracted_answer_value
@@ -540,7 +601,11 @@ def test_configuration(
                     global_step=int(strength * strengths_multiplier_tensorboard),
                 )
 
-        # Create plot for this combination - logprobs are always valid (no NaN values)
+        # ========================================================================
+        # PHASE 7: ANALYSIS AND VISUALIZATION
+        # ========================================================================
+        # Create plots and calculate correlation statistics to evaluate how well
+        # the control vector influences model behavior in the expected direction.
         strengths_list = sorted(scores.keys())
         scores_list = [scores[s] for s in strengths_list]
         extracted_answers_list = [extracted_answers[s] for s in strengths_list]
@@ -743,11 +808,15 @@ def test_configuration(
 
         plt.close(fig)  # Close the specific figure to save memory
 
-        # Reset model control and unwrap to restore original state
+        # ========================================================================
+        # PHASE 8: CLEANUP AND MEMORY MANAGEMENT
+        # ========================================================================
+        # Reset the model state and explicitly free GPU memory to prevent OOM
+        # errors in subsequent configurations. This is critical for grid search.
         control_model.reset()
         unwrapped_model = control_model.unwrap()
 
-        # Close the writer for this combination
+        # Close the TensorBoard writer for this combination
         writer.close()
 
         # Explicitly delete all model references to free GPU memory
