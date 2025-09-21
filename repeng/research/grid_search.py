@@ -257,7 +257,7 @@ def test_configuration(
     conversation, train_dataset, target_tokens, score_token = get_data(dataset)
     scenario = tokenizer.apply_chat_template(
         conversation=conversation,
-        continue_final_message=True,
+        continue_final_message=True if conversation[-1]["role"] == "assistant" else False,
         tokenize=False,
         enable_thinking=enable_thinking,
     )

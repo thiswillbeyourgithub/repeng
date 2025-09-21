@@ -209,6 +209,7 @@ def extract_token_logprobs(
         else:
             # If no matching tokens found, assign very low probability
             result[target] = float("-inf")
+            breakpoint()
 
     return result
 
@@ -233,10 +234,6 @@ def get_data(dataset: str) -> tuple[list[dict], list, list[str], str]:
                 "role": "user",
                 "content": "You have to take a wild guess: what age group do you think I belong to? Please choose either 20 or 25.",
             },
-            {
-                "role": "assistant",
-                "content": "Tough one. I think you are most likely ",
-            },
         ]
         target_tokens = ["20", "25"]
         score_token = (
@@ -248,10 +245,6 @@ def get_data(dataset: str) -> tuple[list[dict], list, list[str], str]:
             {
                 "role": "user",
                 "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human? Please choose either 125 or 135.",
-            },
-            {
-                "role": "assistant",
-                "content": "Alright. I got it. The IQ of the human I pick is ",
             },
         ]
         target_tokens = ["125", "135"]
