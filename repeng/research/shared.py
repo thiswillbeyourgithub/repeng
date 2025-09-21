@@ -228,23 +228,30 @@ def get_data(dataset: str) -> tuple[list[dict], list, list[str], str]:
     tuple[list[dict], list, list[str], str]
         Tuple containing (conversation_as_list_of_dicts, dataset_entries, target_tokens
     """
+    target_tokens = ["A", "B"]
     if dataset == "age":
         conversation = [
             {
+                "role": "system",
+                "content": "You imagine then take a wild guess and answer either A or B.",
+            },
+            {
                 "role": "user",
-                "content": "You have to take a wild guess: what age group do you think I belong to? Please choose either 20 or 25.",
+                "content": "Guess my age. Please answer A for 20 or B for 25.",
             },
         ]
-        target_tokens = ["20", "25"]
         return conversation, datasets.young_old_paragraph, target_tokens
     elif dataset == "iq":
         conversation = [
             {
+                "role": "system",
+                "content": "You imagine then take a wild guess and answer either A or B.",
+            },
+            {
                 "role": "user",
-                "content": "Now for the next part of the test, imagine being human. You can invent ANYONE you want and have to imagine being that person. Tell me, what is the IQ score of this human? Please choose either 125 or 135.",
+                "content": "Guess your own IQ. Please answer A for 125 or B for 135.",
             },
         ]
-        target_tokens = ["125", "135"]
         return conversation, datasets.dumb_genius_paragraph, target_tokens
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
