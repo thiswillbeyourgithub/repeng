@@ -186,7 +186,7 @@ def test_configuration(
     logged_training_logprobs: set | None = None,
 ) -> dict:
     """Test a single configuration and return results."""
-    
+
     # ============================================================================
     # PHASE 1: INITIAL SETUP AND LOGGING
     # ============================================================================
