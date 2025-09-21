@@ -250,8 +250,11 @@ def test_configuration(
                     # If not in debug mode, just raise the error immediately
                     raise
             else:
-                # Non-CUDA error, re-raise immediately
-                raise
+                # Non-CUDA error
+                if debug:
+                    breakpoint()
+                else:
+                    raise
         except Exception as e:
             # Any other error, re-raise immediately
             logger.info(f"Non-CUDA error during model loading: {e}")
