@@ -274,7 +274,7 @@ def test_configuration(
 
     # Extract dataset-specific conversation template, training data, and evaluation targets.
     # This determines what the model will be asked to do and how we'll measure success.
-    conversation, train_dataset, target_tokens, score_token = get_data(dataset)
+    conversation, train_dataset, target_tokens = get_data(dataset)
     # Create the base scenario prompt from the conversation template.
     # This will be used for testing the control vector at different strengths.
     scenario = tokenizer.apply_chat_template(

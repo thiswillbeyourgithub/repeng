@@ -216,7 +216,7 @@ def extract_token_logprobs(
 
 def get_data(dataset: str) -> tuple[list[dict], list, list[str], str]:
     """
-    Get scenario conversation, dataset, target tokens, and score token based on dataset name.
+    Get scenario conversation, dataset and target tokens based on dataset name.
 
     Parameters
     ----------
@@ -226,7 +226,7 @@ def get_data(dataset: str) -> tuple[list[dict], list, list[str], str]:
     Returns
     -------
     tuple[list[dict], list, list[str], str]
-        Tuple containing (conversation_as_list_of_dicts, dataset_entries, target_tokens, score_token)
+        Tuple containing (conversation_as_list_of_dicts, dataset_entries, target_tokens
     """
     if dataset == "age":
         conversation = [
@@ -236,10 +236,7 @@ def get_data(dataset: str) -> tuple[list[dict], list, list[str], str]:
             },
         ]
         target_tokens = ["20", "25"]
-        score_token = (
-            "25"  # Use logprob of "25" as the score (higher = more likely old)
-        )
-        return conversation, datasets.young_old_paragraph, target_tokens, score_token
+        return conversation, datasets.young_old_paragraph, target_tokens
     elif dataset == "iq":
         conversation = [
             {
@@ -248,9 +245,6 @@ def get_data(dataset: str) -> tuple[list[dict], list, list[str], str]:
             },
         ]
         target_tokens = ["125", "135"]
-        score_token = (
-            "135"  # Use logprob of "135" as the score (higher = more likely genius)
-        )
-        return conversation, datasets.dumb_genius_paragraph, target_tokens, score_token
+        return conversation, datasets.dumb_genius_paragraph, target_tokens
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
