@@ -28,7 +28,7 @@ from repeng import (
 )
 from repeng.research.shared import (
     get_data,
-    extract_token_logprobs,
+    find_matching_token_ids,
 )
 
 from sklearnex import patch_sklearn
@@ -378,20 +378,36 @@ def test_configuration(
                 initial_generated_text + conclusion_prompt + final_answer_text
             )
 
-            # Extract logprobs from the final generation tokens only
+            # Extract logprobs from the final generation tokens directly
             if len(final_new_tokens) > 0:
-                logprobs = extract_token_logprobs(
-                    control_model,
-                    tokenizer,
-                    target_tokens,
-                    input_ids=final_input_ids,
-                    num_generated_tokens=len(final_new_tokens),
-                    normalize=True,
-                    sum_across_positions=True,
-                )
+                # Get model outputs for the final scenario to extract logprobs
+                with torch.no_grad():
+                    outputs = control_model(final_input_ids)
+                    # Get logits for the generated token positions
+                    generated_logits = outputs.logits[0, -len(final_new_tokens) :, :]
+                    # Apply log softmax to get log probabilities
+                    generated_log_probs = F.log_softmax(generated_logits, dim=-1)
+
+                # Find matching token IDs for each target token
+                token_id_mapping = find_matching_token_ids(tokenizer, target_tokens)
+
+                # Sum logprobs for each target token across all generated positions
+                logprobs = {}
+                for target, matching_ids in token_id_mapping.items():
+                    if matching_ids:
+                        total_logprob = 0.0
+                        for pos in range(generated_log_probs.shape[0]):
+                            for token_id in matching_ids:
+                                total_logprob += generated_log_probs[
+                                    pos, token_id
+                                ].item()
+                        logprobs[target] = total_logprob
+                    else:
+                        logprobs[target] = float("-inf")
             else:
                 # No final tokens generated
                 logprobs = {target: float("-inf") for target in target_tokens}
+                breakpoint()
 
             # Extract answer using regex
             extracted_answer = None
@@ -450,11 +466,19 @@ def test_configuration(
             )
 
             # Log extracted answer to tensorboard
-            writer.add_scalar(
-                f"extracted_answers/{extracted_answer_value}",
-                1.0,  # Just to mark that this answer was extracted
-                global_step=int(strength * strengths_multiplier_tensorboard),
-            )
+            if isinstance(extracted_answer_value, int):
+                writer.add_scalar(
+                    f"extracted_answers/value",
+                    extracted_answer_value,
+                    global_step=int(strength * strengths_multiplier_tensorboard),
+                )
+            else:
+                # For non-numeric answers, log as text
+                writer.add_text(
+                    f"extracted_answers/text",
+                    str(extracted_answer_value),
+                    global_step=int(strength * strengths_multiplier_tensorboard),
+                )
 
             # Log all target token logprobs
             logprobs_text = ", ".join(
