@@ -15,6 +15,7 @@ import matplotlib
 
 matplotlib.use("Agg")  # Use non-interactive backend for file output
 import matplotlib.pyplot as plt
+import numpy as np
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch.utils.tensorboard import SummaryWriter
@@ -72,6 +73,7 @@ quant_config = BitsAndBytesConfig(
 param_grid = {
     "model_name": [
         # "qwen/qwen3-4b",
+        "qwen/qwen3-8b",
         # "mistralai/Mistral-7B-Instruct-v0.3",
         "meta-llama/Llama-3.2-3B-Instruct",
         # "google/gemma-7b-it",
@@ -792,19 +794,26 @@ def test_configuration(
             if debug:
                 raise
 
-        # Log plot to tensorboard
+        # Log plot to tensorboard as image
         try:
+            # Convert figure to numpy array for tensorboard
+            fig.canvas.draw()
+            buf = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+            buf = buf.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+            # Convert from HWC to CHW format for tensorboard
+            img_array = np.transpose(buf, (2, 0, 1))
+            
             # Use configuration-specific tag and unique global step
             plot_tag = f"plots/{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}"
-            writer.add_figure(
+            writer.add_image(
                 plot_tag,
-                fig,
+                img_array,
                 global_step=combo_idx,  # Use combo_idx for unique global step
             )
             # Explicitly flush the writer to ensure data is written
             writer.flush()
             logger.info(
-                f"  Plot successfully logged to TensorBoard with tag: {plot_tag}"
+                f"  Plot successfully logged to TensorBoard as image with tag: {plot_tag}"
             )
         except Exception as e:
             logger.info(f"  Error logging plot to TensorBoard: {e}")
