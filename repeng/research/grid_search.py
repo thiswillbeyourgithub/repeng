@@ -62,7 +62,8 @@ from transformers import BitsAndBytesConfig
 # Configure quantization for models that support it
 # source: https://huggingface.co/docs/transformers/quantization/bitsandbytes
 quant_config = BitsAndBytesConfig(
-    device_map="cuda",
+    # device_map="cuda",
+    device_map="cpu",
     load_in_4bit=True,
     # load_in_8bit=True,
     llm_int8_enable_fp32_cpu_offload=True,  # allow offloading between gpu and cpu, only for 8bit
@@ -75,7 +76,7 @@ param_grid = {
         # "qwen/qwen3-4b",
         "qwen/qwen3-8b",
         # "mistralai/Mistral-7B-Instruct-v0.3",
-        "meta-llama/Llama-3.2-3B-Instruct",
+        # "meta-llama/Llama-3.2-3B-Instruct",
         # "google/gemma-7b-it",
     ],
     # "method": ["mean", "median"],
@@ -402,6 +403,19 @@ def test_configuration(
                 initial_new_tokens, skip_special_tokens=True
             )
 
+            # Compute probability mass at the end of Stage 1 generation
+            stage1_probability_mass = 0.0
+            if len(initial_new_tokens) > 0:
+                with torch.no_grad():
+                    # Get logits for the last generated token in Stage 1
+                    stage1_outputs = control_model(initial_generated_ids)
+                    # Get logits for the last position (which corresponds to the last generated token)
+                    last_token_logits = stage1_outputs.logits[0, -1, :]
+                    # Convert to probabilities and sum across vocabulary
+                    last_token_probs = torch.nn.functional.softmax(last_token_logits, dim=-1)
+                    stage1_probability_mass = last_token_probs.sum().item()
+            logger.info(f"  Stage 1 probability mass: {stage1_probability_mass:.6f}")
+
             # ====================================================================
             # STAGE 2: CONSTRAINED ANSWER GENERATION
             # ====================================================================
@@ -448,6 +462,20 @@ def test_configuration(
             final_answer_text = tokenizer.decode(
                 final_new_tokens, skip_special_tokens=True
             )
+            
+            # Compute probability mass at the end of Stage 2 generation
+            stage2_probability_mass = 0.0
+            if len(final_new_tokens) > 0:
+                with torch.no_grad():
+                    # Get logits for the last generated token in Stage 2
+                    stage2_outputs = control_model(final_generated_ids)
+                    # Get logits for the last position (which corresponds to the last generated token)
+                    last_token_logits = stage2_outputs.logits[0, -1, :]
+                    # Convert to probabilities and sum across vocabulary
+                    last_token_probs = torch.nn.functional.softmax(last_token_logits, dim=-1)
+                    stage2_probability_mass = last_token_probs.sum().item()
+            logger.info(f"  Stage 2 probability mass: {stage2_probability_mass:.6f}")
+            
             # Combine both generation stages for complete logging
             complete_generated_text = (
                 initial_generated_text + conclusion_prompt + final_answer_text
@@ -556,6 +584,8 @@ def test_configuration(
             logger.info(f"  Extracted answer: {extracted_answer_value}")
             logger.info(f"  Logprobs: {logprobs}")
             logger.info(f"  Score (difference): {score}")
+            logger.info(f"  Stage 1 probability mass: {stage1_probability_mass:.6f}")
+            logger.info(f"  Stage 2 probability mass: {stage2_probability_mass:.6f}")
 
             # Log the generated text and logprobs to tensorboard
             zones_tag = format_layer_zones_for_filename(layer_zones)
@@ -623,6 +653,18 @@ def test_configuration(
                     logprob,
                     global_step=int(strength * strengths_multiplier_tensorboard),
                 )
+
+            # Log probability masses for coherence monitoring
+            writer.add_scalar(
+                "probability_mass/stage1",
+                stage1_probability_mass,
+                global_step=int(strength * strengths_multiplier_tensorboard),
+            )
+            writer.add_scalar(
+                "probability_mass/stage2", 
+                stage2_probability_mass,
+                global_step=int(strength * strengths_multiplier_tensorboard),
+            )
 
         # ========================================================================
         # PHASE 7: ANALYSIS AND VISUALIZATION
