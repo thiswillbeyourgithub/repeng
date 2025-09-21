@@ -389,7 +389,7 @@ def test_configuration(
                     max_new_tokens=512,  # Allow longer initial generation
                     min_new_tokens=1,
                     do_sample=False,
-                    num_breams=1,
+                    num_beams=1,
                     pad_token_id=tokenizer.eos_token_id,
                 )
 
@@ -434,7 +434,7 @@ def test_configuration(
                     do_sample=False,
                     min_new_tokens=1,
                     stop_strings=["A", "B"],
-                    num_breams=1,
+                    num_beams=1,
                     pad_token_id=tokenizer.eos_token_id,
                 )
 
