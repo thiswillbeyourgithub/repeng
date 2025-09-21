@@ -330,7 +330,7 @@ def test_configuration(
             with torch.no_grad():
                 initial_generated_ids = control_model.generate(
                     input_ids,
-                    max_new_tokens=100,  # Allow longer initial generation
+                    max_new_tokens=1000,  # Allow longer initial generation
                     do_sample=False,
                     pad_token_id=tokenizer.eos_token_id,
                 )
@@ -342,7 +342,7 @@ def test_configuration(
             )
 
             # Stage 2: Add conclusion prompt and generate final answer
-            conclusion_prompt = "\nIn conclusion, the answer I picked is "
+            conclusion_prompt = "\nANSWER: "
             extended_conversation = conversation.copy()
             extended_conversation[-1]["content"] += (
                 initial_generated_text + conclusion_prompt
@@ -364,7 +364,7 @@ def test_configuration(
             with torch.no_grad():
                 final_generated_ids = control_model.generate(
                     final_input_ids,
-                    max_new_tokens=10,  # Just a few tokens for the final answer
+                    max_new_tokens=5,  # Just a few tokens for the final answer
                     do_sample=False,
                     pad_token_id=tokenizer.eos_token_id,
                 )
