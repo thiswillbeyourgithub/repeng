@@ -433,6 +433,7 @@ def test_configuration(
                     max_new_tokens=5,  # Just a few tokens for the final answer
                     do_sample=False,
                     min_new_tokens=1,
+                    stop_strings=["A", "B"],
                     num_breams=1,
                     pad_token_id=tokenizer.eos_token_id,
                 )
