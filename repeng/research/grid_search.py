@@ -798,13 +798,15 @@ def test_configuration(
         normalize_tag = "norm" if normalize else "nonorm"
         rescaling_tag = rescaling if rescaling else "norescale"
         thinking_tag = "thinking" if enable_thinking else "nothinking"
-        
+
         # Original plot location
         plot_filename = f"./plots/grid_search/logprob_score_{model_tag}_{dataset}_{method}_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}.png"
-        
+
         # TensorBoard logs plot location
-        tensorboard_plot_filename = f"./tensorboard_logs/grid_search/{run_name}/logprob_score_plot.png"
-        
+        tensorboard_plot_filename = (
+            f"./tensorboard_logs/grid_search/{run_name}/logprob_score_plot.png"
+        )
+
         try:
             # Save to original location
             fig.savefig(plot_filename, dpi=300, bbox_inches="tight", facecolor="white")
@@ -816,12 +818,19 @@ def test_configuration(
                 logger.info(f"  Plot file size: {file_size} bytes")
             else:
                 logger.info("  Warning: Plot file was not created!")
-                
+
             # Save to TensorBoard logs directory
             os.makedirs(f"./tensorboard_logs/grid_search/{run_name}", exist_ok=True)
-            fig.savefig(tensorboard_plot_filename, dpi=300, bbox_inches="tight", facecolor="white")
-            logger.info(f"  Plot also saved in TensorBoard logs: {tensorboard_plot_filename}")
-            
+            fig.savefig(
+                tensorboard_plot_filename,
+                dpi=300,
+                bbox_inches="tight",
+                facecolor="white",
+            )
+            logger.info(
+                f"  Plot also saved in TensorBoard logs: {tensorboard_plot_filename}"
+            )
+
         except Exception as e:
             logger.info(f"  Error saving plot: {e}")
             if debug:
