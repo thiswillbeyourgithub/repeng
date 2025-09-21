@@ -802,7 +802,7 @@ def test_configuration(
             buf = buf.reshape(fig.canvas.get_width_height()[::-1] + (3,))
             # Convert from HWC to CHW format for tensorboard
             img_array = np.transpose(buf, (2, 0, 1))
-            
+
             # Use configuration-specific tag and unique global step
             plot_tag = f"plots/{model_tag}_{dataset}_{method}_zones_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}"
             writer.add_image(
