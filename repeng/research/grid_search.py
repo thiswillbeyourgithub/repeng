@@ -395,7 +395,7 @@ def test_configuration(
             # Add a conclusion prompt to elicit a specific numerical answer.
             # This two-stage approach helps ensure we get both natural elaboration
             # and a clear extractable answer for evaluation.
-            conclusion_prompt = "\nHence, my answer is: "
+            conclusion_prompt = "\nHence, my answer in the A or B format is: "
             extended_conversation = conversation.copy()
             extended_conversation[-1]["content"] += (
                 initial_generated_text + conclusion_prompt
