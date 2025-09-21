@@ -800,7 +800,7 @@ def test_configuration(
         thinking_tag = "thinking" if enable_thinking else "nothinking"
 
         # Original plot location
-        plot_filename = f"./plots/grid_search/logprob_score_{model_tag}_{dataset}_{method}_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}.png"
+        plot_filename = f"./tensorboard_logs/grid_search/logprob_score_{model_tag}_{dataset}_{method}_{zones_tag}_{normalize_tag}_{rescaling_tag}_{thinking_tag}.png"
 
         # TensorBoard logs plot location
         tensorboard_plot_filename = (
@@ -900,7 +900,6 @@ def test_configuration(
 
 
 # Create directories
-os.makedirs("./plots/grid_search", exist_ok=True)
 os.makedirs("./tensorboard_logs", exist_ok=True)
 os.makedirs("./logs", exist_ok=True)
 
@@ -994,7 +993,6 @@ def main(
     Notes
     -----
     The function creates several output directories:
-    - ./plots/grid_search/ : Individual plots for each configuration
     - ./tensorboard_logs/grid_search/ : TensorBoard logs for analysis
     - ./logs/ : Text logs from loguru
 
@@ -1377,7 +1375,7 @@ def main(
     logger.info(f"Successful runs: {len(successful_runs)}/{total_combinations}")
 
     # Create summary report
-    summary_file = "./plots/grid_search/summary_report.txt"
+    summary_file = "./tensorboard_logs/grid_search/summary_report.txt"
     with open(summary_file, "w") as f:
         f.write("Grid Search Summary Report\n")
         f.write("==========================\n\n")
