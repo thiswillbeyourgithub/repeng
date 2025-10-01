@@ -67,7 +67,7 @@ For this project I had to make substantial modifications to repeng:
     - [UMAP with densmap](https://umap-learn.readthedocs.io/en/latest/densmap_demo.html)
     - [pacmap](https://github.com/YingfanWang/PaCMAP/)
 
-The idea is to do a grid_search (with taguchi reduction using my other project [TaguchiGridSearchConverted](https://pypi.org/project/taguchigridsearchconverter/) and store all the data into [tensorboard](https://www.tensorflow.org/tensorboard).
+The idea is to do a grid_search (with reduction using my other project [GridSearchReductor](https://github.com/thiswillbeyourgithub/GridSearchReductor) and store all the data into [tensorboard](https://www.tensorflow.org/tensorboard).
 
 
 # Results
