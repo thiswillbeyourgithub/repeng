@@ -43,6 +43,7 @@ For this project I had to make substantial modifications to repeng:
                 - Actually, By asking the LLM to imagine being a human, and asked the age of that human it works.
         - same idea with "sad/happy" then ask to estimate its [BDI](https://en.wikipedia.org/wiki/Beck_Depression_Inventory) or [PHQ-9](https://en.wikipedia.org/wiki/PHQ-9) score.
         - and so on
+        - or we can study the variation of logit in a multiple choice question.
     - we can then answer:
         1. Is the "best layer" stable across experiments
         2. Is the "best layer"'s sensitivity (strength wise) stable across experiments
